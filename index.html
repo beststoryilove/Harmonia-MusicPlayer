@@ -1010,6 +1010,7 @@
         const saveWallpaperBtn = document.getElementById('saveWallpaperBtn');
         const lyricsContent = document.getElementById('lyricsContent');
         const shareMusicBtn = document.getElementById('shareMusicBtn');
+        const originalTitle = "Harmonia - 音乐播放器";
         
         // 全局变量
         let currentPage = 1;
@@ -1021,6 +1022,9 @@
         let currentWallpaperUrl = '';
         let lyricsData = [];
         let lyricLines = [];
+        let isPlaying = false;
+        let isLyricTitleActive = false;
+        let originalSongTitle = "";
         
         // 初始化音量
         audioPlayer.volume = volumeSlider.value;
@@ -1056,11 +1060,83 @@
             }, 600); // 与动画持续时间匹配
         }
         
-        // 为按钮添加水波纹效果
+        // 为按钮添加水波纹效果（排除分享按钮）
         const buttons = document.querySelectorAll('button');
         buttons.forEach(button => {
-            button.addEventListener('click', createRipple);
+            // 排除分享按钮（id为"shareMusicBtn"）
+            if (button.id !== 'shareMusicBtn') {
+                button.addEventListener('click', createRipple);
+            }
         });
+
+        // 更新页面标题的函数
+        function updatePageTitle() {
+            const titleElement = document.querySelector('title');
+            if (isPlaying && nowPlayingTitle.textContent && nowPlayingArtist.textContent) {
+                const songName = nowPlayingTitle.textContent;
+                const artists = nowPlayingArtist.textContent;
+                titleElement.textContent = `正在为您播放：《${songName}》——${artists}`;
+                originalSongTitle = titleElement.textContent; // 保存原始标题
+            } else {
+                titleElement.textContent = originalTitle;
+            }
+            isLyricTitleActive = false; // 重置歌词标题状态
+        }
+
+        // 更新歌词高亮和标题的函数
+        function updateLyricsHighlight(currentTime) {
+            if (!lyricsData.length) {
+                updatePageTitle(); // 没有歌词时恢复歌曲标题
+                return;
+            }
+
+            // 找到当前应该高亮的歌词行
+            let activeIndex = -1;
+            for (let i = 0; i < lyricsData.length; i++) {
+                if (lyricsData[i].time <= currentTime) {
+                    activeIndex = i;
+                } else {
+                    break;
+                }
+            }
+
+            // 更新所有行的样式
+            const allLyricLines = lyricsContent.querySelectorAll('.lyric-line:not(.translation)');
+            allLyricLines.forEach((line, index) => {
+                line.classList.remove('active');
+                if (index === activeIndex) {
+                    line.classList.add('active');
+                    scrollToLyricLine(line);
+                    
+                    // 更新网页标题为当前歌词
+                    const lyricText = lyricsData[index].text;
+                    if (lyricText && lyricText.trim() !== "") {
+                        document.title = lyricText;
+                        isLyricTitleActive = true;
+                    }
+                }
+            });
+
+            // 如果没有活动歌词行，恢复歌曲标题
+            if (activeIndex === -1 && isLyricTitleActive) {
+                updatePageTitle();
+                isLyricTitleActive = false;
+            }
+        }
+
+        // 修改更新页面标题的函数
+        function updatePageTitle() {
+            const titleElement = document.querySelector('title');
+            if (isPlaying && nowPlayingTitle.textContent && nowPlayingArtist.textContent) {
+                const songName = nowPlayingTitle.textContent;
+                const artists = nowPlayingArtist.textContent;
+                titleElement.textContent = `正在为您播放：《${songName}》——${artists}`;
+                originalSongTitle = titleElement.textContent; // 保存原始标题
+            } else {
+                titleElement.textContent = originalTitle;
+            }
+            isLyricTitleActive = false; // 重置歌词标题状态
+        }
         
         // 初始化播放列表
         function initPlaylist() {
@@ -1363,6 +1439,9 @@
             } finally {
                 hideLoading();
             }
+            isPlaying = true;
+            isLyricTitleActive = false;
+            updatePageTitle();
         }
         
         // 获取随机背景图片
@@ -1654,6 +1733,9 @@
             } finally {
                 hideLoading();
             }
+            isPlaying = true;
+            isLyricTitleActive = false;
+            updatePageTitle(); 
         }
         
         // 更新进度条
@@ -1758,9 +1840,13 @@
                     }
                 });
                 playButton.textContent = '⏸';
+                isPlaying = true;
+                updatePageTitle(); // 确保开始播放时显示歌曲标题
             } else {
                 audioPlayer.pause();
                 playButton.textContent = '▶';
+                isPlaying = false;
+                updatePageTitle(); // 暂停时恢复歌曲标题
             }
         });
         
@@ -1785,6 +1871,8 @@
         audioPlayer.addEventListener('timeupdate', updateProgress);
         
         audioPlayer.addEventListener('ended', () => {
+            isPlaying = false;
+            updatePageTitle();
             playButton.textContent = '▶';
             // 自动播放下一首
             if (currentPlaylistIndex >= 0 && currentPlaylistIndex < playlist.length - 1) {
@@ -1796,6 +1884,17 @@
         
         audioPlayer.addEventListener('loadedmetadata', () => {
             updateProgress();
+        });
+
+        // 在 audioPlayer 事件监听器中添加
+        audioPlayer.addEventListener('play', () => {
+            isPlaying = true;
+            updatePageTitle();
+        });
+
+        audioPlayer.addEventListener('pause', () => {
+            isPlaying = false;
+            updatePageTitle();
         });
         
         // 音量控制
