@@ -768,12 +768,6 @@
             animation: loadingDots 1.5s infinite;
         }
         
-        @keyframes loadingDots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-        
         .error {
             color: #ff6b6b;
             text-align: center;
@@ -1103,6 +1097,7 @@
         let originalSongTitle = "";
         let ws = null; // WebSocket对象
         let desktopLyricsEnabled = false; // 桌面歌词是否启用
+        let currentLyricsResponse = null; // 保存当前歌词的原始数据
         
         // 初始化音量
         audioPlayer.volume = volumeSlider.value;
@@ -1465,6 +1460,9 @@
                     lyricsContent.appendChild(translationElement);
                 }
             });
+            
+            // 保存当前歌词响应
+            currentLyricsResponse = lyricResponse;
         }
         
         // 更新歌词高亮和滚动
@@ -1882,6 +1880,9 @@
                 const lyricsResponse = await fetchLyrics(track.lyric_id);
                 displayLyrics(lyricsResponse);
                 
+                // 发送完整歌词到桌面程序
+                sendFullLyricsToDesktop(lyricsResponse);
+                
                 // 更新背景图片
                 await updateBackground();
                 
@@ -2020,6 +2021,16 @@
                         type: 'song',
                         song: nowPlayingTitle.textContent,
                         artist: nowPlayingArtist.textContent
+                    };
+                    ws.send(JSON.stringify(data));
+                }
+                
+                // 如果当前有歌词数据，发送完整歌词
+                if (currentLyricsResponse) {
+                    const data = {
+                        type: 'full_lyric',
+                        lyric: currentLyricsResponse.lyric || '',
+                        tlyric: currentLyricsResponse.tlyric || ''
                     };
                     ws.send(JSON.stringify(data));
                 }
