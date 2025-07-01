@@ -53,6 +53,64 @@
             transform: translateY(0);
         }
         
+        .desktop-lyrics-btn {
+            position: fixed;
+            bottom: 160px;
+            right: 20px;
+            padding: 12px 18px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(52, 152, 219, 0.3);
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .desktop-lyrics-btn::before {
+            content: '🎤';
+            font-size: 16px;
+        }
+        
+        .desktop-lyrics-btn:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(52, 152, 219, 0.5);
+        }
+        
+        .desktop-lyrics-btn:active {
+            transform: translateY(0);
+        }
+        
+        .desktop-lyrics-status {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            padding: 8px 15px;
+            background: rgba(30, 22, 45, 0.85);
+            border-radius: 30px;
+            color: #aaa;
+            font-size: 12px;
+            z-index: 99;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .desktop-lyrics-status.connected {
+            color: #2ecc71;
+        }
+        
+        .desktop-lyrics-status.disconnected {
+            color: #e74c3c;
+        }
+        
         .share-music {
             position: fixed;
             bottom: 90px;
@@ -888,6 +946,20 @@
                 font-size: 12px;
             }
             
+            .desktop-lyrics-btn {
+                bottom: 150px;
+                right: 20px;
+                padding: 10px 15px;
+                font-size: 12px;
+            }
+            
+            .desktop-lyrics-status {
+                bottom: 110px;
+                right: 20px;
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+            
             .share-music::before {
                 font-size: 14px;
             }
@@ -904,6 +976,8 @@
 </head>
 <body>
     <!-- 壁纸保存按钮及歌曲分享按钮 -->
+    <button class="desktop-lyrics-btn" id="desktopLyricsBtn">开启桌面歌词（桌面端限定）</button>
+    <div class="desktop-lyrics-status" id="desktopLyricsStatus">未连接桌面歌词程序</div>
     <button class="share-music" id="shareMusicBtn">发现了宝藏歌曲想分享？点我！</button>
     <button class="save-wallpaper" id="saveWallpaperBtn">壁纸好看吗？点我立即保存！</button>
     
@@ -1010,6 +1084,8 @@
         const saveWallpaperBtn = document.getElementById('saveWallpaperBtn');
         const lyricsContent = document.getElementById('lyricsContent');
         const shareMusicBtn = document.getElementById('shareMusicBtn');
+        const desktopLyricsBtn = document.getElementById('desktopLyricsBtn');
+        const desktopLyricsStatus = document.getElementById('desktopLyricsStatus');
         const originalTitle = "Harmonia - 音乐播放器";
         
         // 全局变量
@@ -1025,6 +1101,8 @@
         let isPlaying = false;
         let isLyricTitleActive = false;
         let originalSongTitle = "";
+        let ws = null; // WebSocket对象
+        let desktopLyricsEnabled = false; // 桌面歌词是否启用
         
         // 初始化音量
         audioPlayer.volume = volumeSlider.value;
@@ -1064,7 +1142,7 @@
         const buttons = document.querySelectorAll('button');
         buttons.forEach(button => {
             // 排除分享按钮（id为"shareMusicBtn"）
-            if (button.id !== 'shareMusicBtn') {
+            if (button.id !== 'shareMusicBtn' && button.id !== 'desktopLyricsBtn') {
                 button.addEventListener('click', createRipple);
             }
         });
@@ -1087,14 +1165,17 @@
         function updateLyricsHighlight(currentTime) {
             if (!lyricsData.length) {
                 updatePageTitle(); // 没有歌词时恢复歌曲标题
+                sendLyricToDesktop(""); // 发送空歌词
                 return;
             }
 
             // 找到当前应该高亮的歌词行
             let activeIndex = -1;
+            activeLyric = lyricsData[i].text; // 保存当前歌词
             for (let i = 0; i < lyricsData.length; i++) {
                 if (lyricsData[i].time <= currentTime) {
                     activeIndex = i;
+                    activeLyric = lyricsData[i].text; // 保存当前歌词
                 } else {
                     break;
                 }
@@ -1117,10 +1198,14 @@
                 }
             });
 
+            // 发送当前歌词到桌面歌词程序
+            sendLyricToDesktop(lyricText);
+
             // 如果没有活动歌词行，恢复歌曲标题
             if (activeIndex === -1 && isLyricTitleActive) {
                 updatePageTitle();
                 isLyricTitleActive = false;
+                sendLyricToDesktop("");
             }
         }
 
@@ -1251,6 +1336,45 @@
                 return null;
             }
         }
+
+        // 发送完整歌词到桌面歌词程序
+        function sendFullLyricsToDesktop(lyricsResponse) {
+            if (!desktopLyricsEnabled || !ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            try {
+                const data = {
+                    type: 'full_lyric',
+                    lyric: lyricsResponse.lyric || '',
+                    tlyric: lyricsResponse.tlyric || ''
+                };
+                ws.send(JSON.stringify(data));
+                console.log("发送完整歌词数据");
+            } catch (error) {
+                console.error('发送歌词失败:', error);
+                desktopLyricsStatus.textContent = '发送歌词失败';
+                desktopLyricsStatus.classList.add('disconnected');
+                desktopLyricsEnabled = false;
+            }
+        }
+        
+        // 发送当前播放时间到桌面歌词程序
+        function sendCurrentTimeToDesktop() {
+            if (!desktopLyricsEnabled || !ws || ws.readyState !== WebSocket.OPEN || !isPlaying) {
+                return;
+            }
+            
+            try {
+                const data = {
+                    type: 'time',
+                    currentTime: audioPlayer.currentTime
+                };
+                ws.send(JSON.stringify(data));
+            } catch (error) {
+                console.error('发送时间失败:', error);
+            }
+        }
         
         // 解析歌词
         function parseLyrics(lyricText) {
@@ -1349,9 +1473,11 @@
 
             // 找到当前应该高亮的歌词行
             let activeIndex = -1;
+            let activeLyric = ""; // 新增变量存储当前歌词
             for (let i = 0; i < lyricsData.length; i++) {
                 if (lyricsData[i].time <= currentTime) {
                     activeIndex = i;
+                    activeLyric = lyricsData[i].text; // 保存当前歌词
                 } else {
                     break;
                 }
@@ -1387,6 +1513,25 @@
                 behavior: 'smooth'
             });
         }
+
+        // 发送歌曲信息到桌面歌词程序
+        function sendSongInfoToDesktop() {
+            if (!desktopLyricsEnabled || !ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            try {
+                const data = {
+                    type: 'song',
+                    song: nowPlayingTitle.textContent || '未知歌曲',
+                    artist: nowPlayingArtist.textContent || '未知歌手'
+                };
+                ws.send(JSON.stringify(data));
+                console.log("发送歌曲信息:", data); // 调试信息
+            } catch (error) {
+                console.error('发送歌曲信息失败:', error);
+            }
+        }
         
         // 从播放列表播放
         async function playFromPlaylist(index) {
@@ -1402,8 +1547,22 @@
                 
                 // 更新UI
                 nowPlayingTitle.textContent = track.name || '未知歌曲';
-                nowPlayingArtist.textContent = Array.isArray(track.artist) ? track.artist.join('、') : track.artist || '未知歌手';
+
+                // 处理歌手信息 - 修复版本
+                let artists = '未知歌手';
+                if (Array.isArray(track.artist)) {
+                    artists = track.artist.join('、');
+                } else if (typeof track.artist === 'string') {
+                    artists = track.artist;
+                } else if (track.artist) {
+                    artists = String(track.artist); // 其他类型转换为字符串
+                }
+                nowPlayingArtist.textContent = artists;
+                
                 nowPlayingAlbum.textContent = track.album || '未知专辑';
+                
+                // 发送歌曲信息
+                sendSongInfoToDesktop();
                 
                 // 加载专辑图片
                 loadAlbumArt(track.pic_id);
@@ -1411,6 +1570,9 @@
                 // 获取歌词
                 const lyricsResponse = await fetchLyrics(track.lyric_id);
                 displayLyrics(lyricsResponse);
+
+                // 发送完整歌词到桌面程序
+                sendFullLyricsToDesktop(lyricsResponse);
                 
                 // 获取音频URL并播放
                 const audioUrl = await getAudioUrl(track.id);
@@ -1683,6 +1845,9 @@
                         item.classList.remove('active');
                     }
                 });
+
+                // 更新播放器UI
+                nowPlayingTitle.textContent = track.name || '未知歌曲';
                 
                 // 获取音频URL
                 const audioUrl = await getAudioUrl(track.id);
@@ -1694,11 +1859,21 @@
                 // 更新播放器UI
                 nowPlayingTitle.textContent = track.name || '未知歌曲';
                 
-                // 处理歌手数组
-                const artists = Array.isArray(track.artist) ? track.artist.join('、') : track.artist || '未知歌手';
+                // 处理歌手信息 - 修复版本
+                let artists = '未知歌手';
+                if (Array.isArray(track.artist)) {
+                    artists = track.artist.join('、');
+                } else if (typeof track.artist === 'string') {
+                    artists = track.artist;
+                } else if (track.artist) {
+                    artists = String(track.artist); // 其他类型转换为字符串
+                }
                 nowPlayingArtist.textContent = artists;
                 
                 nowPlayingAlbum.textContent = track.album || '未知专辑';
+                
+                // 发送歌曲信息
+                sendSongInfoToDesktop();
                 
                 // 加载专辑图片
                 await loadAlbumArt(track.pic_id);
@@ -1737,6 +1912,12 @@
             isLyricTitleActive = false;
             updatePageTitle(); 
         }
+
+        // 在音频播放时定期发送当前时间
+        audioPlayer.addEventListener('timeupdate', () => {
+            updateProgress();
+            sendCurrentTimeToDesktop();
+        });
         
         // 更新进度条
         function updateProgress() {
@@ -1792,6 +1973,72 @@
         // 清除错误信息
         function clearError() {
             errorMessage.classList.remove('active');
+        }
+        
+        // 发送歌词到桌面歌词程序
+        function sendLyricToDesktop(lyric) {
+            if (!desktopLyricsEnabled || !ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            try {
+                const data = {
+                    type: 'lyric',
+                    content: lyric || '',
+                };
+                ws.send(JSON.stringify(data));
+                console.log("发送歌词:", lyric); // 调试信息
+            } catch (error) {
+                console.error('发送歌词失败:', error);
+                desktopLyricsStatus.textContent = '发送歌词失败';
+                desktopLyricsStatus.classList.add('disconnected');
+                desktopLyricsEnabled = false;
+            }
+        }
+        
+        // 连接到桌面歌词服务
+        function connectToDesktopLyrics() {
+            desktopLyricsStatus.style.display = 'block';
+            
+            // 如果已有连接，先关闭
+            if (ws) {
+                ws.close();
+            }
+            
+            // 创建新的WebSocket连接
+            ws = new WebSocket('ws://localhost:8765');
+            
+            ws.onopen = () => {
+                desktopLyricsStatus.textContent = '已连接到桌面歌词程序';
+                desktopLyricsStatus.classList.remove('disconnected');
+                desktopLyricsStatus.classList.add('connected');
+                desktopLyricsEnabled = true;
+                
+                // 发送当前歌曲信息
+                if (nowPlayingTitle.textContent) {
+                    const data = {
+                        type: 'song',
+                        song: nowPlayingTitle.textContent,
+                        artist: nowPlayingArtist.textContent
+                    };
+                    ws.send(JSON.stringify(data));
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket错误:', error);
+                desktopLyricsStatus.textContent = '连接桌面歌词失败';
+                desktopLyricsStatus.classList.remove('connected');
+                desktopLyricsStatus.classList.add('disconnected');
+                desktopLyricsEnabled = false;
+            };
+            
+            ws.onclose = () => {
+                desktopLyricsStatus.textContent = '桌面歌词连接已断开';
+                desktopLyricsStatus.classList.remove('connected');
+                desktopLyricsStatus.classList.add('disconnected');
+                desktopLyricsEnabled = false;
+            };
         }
         
         // 事件监听器
@@ -1904,6 +2151,21 @@
         
         // 清空播放列表
         clearPlaylist.addEventListener('click', clearPlaylistItems);
+
+        // 桌面歌词按钮
+        desktopLyricsBtn.addEventListener('click', () => {
+            if (!desktopLyricsEnabled) {
+                connectToDesktopLyrics();
+            } else {
+                if (ws) {
+                    ws.close();
+                }
+                desktopLyricsEnabled = false;
+                desktopLyricsStatus.textContent = '桌面歌词已关闭';
+                desktopLyricsStatus.classList.remove('connected');
+                desktopLyricsStatus.classList.remove('disconnected');
+            }
+        });
 
         shareMusicBtn.addEventListener('click', () => {
             if (playlist.length === 0) {
