@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="description" content="Harmonia - 一个美观易用的在线音乐播放器，支持歌词显示、播放列表管理和多主题切换">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Harmonia - 音乐播放器</title>
@@ -211,6 +212,7 @@
         }
         
         .main-wrapper {
+            margin-top: 40px;
             display: flex;
             width: 100%;
             max-width: 1400px;
@@ -421,6 +423,60 @@
         .light-theme .container {
             background: rgba(255, 255, 255, 0.85);
             border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .top-info-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(30, 22, 45, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            padding: 8px 0;
+            font-size: 12px;
+        }
+
+        .light-theme .top-info-bar {
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .top-info-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .top-copyright {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .light-theme .top-copyright {
+            color: rgba(30, 41, 59, 0.7);
+        }
+
+        .top-terms-link {
+            color: #9b59b6;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .light-theme .top-terms-link {
+            color: #6c5ce7;
+        }
+
+        .top-terms-link:hover {
+            color: #8e44ad;
+            text-decoration: underline;
+        }
+
+        .light-theme .top-terms-link:hover {
+            color: #5d4bdb;
         }
         
         h1 {
@@ -1325,10 +1381,30 @@
             .theme-toggle i {
                 font-size: 20px;
             }
+
+            .top-info-bar {
+                padding: 6px 0;
+            }
+            
+            .top-info-content {
+                flex-direction: column;
+                gap: 4px;
+                padding: 0 15px;
+            }
+            
+            .main-wrapper {
+                margin-top: 60px; /* 移动端可能需要更大的上边距 */
+            }
         }
     </style>
 </head>
 <body>
+    <div class="top-info-bar">
+        <div class="top-info-content">
+            <span class="top-copyright">©Harmonia音乐播放器(2024-2025) 版权归Harmonia团队所有 严禁倒卖/商业行为</span>
+            <a href="tiaokuan.html" class="top-terms-link">点击跳转隐私政策以及用户条款</a>
+        </div>
+    </div>
     <!-- 壁纸保存按钮及歌曲分享按钮 -->
     <button class="desktop-lyrics-btn" id="desktopLyricsBtn">开启桌面歌词（桌面端限定）</button>
     <div class="desktop-lyrics-status" id="desktopLyricsStatus">未连接桌面歌词程序</div>
