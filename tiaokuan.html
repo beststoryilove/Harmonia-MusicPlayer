@@ -13,6 +13,7 @@
             margin: 0 auto;
             padding: 20px;
             background-color: #f9f9f9;
+            position: relative;
         }
         h1 {
             color: #2c3e50;
@@ -47,93 +48,494 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             margin-bottom: 30px;
         }
+        
+        /* 语言切换按钮样式 */
+        .language-switcher {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+        .language-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .language-btn:hover {
+            background-color: #2980b9;
+        }
+        .language-btn::after {
+            content: "▼";
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        .language-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-width: 120px;
+            margin-top: 5px;
+        }
+        .language-options.show {
+            display: block;
+        }
+        .language-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .language-option:hover {
+            background-color: #f5f5f5;
+        }
     </style>
 </head>
 <body>
-    <h1>Harmonia音乐播放器</h1>
-    <p class="last-update">最后更新日期：2025年8月27日</p>
+    <!-- 语言切换按钮 -->
+    <div class="language-switcher">
+        <button class="language-btn" id="languageBtn">简体中文</button>
+        <div class="language-options" id="languageOptions">
+            <div class="language-option" data-lang="zh-CN">简体中文</div>
+            <div class="language-option" data-lang="zh-TW">繁體中文</div>
+            <div class="language-option" data-lang="ja">日本語</div>
+            <div class="language-option" data-lang="en">English</div>
+            <div class="language-option" data-lang="ko">한국어</div>
+        </div>
+    </div>
+
+    <h1 data-translate="title">Harmonia音乐播放器</h1>
+    <p class="last-update" data-translate="lastUpdate">最后更新日期：2025年8月27日</p>
     
     <div class="section">
-        <h2>隐私条款</h2>
+        <h2 data-translate="privacyTitle">隐私条款</h2>
         
-        <h3>1. 数据收集与使用</h3>
-        <p>Harmonia音乐播放器是一个纯静态网页项目，我们承诺：</p>
+        <h3 data-translate="dataCollection">1. 数据收集与使用</h3>
+        <p data-translate="privacyIntro">Harmonia音乐播放器是一个纯静态网页项目，我们承诺：</p>
         <ul>
-            <li>本项目<b>不会主动收集</b>您的任何个人信息</li>
-            <li>所有用户数据（包括播放列表、我的收藏和播放历史）仅通过浏览器的本地存储(localStorage)保存，不会上传到任何服务器</li>
-            <li>Harmonia-桌面歌词功能的所有数据交换均通过WebSocket在内网环境下进行，仅传输歌词相关信息，不会泄露任何用户数据</li>
+            <li data-translate="privacyPoint1">本项目<b>不会主动收集</b>您的任何个人信息</li>
+            <li data-translate="privacyPoint2">所有用户数据（包括播放列表、我的收藏和播放历史）仅通过浏览器的本地存储(localStorage)保存，不会上传到任何服务器</li>
+            <li data-translate="privacyPoint3">Harmonia-桌面歌词功能的所有数据交换均通过WebSocket在内网环境下进行，仅传输歌词相关信息，不会泄露任何用户数据</li>
         </ul>
         
-        <h3>2. 第三方服务</h3>
-        <p>本项目使用了以下第三方API服务：</p>
+        <h3 data-translate="thirdParty">2. 第三方服务</h3>
+        <p data-translate="thirdPartyIntro">本项目使用了以下第三方API服务：</p>
         <ul>
-            <li>xxAPI（小小API）：提供4K背景支持</li>
-            <li>GDStudio（GD音乐台）API：提供音乐数据服务</li>
+            <li data-translate="thirdParty1">xxAPI（小小API）：提供4K背景支持</li>
+            <li data-translate="thirdParty2">GDStudio（GD音乐台）API：提供音乐数据服务</li>
         </ul>
-        <p>请注意：</p>
+        <p data-translate="thirdPartyNote">请注意：</p>
         <ul>
-            <li>我们无法保证这些第三方服务提供商不会收集您的个人信息</li>
-            <li>我们也无法左右这些第三方服务提供商不会收集您的个人信息</li>
-            <li>建议您查阅这些服务的隐私政策以了解其数据收集行为</li>
-            <li>如果您不接受个人的信息被收集，则不建议您使用本项目</li>
+            <li data-translate="thirdPartyNote1">我们无法保证这些第三方服务提供商不会收集您的个人信息</li>
+            <li data-translate="thirdPartyNote2">我们也无法左右这些第三方服务提供商不会收集您的个人信息</li>
+            <li data-translate="thirdPartyNote3">建议您查阅这些服务的隐私政策以了解其数据收集行为</li>
+            <li data-translate="thirdPartyNote4">如果您不接受个人的信息被收集，则不建议您使用本项目</li>
         </ul>
         
-        <h3>3. 托管平台</h3>
-        <p>本项目托管在以下平台：</p>
+        <h3 data-translate="hosting">3. 托管平台</h3>
+        <p data-translate="hostingIntro">本项目托管在以下平台：</p>
         <ul>
-            <li>GitHub Pages：提供静态网页托管服务</li>
-            <li>CloudFlare：提供CDN加速服务</li>
+            <li data-translate="hosting1">GitHub Pages：提供静态网页托管服务</li>
+            <li data-translate="hosting2">CloudFlare：提供CDN加速服务</li>
         </ul>
-        <p>这些平台可能会收集访问日志等基本信息，我们无法控制这些数据的收集。</p>
+        <p data-translate="hostingNote">这些平台可能会收集访问日志等基本信息，我们无法控制这些数据的收集。</p>
         
-        <h3>4. 数据安全</h3>
-        <p>虽然我们采取了合理措施保护您的数据安全，但请注意：</p>
+        <h3 data-translate="dataSecurity">4. 数据安全</h3>
+        <p data-translate="securityIntro">虽然我们采取了合理措施保护您的数据安全，但请注意：</p>
         <ul>
-            <li>任何互联网传输都存在潜在风险</li>
-            <li>浏览器本地存储的数据可能因浏览器设置或设备更换而丢失</li>
-            <li>建议定期备份您的播放列表等重要数据</li>
+            <li data-translate="security1">任何互联网传输都存在潜在风险</li>
+            <li data-translate="security2">浏览器本地存储的数据可能因浏览器设置或设备更换而丢失</li>
+            <li data-translate="security3">建议定期备份您的播放列表等重要数据</li>
         </ul>
     </div>
     
     <div class="section">
-        <h2>用户协议</h2>
+        <h2 data-translate="userAgreement">用户协议</h2>
         
-        <h3>1. 服务使用</h3>
-        <p>使用Harmonia音乐播放器即表示您同意：</p>
+        <h3 data-translate="serviceUse">1. 服务使用</h3>
+        <p data-translate="serviceIntro">使用Harmonia音乐播放器即表示您同意：</p>
         <ul>
-            <li>您将遵守所有适用的法律法规</li>
-            <li>您可能会被第三方平台收集个人数据，若同意则表示允许第三方平台收集个人数据</li>
-            <li>您不会使用本服务进行任何非法活动</li>
-            <li>您理解并接受本隐私条款和用户协议的所有内容</li>
+            <li data-translate="service1">您将遵守所有适用的法律法规</li>
+            <li data-translate="service2">您可能会被第三方平台收集个人数据，若同意则表示允许第三方平台收集个人数据</li>
+            <li data-translate="service3">您不会使用本服务进行任何非法活动</li>
+            <li data-translate="service4">您理解并接受本隐私条款和用户协议的所有内容</li>
         </ul>
         
-        <h3>2. 免责声明</h3>
-        <p>Harmonia音乐播放器是一个开源项目，我们：</p>
+        <h3 data-translate="disclaimer">2. 免责声明</h3>
+        <p data-translate="disclaimerIntro">Harmonia音乐播放器是一个开源项目，我们：</p>
         <ul>
-            <li>不保证服务的持续性、无错误或完全安全</li>
-            <li>不对因使用或无法使用本服务造成的任何损失负责</li>
-            <li>保留随时修改或终止服务的权利，恕不另行通知</li>
-            <li>非项目本身问题的，责任方为提供相关服务的第三方，我们不承担相应责任</li>
+            <li data-translate="disclaimer1">不保证服务的持续性、无错误或完全安全</li>
+            <li data-translate="disclaimer2">不对因使用或无法使用本服务造成的任何损失负责</li>
+            <li data-translate="disclaimer3">保留随时修改或终止服务的权利，恕不另行通知</li>
+            <li data-translate="disclaimer4">非项目本身问题的，责任方为提供相关服务的第三方，我们不承担相应责任</li>
         </ul>
         
-        <h3>3. 知识产权</h3>
-        <p>所有音乐版权归其各自创作者/版权持有者所有，本项目的所有代码归Harmonia团队所有：</p>
+        <h3 data-translate="intellectualProperty">3. 知识产权</h3>
+        <p data-translate="propertyIntro">所有音乐版权归其各自创作者/版权持有者所有，本项目的所有代码归Harmonia团队所有：</p>
         <ul>
-            <li>本项目仅提供第三方音乐播放功能，不拥有任何音乐版权</li>
-            <li>请支持正版音乐，请勿将从本项目获取的任何音频文件/专辑图文件/歌词文件进行非法活动</li>
-            <li>项目代码遵循MIT开源协议，请勿将本项目进行倒卖/任何商业行为</li>
+            <li data-translate="property1">本项目仅提供第三方音乐播放功能，不拥有任何音乐版权</li>
+            <li data-translate="property2">请支持正版音乐，请勿将从本项目获取的任何音频文件/专辑图文件/歌词文件进行非法活动</li>
+            <li data-translate="property3">项目代码遵循MIT开源协议，请勿将本项目进行倒卖/任何商业行为</li>
         </ul>
         
-        <h3>4. 协议变更</h3>
-        <p>我们可能会不定期更新本协议：</p>
+        <h3 data-translate="agreementChanges">4. 协议变更</h3>
+        <p data-translate="changesIntro">我们可能会不定期更新本协议：</p>
         <ul>
-            <li>更新后的协议将在本页面发布</li>
-            <li>继续使用服务即表示您接受更新后的条款</li>
-            <li>建议定期查看本页面以了解最新条款</li>
+            <li data-translate="changes1">更新后的协议将在本页面发布</li>
+            <li data-translate="changes2">继续使用服务即表示您接受更新后的条款</li>
+            <li data-translate="changes3">建议定期查看本页面以了解最新条款</li>
         </ul>
         
-        <h3>5. 联系我们</h3>
-        <p>如有任何问题或建议，请通过GitHub项目页面联系我们。</p>
+        <h3 data-translate="contactUs">5. 联系我们</h3>
+        <p data-translate="contactText">如有任何问题或建议，请通过GitHub项目页面联系我们。</p>
     </div>
+
+    <script>
+        // 多语言词典
+        const translations = {
+            'zh-CN': {
+                'title': 'Harmonia音乐播放器',
+                'lastUpdate': '最后更新日期：2025年8月27日',
+                'privacyTitle': '隐私条款',
+                'dataCollection': '1. 数据收集与使用',
+                'privacyIntro': 'Harmonia音乐播放器是一个纯静态网页项目，我们承诺：',
+                'privacyPoint1': '本项目<b>不会主动收集</b>您的任何个人信息',
+                'privacyPoint2': '所有用户数据（包括播放列表、我的收藏和播放历史）仅通过浏览器的本地存储(localStorage)保存，不会上传到任何服务器',
+                'privacyPoint3': 'Harmonia-桌面歌词功能的所有数据交换均通过WebSocket在内网环境下进行，仅传输歌词相关信息，不会泄露任何用户数据',
+                'thirdParty': '2. 第三方服务',
+                'thirdPartyIntro': '本项目使用了以下第三方API服务：',
+                'thirdParty1': 'xxAPI（小小API）：提供4K背景支持',
+                'thirdParty2': 'GDStudio（GD音乐台）API：提供音乐数据服务',
+                'thirdPartyNote': '请注意：',
+                'thirdPartyNote1': '我们无法保证这些第三方服务提供商不会收集您的个人信息',
+                'thirdPartyNote2': '我们也无法左右这些第三方服务提供商不会收集您的个人信息',
+                'thirdPartyNote3': '建议您查阅这些服务的隐私政策以了解其数据收集行为',
+                'thirdPartyNote4': '如果您不接受个人的信息被收集，则不建议您使用本项目',
+                'hosting': '3. 托管平台',
+                'hostingIntro': '本项目托管在以下平台：',
+                'hosting1': 'GitHub Pages：提供静态网页托管服务',
+                'hosting2': 'CloudFlare：提供CDN加速服务',
+                'hostingNote': '这些平台可能会收集访问日志等基本信息，我们无法控制这些数据的收集。',
+                'dataSecurity': '4. 数据安全',
+                'securityIntro': '虽然我们采取了合理措施保护您的数据安全，但请注意：',
+                'security1': '任何互联网传输都存在潜在风险',
+                'security2': '浏览器本地存储的数据可能因浏览器设置或设备更换而丢失',
+                'security3': '建议定期备份您的播放列表等重要数据',
+                'userAgreement': '用户协议',
+                'serviceUse': '1. 服务使用',
+                'serviceIntro': '使用Harmonia音乐播放器即表示您同意：',
+                'service1': '您将遵守所有适用的法律法规',
+                'service2': '您可能会被第三方平台收集个人数据，若同意则表示允许第三方平台收集个人数据',
+                'service3': '您不会使用本服务进行任何非法活动',
+                'service4': '您理解并接受本隐私条款和用户协议的所有内容',
+                'disclaimer': '2. 免责声明',
+                'disclaimerIntro': 'Harmonia音乐播放器是一个开源项目，我们：',
+                'disclaimer1': '不保证服务的持续性、无错误或完全安全',
+                'disclaimer2': '不对因使用或无法使用本服务造成的任何损失负责',
+                'disclaimer3': '保留随时修改或终止服务的权利，恕不另行通知',
+                'disclaimer4': '非项目本身问题的，责任方为提供相关服务的第三方，我们不承担相应责任',
+                'intellectualProperty': '3. 知识产权',
+                'propertyIntro': '所有音乐版权归其各自创作者/版权持有者所有，本项目的所有代码归Harmonia团队所有：',
+                'property1': '本项目仅提供第三方音乐播放功能，不拥有任何音乐版权',
+                'property2': '请支持正版音乐，请勿将从本项目获取的任何音频文件/专辑图文件/歌词文件进行非法活动',
+                'property3': '项目代码遵循MIT开源协议，请勿将本项目进行倒卖/任何商业行为',
+                'agreementChanges': '4. 协议变更',
+                'changesIntro': '我们可能会不定期更新本协议：',
+                'changes1': '更新后的协议将在本页面发布',
+                'changes2': '继续使用服务即表示您接受更新后的条款',
+                'changes3': '建议定期查看本页面以了解最新条款',
+                'contactUs': '5. 联系我们',
+                'contactText': '如有任何问题或建议，请通过GitHub项目页面联系我们。'
+            },
+            'zh-TW': {
+                'title': 'Harmonia音樂播放器',
+                'lastUpdate': '最後更新日期：2025年8月27日',
+                'privacyTitle': '隱私條款',
+                'dataCollection': '1. 數據收集與使用',
+                'privacyIntro': 'Harmonia音樂播放器是一個純靜態網頁項目，我們承諾：',
+                'privacyPoint1': '本項目<b>不會主動收集</b>您的任何個人信息',
+                'privacyPoint2': '所有用戶數據（包括播放列表、我的收藏和播放歷史）僅通過瀏覽器的本地存儲(localStorage)保存，不會上傳到任何服務器',
+                'privacyPoint3': 'Harmonia-桌面歌詞功能的所有數據交換均通過WebSocket在內網環境下進行，僅傳輸歌詞相關信息，不會泄露任何用戶數據',
+                'thirdParty': '2. 第三方服務',
+                'thirdPartyIntro': '本項目使用了以下第三方API服務：',
+                'thirdParty1': 'xxAPI（小小API）：提供4K背景支持',
+                'thirdParty2': 'GDStudio（GD音樂台）API：提供音樂數據服務',
+                'thirdPartyNote': '請注意：',
+                'thirdPartyNote1': '我們無法保證這些第三方服務提供商不會收集您的個人信息',
+                'thirdPartyNote2': '我們也無法左右這些第三方服務提供商不會收集您的個人信息',
+                'thirdPartyNote3': '建議您查閱這些服務的隱私政策以了解其數據收集行為',
+                'thirdPartyNote4': '如果您不接受個人的信息被收集，則不建議您使用本項目',
+                'hosting': '3. 託管平台',
+                'hostingIntro': '本項目託管在以下平台：',
+                'hosting1': 'GitHub Pages：提供靜態網頁託管服務',
+                'hosting2': 'CloudFlare：提供CDN加速服務',
+                'hostingNote': '這些平台可能會收集訪問日誌等基本信息，我們無法控制這些數據的收集。',
+                'dataSecurity': '4. 數據安全',
+                'securityIntro': '雖然我們採取了合理措施保護您的數據安全，但請注意：',
+                'security1': '任何互聯網傳輸都存在潛在風險',
+                'security2': '瀏覽器本地存儲的數據可能因瀏覽器設置或設備更換而丟失',
+                'security3': '建議定期備份您的播放列表等重要數據',
+                'userAgreement': '用戶協議',
+                'serviceUse': '1. 服務使用',
+                'serviceIntro': '使用Harmonia音樂播放器即表示您同意：',
+                'service1': '您將遵守所有適用的法律法規',
+                'service2': '您可能會被第三方平台收集個人數據，若同意則表示允許第三方平台收集個人數據',
+                'service3': '您不會使用本服務進行任何非法活動',
+                'service4': '您理解並接受本隱私條款和用戶協議的所有內容',
+                'disclaimer': '2. 免責聲明',
+                'disclaimerIntro': 'Harmonia音樂播放器是一個開源項目，我們：',
+                'disclaimer1': '不保證服務的持續性、無錯誤或完全安全',
+                'disclaimer2': '不對因使用或無法使用本服務造成的任何損失負責',
+                'disclaimer3': '保留隨時修改或終止服務的權利，恕不另行通知',
+                'disclaimer4': '非項目本身問題的，責任方為提供相關服務的第三方，我們不承擔相應責任',
+                'intellectualProperty': '3. 知識產權',
+                'propertyIntro': '所有音樂版權歸其各自創作者/版權持有者所有，本項目的所有代碼歸Harmonia團隊所有：',
+                'property1': '本項目僅提供第三方音樂播放功能，不擁有任何音樂版權',
+                'property2': '請支持正版音樂，請勿將從本項目獲取的任何音頻文件/專輯圖文件/歌詞文件進行非法活動',
+                'property3': '項目代碼遵循MIT開源協議，請勿將本項目進行倒賣/任何商業行為',
+                'agreementChanges': '4. 協議變更',
+                'changesIntro': '我們可能會不定期更新本協議：',
+                'changes1': '更新後的協議將在本頁面發布',
+                'changes2': '繼續使用服務即表示您接受更新後的條款',
+                'changes3': '建議定期查看本頁面以了解最新條款',
+                'contactUs': '5. 聯繫我們',
+                'contactText': '如有任何問題或建議，請通過GitHub項目頁面聯繫我們。'
+            },
+            'ja': {
+                'title': 'Harmoniaミュージックプレイヤー',
+                'lastUpdate': '最終更新日：2025年8月27日',
+                'privacyTitle': 'プライバシーポリシー',
+                'dataCollection': '1. データの収集と利用',
+                'privacyIntro': 'Harmoniaミュージックプレイヤーは純粋な静的ウェブプロジェクトであり、私たちは以下のことをお約束します：',
+                'privacyPoint1': '本プロジェクトは<b>積極的にお客様の個人情報を収集することはありません</b>',
+                'privacyPoint2': 'すべてのユーザーデータ（プレイリスト、お気に入り、再生履歴を含む）はブラウザのローカルストレージ(localStorage)にのみ保存され、いかなるサーバーにもアップロードされません',
+                'privacyPoint3': 'Harmonia-デスクトップ歌詞機能のすべてのデータ交換はWebSocketを通じてローカルネットワーク環境で行われ、歌詞関連情報のみを転送し、ユーザーデータを漏洩することはありません',
+                'thirdParty': '2. 第三者サービス',
+                'thirdPartyIntro': '本プロジェクトは以下の第三者APIサービスを利用しています：',
+                'thirdParty1': 'xxAPI（小小API）：4K背景サポートを提供',
+                'thirdParty2': 'GDStudio（GD音楽台）API：音楽データサービスを提供',
+                'thirdPartyNote': 'ご注意ください：',
+                'thirdPartyNote1': 'これらの第三者サービスプロバイダーがお客様の個人情報を収集しないことを保証できません',
+                'thirdPartyNote2': 'これらの第三者サービスプロバイダーがお客様の個人情報を収集しないようにすることもできません',
+                'thirdPartyNote3': 'データ収集行為についてこれらのサービスのプライバシーポリシーを参照することをお勧めします',
+                'thirdPartyNote4': '個人情報の収集を受け入れない場合は、本プロジェクトの使用はお勧めしません',
+                'hosting': '3. ホスティングプラットフォーム',
+                'hostingIntro': '本プロジェクトは以下のプラットフォームでホストされています：',
+                'hosting1': 'GitHub Pages：静的ウェブサイトホスティングサービスを提供',
+                'hosting2': 'CloudFlare：CDN加速サービスを提供',
+                'hostingNote': 'これらのプラットフォームはアクセスログなどの基本情報を収集する可能性があり、私たちはこれらのデータ収集を制御できません。',
+                'dataSecurity': '4. データセキュリティ',
+                'securityIntro': '私たちはお客様のデータの安全を保護するために合理的な措置を講じていますが、以下の点に注意してください：',
+                'security1': 'あらゆるインターネット送信には潜在的なリスクがあります',
+                'security2': 'ブラウザのローカルストレージに保存されたデータは、ブラウザの設定やデバイスの交換により失われる可能性があります',
+                'security3': 'プレイリストなどの重要なデータは定期的にバックアップすることをお勧めします',
+                'userAgreement': '利用規約',
+                'serviceUse': '1. サービスの利用',
+                'serviceIntro': 'Harmoniaミュージックプレイヤーを使用することにより、お客様は以下に同意したものとみなされます：',
+                'service1': '適用されるすべての法令を遵守すること',
+                'service2': '第三者プラットフォームによって個人データが収集される可能性があり、同意することは第三者プラットフォームによる個人データの収集を許可することを意味します',
+                'service3': '本サービスをいかなる違法活動にも使用しないこと',
+                'service4': '本プライバシーポリシーと利用規約のすべての内容を理解し受け入れること',
+                'disclaimer': '2. 免責事項',
+                'disclaimerIntro': 'Harmoniaミュージックプレイヤーはオープンソースプロジェクトであり、私たちは：',
+                'disclaimer1': 'サービスの持続性、エラーのないこと、または完全な安全性を保証しません',
+                'disclaimer2': '本サービスの使用または使用不能によって生じたいかなる損害についても責任を負いません',
+                'disclaimer3': '予告なく随時サービスの変更または終了する権利を留保します',
+                'disclaimer4': 'プロジェクト自体の問題ではない場合、責任は関連サービスを提供する第三者にあり、私たちは相应的な責任を負いません',
+                'intellectualProperty': '3. 知的財産権',
+                'propertyIntro': 'すべての音楽の著作権はそれぞれの創作者/著作権所有者に帰属し、本プロジェクトのすべてのコードはHarmoniaチームに帰属します：',
+                'property1': '本プロジェクトは第三者音楽再生機能を提供するのみで、いかなる音楽の著作権も所有しません',
+                'property2': '正規の音楽をサポートし、本プロジェクトから取得したいかなるオーディオファイル/アルバム画像ファイル/歌詞ファイルも違法活動に使用しないでください',
+                'property3': 'プロジェクトコードはMITオープンソースライセンスに従い、本プロジェクトを転売またはいかなる商業行為にも使用しないでください',
+                'agreementChanges': '4. 協議の変更',
+                'changesIntro': '私たちは随時本協議を更新する場合があります：',
+                'changes1': '更新された協議は本ページで公開されます',
+                'changes2': 'サービスを継続して使用することは、更新された条項を受け入れることを意味します',
+                'changes3': '最新の条項を確認するために定期的に本ページを閲覧することをお勧めします',
+                'contactUs': '5. お問い合わせ',
+                'contactText': 'ご質問やご提案がある場合は、GitHubプロジェクトページを通じてお問い合わせください。'
+            },
+            'en': {
+                'title': 'Harmonia Music Player',
+                'lastUpdate': 'Last updated: August 27, 2025',
+                'privacyTitle': 'Privacy Policy',
+                'dataCollection': '1. Data Collection and Use',
+                'privacyIntro': 'Harmonia Music Player is a pure static web project, and we promise:',
+                'privacyPoint1': 'This project <b>does not actively collect</b> any of your personal information',
+                'privacyPoint2': 'All user data (including playlists, favorites, and playback history) is saved only through browser local storage and will not be uploaded to any server',
+                'privacyPoint3': 'All data exchange for the Harmonia desktop lyrics feature is conducted through WebSocket in the local network environment, transmitting only lyric-related information and will not leak any user data',
+                'thirdParty': '2. Third-Party Services',
+                'thirdPartyIntro': 'This project uses the following third-party API services:',
+                'thirdParty1': 'xxAPI (Little API): Provides 4K background support',
+                'thirdParty2': 'GDStudio (GD Music Station) API: Provides music data services',
+                'thirdPartyNote': 'Please note:',
+                'thirdPartyNote1': 'We cannot guarantee that these third-party service providers will not collect your personal information',
+                'thirdPartyNote2': 'We also cannot influence these third-party service providers to not collect your personal information',
+                'thirdPartyNote3': 'We recommend that you review the privacy policies of these services to understand their data collection practices',
+                'thirdPartyNote4': 'If you do not accept the collection of personal information, it is not recommended to use this project',
+                'hosting': '3. Hosting Platforms',
+                'hostingIntro': 'This project is hosted on the following platforms:',
+                'hosting1': 'GitHub Pages: Provides static web hosting services',
+                'hosting2': 'CloudFlare: Provides CDN acceleration services',
+                'hostingNote': 'These platforms may collect basic information such as access logs, and we have no control over this data collection.',
+                'dataSecurity': '4. Data Security',
+                'securityIntro': 'While we take reasonable measures to protect your data security, please note:',
+                'security1': 'Any internet transmission carries potential risks',
+                'security2': 'Data stored in browser local storage may be lost due to browser settings or device replacement',
+                'security3': 'We recommend regularly backing up important data such as your playlists',
+                'userAgreement': 'User Agreement',
+                'serviceUse': '1. Service Use',
+                'serviceIntro': 'By using Harmonia Music Player, you agree:',
+                'service1': 'You will comply with all applicable laws and regulations',
+                'service2': 'You may have personal data collected by third-party platforms, and consent means allowing third-party platforms to collect personal data',
+                'service3': 'You will not use this service for any illegal activities',
+                'service4': 'You understand and accept all contents of this privacy policy and user agreement',
+                'disclaimer': '2. Disclaimer',
+                'disclaimerIntro': 'Harmonia Music Player is an open source project, and we:',
+                'disclaimer1': 'Do not guarantee the continuity, error-free, or complete security of the service',
+                'disclaimer2': 'Are not responsible for any losses caused by using or being unable to use this service',
+                'disclaimer3': 'Reserve the right to modify or terminate the service at any time without notice',
+                'disclaimer4': 'For issues not related to the project itself, the responsible party is the third party providing the relevant services, and we do not assume corresponding responsibility',
+                'intellectualProperty': '3. Intellectual Property',
+                'propertyIntro': 'All music copyrights belong to their respective creators/copyright holders, and all code of this project belongs to the Harmonia team:',
+                'property1': 'This project only provides third-party music playback functionality and does not own any music copyrights',
+                'property2': 'Please support official music and do not use any audio files/album art files/lyric files obtained from this project for illegal activities',
+                'property3': 'The project code follows the MIT open source license, please do not resell this project or use it for any commercial purposes',
+                'agreementChanges': '4. Agreement Changes',
+                'changesIntro': 'We may update this agreement from time to time:',
+                'changes1': 'The updated agreement will be published on this page',
+                'changes2': 'Continued use of the service means you accept the updated terms',
+                'changes3': 'We recommend checking this page regularly to stay informed about the latest terms',
+                'contactUs': '5. Contact Us',
+                'contactText': 'If you have any questions or suggestions, please contact us through the GitHub project page.'
+            },
+            'ko': {
+                'title': 'Harmonia 뮤직 플레이어',
+                'lastUpdate': '마지막 업데이트: 2025년 8월 27일',
+                'privacyTitle': '개인정보 보호정책',
+                'dataCollection': '1. 데이터 수집 및 사용',
+                'privacyIntro': 'Harmonia 뮤직 플레이어는 순수 정적 웹 프로젝트이며, 우리는 다음과 같이 약속합니다:',
+                'privacyPoint1': '이 프로젝트는 사용자의 개인정보를 <b>적극적으로 수집하지 않습니다</b>',
+                'privacyPoint2': '모든 사용자 데이터(재생 목록, 내 보관함 및 재생 기록 포함)는 브라우저의 로컬 스토리지에만 저장되며 어떤 서버에도 업로드되지 않습니다',
+                'privacyPoint3': 'Harmonia-데스크톱 가사 기능의 모든 데이터 교환은 WebSocket을 통해 내부 네트워크 환경에서 이루어지며, 가사 관련 정보만 전송되며 사용자 데이터를 유출하지 않습니다',
+                'thirdParty': '2. 제3자 서비스',
+                'thirdPartyIntro': '이 프로젝트는 다음 제3자 API 서비스를 사용합니다:',
+                'thirdParty1': 'xxAPI(소소API): 4K 배경 지원 제공',
+                'thirdParty2': 'GDStudio(GD 뮤직 스테이션) API: 음악 데이터 서비스 제공',
+                'thirdPartyNote': '참고 사항:',
+                'thirdPartyNote1': '우리는 이러한 제3자 서비스 제공업체가 사용자의 개인정보를 수집하지 않을 것이라고 보장할 수 없습니다',
+                'thirdPartyNote2': '우리는 또한 이러한 제3자 서비스 제공업체가 사용자의 개인정보를 수집하지 않도록 영향을 미칠 수 없습니다',
+                'thirdPartyNote3': '데이터 수집 관행을 이해하기 위해 이러한 서비스의 개인정보 보호정책을 검토하는 것이 좋습니다',
+                'thirdPartyNote4': '개인정보 수집을 수락하지 않는 경우 이 프로젝트 사용을 권장하지 않습니다',
+                'hosting': '3. 호스팅 플랫폼',
+                'hostingIntro': '이 프로젝트는 다음 플랫폼에서 호스팅됩니다:',
+                'hosting1': 'GitHub Pages: 정적 웹 호스팅 서비스 제공',
+                'hosting2': 'CloudFlare: CDN 가속 서비스 제공',
+                'hostingNote': '이러한 플랫폼은 액세스 로그와 같은 기본 정보를 수집할 수 있으며, 우리는 이러한 데이터 수집을 통제할 수 없습니다.',
+                'dataSecurity': '4. 데이터 보안',
+                'securityIntro': '우리는 사용자 데이터 보안을 보호하기 위해 합리적인 조치를 취하고 있지만 다음 사항에 유의하십시오:',
+                'security1': '모든 인터넷 전송에는 잠재적인 위험이 따릅니다',
+                'security2': '브라우저 로컬 스토리지에 저장된 데이터는 브라우저 설정 또는 장치 교체로 인해 손실될 수 있습니다',
+                'security3': '재생 목록과 같은 중요한 데이터를 정기적으로 백업하는 것이 좋습니다',
+                'userAgreement': '이용약관',
+                'serviceUse': '1. 서비스 사용',
+                'serviceIntro': 'Harmonia 뮤직 플레이어를 사용함으로써 귀하는 다음에 동의하는 것으로 간주됩니다:',
+                'service1': '적용 가능한 모든 법률 및 규정을 준수할 것',
+                'service2': '제3자 플랫폼에 의해 개인 데이터가 수집될 수 있으며, 동의는 제3자 플랫폼이 개인 데이터를 수집하는 것을 허용하는 것을 의미합니다',
+                'service3': '이 서비스를 어떠한 불법 활동에도 사용하지 않을 것',
+                'service4': '본 개인정보 보호정책과 이용약관의 모든 내용을 이해하고 수락함',
+                'disclaimer': '2. 면책 조항',
+                'disclaimerIntro': 'Harmonia 뮤직 플레이어는 오픈 소스 프로젝트이며, 우리는:',
+                'disclaimer1': '서비스의 지속성, 무결점 또는 완전한 보안을 보장하지 않습니다',
+                'disclaimer2': '이 서비스를 사용하거나 사용할 수 없음으로 인해 발생하는 모든 손실에 대해 책임을 지지 않습니다',
+                'disclaimer3': '사전 통지 없이 언제든지 서비 수정 또는 종료할 권리를 보유합니다',
+                'disclaimer4': '프로젝트 자체의 문제가 아닌 경우, 책임은 관련 서비스를 제공하는 제3자에게 있으며 우리는 이에 대한 책임을 지지 않습니다',
+                'intellectualProperty': '3. 지적 재산권',
+                'propertyIntro': '모든 음악 저작권은 각각의 창작자/저작권 소유자에게 귀속되며, 이 프로젝트의 모든 코드는 Harmonia 팀에 귀속됩니다:',
+                'property1': '이 프로젝트는 제3자 음악 재생 기능만 제공하며 어떤 음악 저작권도 소유하지 않습니다',
+                'property2': '정식 음악을 지원하고 이 프로젝트에서 얻은 모든 오디오 파일/앨범 아트 파일/가사 파일을 불법 활동에 사용하지 마십시오',
+                'property3': '프로젝트 코드는 MIT 오픈 소스 라이선스를 따르며, 이 프로젝트를 재판매하거나 어떤 상업적 행위에도 사용하지 마십시오',
+                'agreementChanges': '4. 약관 변경',
+                'changesIntro': '우리는 때때로 이 약관을 업데이트할 수 있습니다:',
+                'changes1': '업데이트된 약관은 이 페이지에 게시됩니다',
+                'changes2': '서비스를 계속 사용하면 업데이트된 약관을 수락하는 것으로 간주됩니다',
+                'changes3': '최신 약관을 알아보기 위해 정기적으로 이 페이지를 확인하는 것이 좋습니다',
+                'contactUs': '5. 문의하기',
+                'contactText': '질문이나 제안 사항이 있으면 GitHub 프로젝트 페이지를 통해 문의해 주세요.'
+            }
+        };
+
+        // 语言切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const languageBtn = document.getElementById('languageBtn');
+            const languageOptions = document.getElementById('languageOptions');
+            const languageOptionItems = document.querySelectorAll('.language-option');
+            
+            // 显示/隐藏语言选项
+            languageBtn.addEventListener('click', function() {
+                languageOptions.classList.toggle('show');
+            });
+            
+            // 点击语言选项
+            languageOptionItems.forEach(option => {
+                option.addEventListener('click', function() {
+                    const lang = this.getAttribute('data-lang');
+                    changeLanguage(lang);
+                    languageBtn.textContent = this.textContent;
+                    languageOptions.classList.remove('show');
+                    
+                    // 保存语言选择到本地存储
+                    localStorage.setItem('preferredLanguage', lang);
+                });
+            });
+            
+            // 检测外部点击关闭语言选项
+            document.addEventListener('click', function(e) {
+                if (!languageBtn.contains(e.target) && !languageOptions.contains(e.target)) {
+                    languageOptions.classList.remove('show');
+                }
+            });
+            
+            // 检查是否有保存的语言偏好
+            const savedLanguage = localStorage.getItem('preferredLanguage');
+            if (savedLanguage && translations[savedLanguage]) {
+                changeLanguage(savedLanguage);
+                // 更新按钮文本
+                const selectedLangText = document.querySelector(`.language-option[data-lang="${savedLanguage}"]`).textContent;
+                languageBtn.textContent = selectedLangText;
+            }
+        });
+        
+        // 切换语言函数
+        function changeLanguage(lang) {
+            if (!translations[lang]) return;
+            
+            const elements = document.querySelectorAll('[data-translate]');
+            elements.forEach(element => {
+                const key = element.getAttribute('data-translate');
+                if (translations[lang][key]) {
+                    if (element.innerHTML.includes('<b>') || element.innerHTML.includes('<i>') || element.innerHTML.includes('<strong>')) {
+                        // 保留HTML标签
+                        const tempElement = document.createElement('div');
+                        tempElement.innerHTML = translations[lang][key];
+                        element.innerHTML = tempElement.innerHTML;
+                    } else {
+                        element.textContent = translations[lang][key];
+                    }
+                }
+            });
+            
+            // 更新页面语言属性
+            document.documentElement.lang = lang;
+        }
+    </script>
 </body>
 </html>
