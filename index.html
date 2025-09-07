@@ -132,6 +132,10 @@
         .desktop-lyrics-status.disconnected {
             color: #e74c3c;
         }
+
+        .share-music .button-text {
+            display: inline;
+        }
         
         .share-music {
             position: fixed;
@@ -161,6 +165,10 @@
         .share-music::before {
             content: '🎵';
             font-size: 16px;
+        }
+
+        .share-music .mobile-text {
+            display: none;
         }
         
         .share-music:hover {
@@ -1021,9 +1029,6 @@
             min-height: 28px;
             font-weight: 300;
             opacity: 0.8;
-            transform: translateY(20px);
-            opacity: 0;
-            animation: fadeInUp 0.5s forwards;
         }
         
         .light-theme .lyric-line {
@@ -1036,8 +1041,7 @@
             font-weight: 600;
             opacity: 1;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
-            animation: lyricPulse 1s infinite alternate;
+            transition: all 0.1s ease;
         }
         
         .light-theme .lyric-line.active {
@@ -1326,30 +1330,32 @@
                 border-radius: 30px;
                 width: 100%;
             }
-            
-            .share-music {
-                bottom: 80px;
+
+            .share-music, .save-wallpaper {
+                bottom: 20px;
                 right: 20px;
-                padding: 10px 15px;
-                font-size: 12px;
-                max-width: 180px;
+                padding: 12px 18px;
+                font-size: 14px;
+                max-width: 120px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
             
+            .share-music {
+                bottom: 70px;
+            }
+
+            .share-music .button-text {
+                display: none;
+            }
+            
             .save-wallpaper {
                 bottom: 20px;
-                right: 20px;
-                padding: 10px 15px;
-                font-size: 12px;
             }
             
             .desktop-lyrics-btn {
-                bottom: 150px;
-                right: 20px;
-                padding: 10px 15px;
-                font-size: 12px;
+                display: none !important;
             }
             
             .desktop-lyrics-status {
@@ -1360,7 +1366,11 @@
             }
             
             .share-music::before {
-                font-size: 14px;
+                display: none;
+            }
+
+            .share-music .mobile-text {
+                display: inline;
             }
             
             .volume-container {
@@ -1408,7 +1418,10 @@
     <!-- 壁纸保存按钮及歌曲分享按钮 -->
     <button class="desktop-lyrics-btn" id="desktopLyricsBtn">开启桌面歌词（桌面端限定）</button>
     <div class="desktop-lyrics-status" id="desktopLyricsStatus">未连接桌面歌词程序</div>
-    <button class="share-music" id="shareMusicBtn">发现了宝藏歌曲想分享？点我！</button>
+    <button class="share-music" id="shareMusicBtn">
+        <span class="button-text">发现了宝藏歌曲想分享？点我！</span>
+        <span class="mobile-text">分享歌曲</span>
+    </button>
     <button class="save-wallpaper" id="saveWallpaperBtn">壁纸好看吗？点我立即保存！</button>
     
     <div class="theme-toggle" id="themeToggle">
@@ -1570,6 +1583,18 @@
         function isMobile() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
+
+        function optimizeMobileButtons() {
+            if (isMobile()) {
+                // 移除桌面歌词按钮
+                desktopLyricsBtn.style.display = 'none';
+                desktopLyricsStatus.style.display = 'none';
+                
+                // 简化按钮文本
+                shareMusicBtn.textContent = '分享歌曲';
+                saveWallpaperBtn.textContent = '保存壁纸'; 
+            }
+        }
         
         // 初始化主题
         function initTheme() {
@@ -1682,11 +1707,9 @@
 
             // 找到当前应该高亮的歌词行
             let activeIndex = -1;
-            let activeLyric = "";
             for (let i = 0; i < lyricsData.length; i++) {
                 if (lyricsData[i].time <= currentTime) {
                     activeIndex = i;
-                    activeLyric = lyricsData[i].text; // 保存当前歌词
                 } else {
                     break;
                 }
@@ -1695,8 +1718,10 @@
             // 更新所有行的样式
             const allLyricLines = lyricsContent.querySelectorAll('.lyric-line:not(.translation)');
             allLyricLines.forEach((line, index) => {
+                // 立即移除active类，不添加过渡效果
                 line.classList.remove('active');
                 if (index === activeIndex) {
+                    // 立即添加active类
                     line.classList.add('active');
                     scrollToLyricLine(line);
                     
@@ -2011,7 +2036,6 @@
                 lineElement.textContent = line.text;
                 lineElement.dataset.time = line.time;
                 lineElement.style.minHeight = '24px'; // 固定最小高度
-                lineElement.style.animationDelay = `${index * 0.05}s`;
                 lyricsContent.appendChild(lineElement);
 
                 if (line.translation && line.translation.trim() !== '') {
@@ -2019,7 +2043,6 @@
                     translationElement.className = 'lyric-line translation';
                     translationElement.textContent = line.translation;
                     translationElement.style.minHeight = '20px'; // 固定翻译行高度
-                    translationElement.style.animationDelay = `${index * 0.05 + 0.1}s`;
                     lyricsContent.appendChild(translationElement);
                 }
             });
@@ -3166,6 +3189,7 @@
         initTheme();
         updateBackground();
         initPlaylist();
+        optimizeMobileButtons();
     </script>
 </body>
 </html>
