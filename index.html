@@ -1029,6 +1029,7 @@
             min-height: 28px;
             font-weight: 300;
             opacity: 0.8;
+            cursor: pointer;
         }
         
         .light-theme .lyric-line {
@@ -2043,6 +2044,7 @@
                     translationElement.className = 'lyric-line translation';
                     translationElement.textContent = line.translation;
                     translationElement.style.minHeight = '20px'; // 固定翻译行高度
+                    translationElement.dataset.time = line.time; // 翻译行也携带时间戳
                     lyricsContent.appendChild(translationElement);
                 }
             });
@@ -2723,6 +2725,34 @@
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 searchMusic(searchInput.value.trim());
+            }
+        });
+
+        // 点击任意歌词行，从该行起始时间开始播放
+        lyricsContent.addEventListener('click', (e) => {
+            // 找到被点击的歌词行元素
+            const target = e.target.closest('.lyric-line');
+            if (!target) return;
+
+            // 取该行的时间（主行和翻译行都带有 dataset.time）
+            const t = parseFloat(target.dataset.time);
+            if (isNaN(t) || !isFinite(t)) return;
+
+            // 若音频已就绪则跳转；未就绪也先设置 currentTime，元数据加载后会生效
+            try {
+                audioPlayer.currentTime = t;
+                // 立即刷新高亮体验
+                updateLyricsHighlight(t);
+                // 从该位置开始播放
+                audioPlayer.play().then(() => {
+                    playButton.textContent = '⏸';
+                    isPlaying = true;
+                    updatePageTitle();
+                }).catch(() => {
+                    // 某些移动端需要用户手势：这里保持静默，用户再次点播放即可
+                });
+            } catch (_) {
+                // 忽略异常，避免打断交互
             }
         });
         
