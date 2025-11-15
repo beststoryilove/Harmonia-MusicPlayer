@@ -543,14 +543,14 @@
     // ===== Network (music api) =====
     async function fetchLyrics(lyricId){
       try{
-        const r = await fetch(`https://music-api.gdstudio.org/api.php?types=lyric&source=netease&id=${lyricId}`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=lyric&source=netease&id=${lyricId}`);
         if(!r.ok) throw new Error('无法获取歌词');
         return await r.json();
       }catch(e){ console.error(e); return null; }
     }
     async function getAlbumArtUrl(picId){
       try{
-        const r = await fetch(`https://music-api.gdstudio.org/api.php?types=pic&source=netease&id=${picId}&size=500`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=netease&id=${picId}&size=500`);
         if(!r.ok) throw new Error('无法获取专辑图片');
         const data = await r.json(); if(!data.url) throw new Error('无效的专辑图片URL');
         return data.url.replace(/\\/g,'');
@@ -563,7 +563,7 @@
     }
     async function getAudioUrl(id){
       try{
-        const r = await fetch(`https://music-api.gdstudio.org/api.php?types=url&source=netease&id=${id}&br=999`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=netease&id=${id}&br=999`);
         const data=await r.json(); if(!data.url) throw new Error('无法获取音频链接');
         return data.url.replace(/\\/g,'');
       }catch(e){ console.error(e); return null; }
@@ -585,7 +585,7 @@
       if(!query.trim()){ showError('请输入搜索内容'); return; }
       try{
         showLoading(); clearError();
-        const r = await fetch(`https://music-api.gdstudio.org/api.php?types=search&source=netease&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=netease&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
         if(!r.ok) throw new Error('搜索失败，请稍后再试');
         const data = await r.json();
         if(!data || data.length===0) throw new Error('未找到相关歌曲');
