@@ -856,7 +856,7 @@
     .lyrics-container {
       flex: 1;
       overflow-y: auto;
-      scroll-behavior: smooth;
+      scroll-behavior: smooth; /* KEEP THIS FOR NOW AS IT'S THE PRIMARY CONTROL */
       padding: 20px;
       background: var(--item-bg-dark); /* Consistent background with other items */
       border-radius: var(--border-radius-md);
@@ -871,7 +871,7 @@
     }
     .lyrics-content {
       text-align: center;
-      transition: transform 0.1s ease-out; /* Keep transform for potential smooth scrolling optimization */
+      /* REMOVED: transition: transform 0.1s ease-out; */ /* This was likely problematic */
       padding: 20px 0;
     }
     .lyric-line {
@@ -879,7 +879,7 @@
       color: rgba(255, 255, 255, 0.7);
       font-size: 18px;
       line-height: 1.7;
-      transition: all 0.3s;
+      transition: color 0.3s, font-size 0.3s, font-weight 0.3s, opacity 0.3s, text-shadow 0.3s; /* Optimized transition */
       min-height: 28px;
       font-weight: 300;
       opacity: 0.8;
@@ -892,7 +892,7 @@
       font-weight: 600;
       opacity: 1;
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.3), 0 0 20px rgba(155, 89, 182, 0.5); /* Enhanced shadow */
-      transition: all 0.1s ease;
+      /* transition: all 0.1s ease;  Original was too broad */
     }
     .lyric-line.translation {
       color: rgba(170, 170, 170, 0.8);
@@ -1307,9 +1307,9 @@
     let currentPlayMode = 'normal'; // normal, repeat, shuffle
     let currentTab = 'playlist'; // 'playlist', 'favorites', 'history'
 
-    // Debounce/Throttle variables
-    // let searchTimeout = null; // No longer needed for input event
-    // let volumeTimeout = null; // Not needed if debounce handles it
+    // Add a global/module-level variable to cache lyric elements
+    let cachedLyricElements = [];
+
 
     audioPlayer.volume = parseFloat(localStorage.getItem('musicPlayerVolume') || '0.7'); // Persist volume
     volumeSlider.value = audioPlayer.volume;
@@ -1341,7 +1341,7 @@
     }
 
     function updatePageTitle() {
-      if (isPlaying && nowPlayingTitle.textContent && nowPlayingArtist.textContent && nowPlayingTitle.textContent !== '歌曲标题') {
+      if (isPlaying && nowPlayingTitle.textContent && nowPlayingTitle.textContent !== '歌曲标题') {
         document.title = `正在为您播放：《${nowPlayingTitle.textContent}》——${nowPlayingArtist.textContent}`;
       } else {
         document.title = originalTitle;
@@ -1407,6 +1407,7 @@
       if (!lyricResponse || (!lyricResponse.lyric && !lyricResponse.tlyric)) {
         lyricsContent.innerHTML = '<div class="no-lyrics">暂无歌词</div>';
         lyricsData = [];
+        cachedLyricElements = []; // Clear cached elements when no lyrics
         return;
       }
 
@@ -1468,23 +1469,15 @@
       });
       lyricsContent.appendChild(fragment);
       currentLyricsResponse = lyricResponse; // Store original for desktop client
+
+      cachedLyricElements = lyricsContent.querySelectorAll('.lyric-line:not(.translation)'); // Cache elements here
     }
 
     function scrollToLyricLine(el) {
       if (!el) return;
-      const container = lyricsScrollContainer;
-      const containerHeight = container.clientHeight;
-      const elementOffsetTop = el.offsetTop; // Relative to its parent
-      const elementHeight = el.clientHeight;
-
-      // Scroll to center the active line
-      const scrollTarget = elementOffsetTop - (containerHeight / 2) + (elementHeight / 2);
-      container.scrollTo({ top: scrollTarget, behavior: 'smooth' });
-    }
-
-    function sendLyricToDesktop(text) {
-      if (!desktopLyricsEnabled || !ws || ws.readyState !== WebSocket.OPEN) return;
-      try { ws.send(JSON.stringify({ type: 'lyric', text: text || '' })); } catch (e) { console.error('Error sending lyric to desktop:', e); }
+      // Use 'auto' behavior for mobile to avoid jank, 'smooth' for desktop
+      const scrollBehavior = isMobile() ? 'auto' : 'smooth';
+      el.scrollIntoView({ behavior: scrollBehavior, block: 'center', inline: 'nearest' });
     }
 
     let currentActiveLyricElement = null; // Cache active lyric element
@@ -1503,7 +1496,8 @@
         }
       }
 
-      const allLyricElements = lyricsContent.querySelectorAll('.lyric-line:not(.translation)');
+      // Use the cached elements
+      const allLyricElements = cachedLyricElements;
 
       if (activeIndex === -1 && currentActiveLyricElement) {
         // If no line is active and there was one, clear it
