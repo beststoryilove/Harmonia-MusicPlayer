@@ -1474,10 +1474,14 @@
     }
 
     function scrollToLyricLine(el) {
-      if (!el) return;
-      // Use 'auto' behavior for mobile to avoid jank, 'smooth' for desktop
+      if (!el || !lyricsScrollContainer) return;
+      // Center the active line inside the lyrics scroller without moving the whole page
       const scrollBehavior = isMobile() ? 'auto' : 'smooth';
-      el.scrollIntoView({ behavior: scrollBehavior, block: 'center', inline: 'nearest' });
+      const containerRect = lyricsScrollContainer.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const offset = elRect.top - containerRect.top + lyricsScrollContainer.scrollTop;
+      const targetTop = offset - (lyricsScrollContainer.clientHeight / 2) + (el.offsetHeight / 2);
+      lyricsScrollContainer.scrollTo({ top: Math.max(targetTop, 0), behavior: scrollBehavior });
     }
 
     let currentActiveLyricElement = null; // Cache active lyric element
