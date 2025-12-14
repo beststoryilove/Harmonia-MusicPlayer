@@ -56,14 +56,25 @@
       position: relative;
       overflow-x: hidden;
       transition: background var(--transition-speed) ease, color var(--transition-speed) ease;
-      background-size: cover; /* Ensure background image covers the entire body */
-      background-position: center;
-      background-attachment: fixed;
     }
 
     body.light-theme {
       background: var(--bg-light);
       color: var(--text-light);
+    }
+
+    /* 背景层 */
+    #background-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      transition: background-image 0.5s ease;
     }
 
     /* Custom Scrollbar for better aesthetics */
@@ -112,6 +123,7 @@
       right: 20px;
       background: var(--primary-gradient);
       box-shadow: 0 4px 20px rgba(142, 68, 173, 0.3);
+      display: none;
     }
     .save-wallpaper:hover {
       background: linear-gradient(135deg, #9b59b6, #8e44ad);
@@ -170,7 +182,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      z-index: 100;
+      z-index: 1001;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       transition: all var(--transition-speed) ease;
     }
@@ -183,6 +195,38 @@
       color: var(--primary-color);
     }
     body.light-theme .theme-toggle {
+      background: var(--card-bg-light);
+      border: 1px solid var(--border-light);
+    }
+
+    /* 设置按钮 */
+    .settings-toggle {
+      position: fixed;
+      top: 20px;
+      right: 80px;
+      width: 50px;
+      height: 50px;
+      border-radius: var(--border-radius-full);
+      background: var(--card-bg-dark);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1001;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all var(--transition-speed) ease;
+    }
+    .settings-toggle:hover {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      transform: translateY(-2px);
+    }
+    .settings-toggle i {
+      font-size: 24px;
+      color: var(--primary-color);
+    }
+    body.light-theme .settings-toggle {
       background: var(--card-bg-light);
       border: 1px solid var(--border-light);
     }
@@ -984,14 +1028,16 @@
       width: 100%;
       height: 100%;
       background-color: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      display: flex; /* Changed from none to flex by JS when showing */
+      z-index: 2000;
+      display: flex;
       justify-content: center;
       align-items: center;
       opacity: 0;
       transition: opacity 0.3s ease;
     }
-    .modal-overlay.show { opacity: 1; }
+    .modal-overlay.show {
+      opacity: 1;
+    }
     .modal-content {
       background-color: #282828;
       border-radius: var(--border-radius-lg);
@@ -999,14 +1045,11 @@
       width: 90%;
       max-width: 500px;
       max-height: 80vh;
-      overflow: hidden; /* changed to hidden as scroll is on list */
+      overflow: hidden;
       box-shadow: var(--shadow-dark);
       transform: translateY(-20px);
       transition: transform 0.3s ease, opacity 0.3s ease;
       opacity: 0;
-      position: relative;
-      display: flex; /* Added for better internal layout control */
-      flex-direction: column; /* Arrange children vertically */
     }
     .modal-overlay.show .modal-content {
       transform: translateY(0);
@@ -1014,100 +1057,169 @@
     }
     body.light-theme .modal-content {
       background-color: #f0f4f8;
-      box-shadow: var(--shadow-light);
     }
-    .modal-content h2 {
-      color: var(--primary-color);
+
+    /* Settings Form */
+    .setting-group {
       margin-bottom: 20px;
-      text-align: center;
-      font-size: 24px;
     }
-    .modal-content p {
-      color: var(--text-muted-dark);
-      margin-bottom: 20px;
+    .setting-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #e8e8e8; /* 明亮的文字颜色 */
+      font-weight: 500;
+    }
+    .setting-group select,
+    .setting-group input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff; /* 白色文字 */
       font-size: 14px;
     }
-    body.light-theme .modal-content p {
-      color: var(--text-muted-light);
+    .setting-group input[type="range"] {
+      padding: 0;
+      height: 20px;
     }
+    .setting-group select option {
+      background: #1a1a2e;
+      color: #ffffff;
+    }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      cursor: pointer;
+      color: #e8e8e8; /* 明亮的文字颜色 */
+    }
+    .radio-group input[type="radio"] {
+      margin-right: 8px;
+    }
+    body.light-theme .setting-group label {
+      color: #1e293b; /* 深色文字 */
+    }
+    body.light-theme .setting-group select,
+    body.light-theme .setting-group input[type="range"] {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1e293b; /* 深色文字 */
+      border: 1px solid rgba(0, 0, 0, 0.2);
+    }
+    body.light-theme .setting-group select option {
+      background: #ffffff;
+      color: #1e293b;
+    }
+    body.light-theme .radio-group label {
+      color: #1e293b; /* 深色文字 */
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 25px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-export, .btn-import, .btn-cancel {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all var(--transition-speed) ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .btn-export {
+      background: var(--primary-gradient);
+      color: #ffffff;
+    }
+    .btn-export:hover {
+      background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(155, 89, 182, 0.4);
+    }
+    .btn-import {
+      background: var(--secondary-gradient);
+      color: #ffffff;
+    }
+    .btn-import:hover {
+      background: linear-gradient(135deg, #5d4bdb, #6c5ce7);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+    }
+    .btn-cancel {
+      background: rgba(255, 77, 77, 0.2);
+      color: #ffffff;
+      border: 1px solid rgba(255, 77, 77, 0.5);
+    }
+    .btn-cancel:hover {
+      background: rgba(255, 77, 77, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 77, 77, 0.3);
+    }
+    body.light-theme .btn-export,
+    body.light-theme .btn-import {
+      color: #ffffff;
+    }
+    body.light-theme .btn-cancel {
+      background: rgba(0, 0, 0, 0.08);
+      color: #1e293b;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+    }
+    body.light-theme .btn-cancel:hover {
+      background: rgba(0, 0, 0, 0.15);
+    }
+
     .modal-song-list {
-      margin-bottom: 20px;
       max-height: 300px;
       overflow-y: auto;
-      border: 1px solid var(--border-dark);
+      margin: 15px 0;
       border-radius: var(--border-radius-md);
-      padding-right: 5px; /* Space for scrollbar */
-      flex-grow: 1; /* Allow song list to take available space */
-    }
-    body.light-theme .modal-song-list {
-      border: 1px solid var(--border-light);
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px;
     }
     .modal-song-row {
       display: flex;
       align-items: center;
       padding: 10px;
-      margin-bottom: 5px;
-      background: var(--item-bg-dark);
-      border-radius: 5px;
+      margin-bottom: 8px;
+      border-radius: var(--border-radius-sm);
+      background: rgba(255, 255, 255, 0.05);
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
-    .modal-song-row:hover { background: var(--item-hover-dark); }
-    body.light-theme .modal-song-row { background: var(--item-bg-light); }
-    body.light-theme .modal-song-row:hover { background: var(--item-hover-light); }
-
-    .modal-song-row input[type="checkbox"] {
-      margin-right: 10px;
-      accent-color: var(--primary-color); /* Style checkbox */
+    .modal-song-row:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
-    .modal-song-info { flex: 1; }
+    .modal-song-info {
+      flex: 1;
+      margin-left: 10px;
+    }
     .modal-song-title {
-      font-weight: bold;
-      margin-bottom: 3px;
-      color: var(--text-dark);
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 4px;
     }
     .modal-song-artist {
-      font-size: 12px;
-      color: var(--text-muted-dark);
+      font-size: 13px;
+      color: #aaaaaa;
     }
-    body.light-theme .modal-song-title { color: var(--text-light); }
-    body.light-theme .modal-song-artist { color: var(--text-muted-light); }
-
-    .modal-buttons {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 15px; /* Added margin below action buttons */
+    body.light-theme .modal-song-list {
+      background: rgba(0, 0, 0, 0.05);
     }
-    .modal-buttons button {
-      flex: 1;
-      padding: 10px 15px;
-      border-radius: 25px;
-      box-shadow: none;
-      transform: none;
-      font-size: 14px;
+    body.light-theme .modal-song-row {
+      background: rgba(0, 0, 0, 0.03);
     }
-    .modal-buttons .btn-export { background: var(--primary-gradient); }
-    .modal-buttons .btn-import { background: var(--secondary-gradient); }
-
-    /* Specific style for the Cancel button */
-    .modal-content > .btn-cancel {
-      background: var(--error-color);
-      color: var(--text-dark);
-      padding: 10px 15px;
-      border-radius: 25px;
-      box-shadow: 0 4px 10px rgba(255, 77, 77, 0.3);
-      margin: 10px auto 0 auto; /* Center it horizontally with top margin */
-      display: block; /* Ensure it respects margin: auto */
-      width: fit-content; /* Make its width fit content */
-      min-width: 120px; /* Minimum width for better appearance */
-      text-align: center; /* Center text inside the button */
-      transition: all var(--transition-speed) ease;
+    body.light-theme .modal-song-row:hover {
+      background: rgba(0, 0, 0, 0.08);
     }
-    .modal-content > .btn-cancel:hover {
-      background: #e74c3c;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(255, 77, 77, 0.4);
+    body.light-theme .modal-song-title {
+      color: #1e293b;
+    }
+    body.light-theme .modal-song-artist {
+      color: #64748b;
     }
 
     /* Mobile styles */
@@ -1141,10 +1253,22 @@
       .volume-container { margin-left: 0; margin-top: 10px; width: 100%; justify-content: center; }
       .volume-slider { width: 150px; } /* Adjust volume slider width */
       .controls { gap: 15px; }
+
+      .settings-toggle {
+        right: auto;
+        left: 20px;
+      }
+      .theme-toggle {
+        right: 20px;
+      }
+      .modal-content {
+        padding: 20px;
+      }
     }
   </style>
 </head>
 <body>
+  <div id="background-layer"></div>
   <div class="top-info-bar">
     <div class="top-info-content">
       <span>©Harmonia音乐播放器(2024-2025) 版权归Harmonia团队所有 严禁倒卖/商业行为</span>
@@ -1157,6 +1281,9 @@
   <div class="desktop-lyrics-status" id="desktopLyricsStatus">未连接桌面歌词程序</div>
   <button class="share-music" id="shareMusicBtn"><span class="button-text">发现了宝藏歌曲想分享？点我！</span><span class="mobile-text" style="display:none">分享歌曲</span></button>
   <button class="save-wallpaper" id="saveWallpaperBtn">壁纸好看吗？点我立即保存！</button>
+  <div class="settings-toggle" id="settingsToggle" title="设置">
+    <i class="fas fa-cog"></i>
+  </div>
   <div class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></div>
 
   <div class="main-wrapper">
@@ -1249,6 +1376,58 @@
 
   <audio id="audioPlayer"></audio>
 
+  <!-- 设置模态框 -->
+  <div class="modal-overlay" id="settingsModalOverlay">
+    <div class="modal-content">
+      <h2 style="color: var(--primary-color); margin-bottom: 20px;">设置</h2>
+      <form id="settingsForm">
+        <div class="setting-group">
+          <label for="sourceSelect">音源平台</label>
+          <select id="sourceSelect" name="source">
+            <option value="netease">网易云音乐</option>
+            <option value="tencent">QQ音乐</option>
+            <option value="tidal">Tidal</option>
+            <option value="spotify">Spotify</option>
+            <option value="ytmusic">YouTube Music</option>
+            <option value="qobuz">Qobuz</option>
+            <option value="joox">JOOX</option>
+            <option value="deezer">Deezer</option>
+            <option value="migu">咪咕音乐</option>
+            <option value="kugou">酷狗音乐</option>
+            <option value="kuwo">酷我音乐</option>
+            <option value="ximalaya">喜马拉雅</option>
+            <option value="apple">Apple Music</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label for="qualitySelect">音质</label>
+          <select id="qualitySelect" name="quality">
+            <option value="128">128kbps</option>
+            <option value="192">192kbps</option>
+            <option value="320">320kbps</option>
+            <option value="740">740kbps（无损）</option>
+            <option value="999">999kbps（无损）</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label style="margin-bottom: 12px;">背景模式</label>
+          <div class="radio-group">
+            <label><input type="radio" name="bgMode" value="default" checked> 默认（4K壁纸）</label>
+            <label><input type="radio" name="bgMode" value="albumBlur"> 专辑模糊背景</label>
+          </div>
+        </div>
+        <div class="setting-group" id="blurControl" style="display:none;">
+          <label>模糊程度 <span id="blurValue" style="color: var(--primary-color); font-weight: 700;">5</span>px</label>
+          <input type="range" id="blurRange" min="0" max="20" step="1" value="5">
+        </div>
+        <div class="modal-buttons">
+          <button type="submit" class="btn-export">保存设置</button>
+          <button type="button" class="btn-cancel" id="settingsCancel">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     // ===== DOM Cache =====
     const searchInput = document.getElementById('searchInput');
@@ -1288,6 +1467,19 @@
     const playlistCollapsible = document.getElementById('playlistCollapsible');
     const originalTitle = "Harmonia - 音乐播放器";
 
+    // 新增DOM元素
+    const backgroundLayer = document.getElementById('background-layer');
+    const settingsToggle = document.getElementById('settingsToggle');
+    const settingsModalOverlay = document.getElementById('settingsModalOverlay');
+    const sourceSelect = document.getElementById('sourceSelect');
+    const qualitySelect = document.getElementById('qualitySelect');
+    const bgModeRadios = document.querySelectorAll('input[name="bgMode"]');
+    const blurControl = document.getElementById('blurControl');
+    const blurRange = document.getElementById('blurRange');
+    const blurValue = document.getElementById('blurValue');
+    const settingsForm = document.getElementById('settingsForm');
+    const settingsCancel = document.getElementById('settingsCancel');
+
     // ===== State =====
     let currentPage = 1;
     let currentSearchResults = [];
@@ -1307,9 +1499,17 @@
     let currentPlayMode = 'normal'; // normal, repeat, shuffle
     let currentTab = 'playlist'; // 'playlist', 'favorites', 'history'
 
+    // 新增状态
+    let currentSettings = {
+      source: 'netease',
+      quality: '999',
+      bgMode: 'default',
+      blurRadius: 5,
+    };
+    let currentAlbumArtUrl = null; // store current album art url for background
+
     // Add a global/module-level variable to cache lyric elements
     let cachedLyricElements = [];
-
 
     audioPlayer.volume = parseFloat(localStorage.getItem('musicPlayerVolume') || '0.7'); // Persist volume
     volumeSlider.value = audioPlayer.volume;
@@ -1365,6 +1565,54 @@
       };
     }
 
+    // ===== Settings Functions =====
+    function loadSettings() {
+      const saved = localStorage.getItem('musicPlayerSettings');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          currentSettings = { ...currentSettings, ...parsed };
+        } catch (e) { console.error('Failed to parse settings', e); }
+      }
+    }
+
+    function saveSettings() {
+      localStorage.setItem('musicPlayerSettings', JSON.stringify(currentSettings));
+    }
+
+    async function applySettings() {
+      // Apply background mode
+      if (currentSettings.bgMode === 'default') {
+        backgroundLayer.style.filter = 'none';
+        backgroundLayer.style.backgroundImage = ''; // 先清除
+        await updateBackground();
+      } else {
+        // albumBlur mode
+        if (currentAlbumArtUrl) {
+          setBackgroundImage(currentAlbumArtUrl);
+          applyBlur(currentSettings.blurRadius);
+        } else {
+          clearBackgroundImage();
+        }
+      }
+    }
+
+    function setBackgroundImage(url) {
+      backgroundLayer.style.backgroundImage = `url(${url})`;
+      currentWallpaperUrl = url;
+      saveWallpaperBtn.style.display = 'block';
+    }
+
+    function clearBackgroundImage() {
+      backgroundLayer.style.backgroundImage = '';
+      currentWallpaperUrl = '';
+      saveWallpaperBtn.style.display = 'none';
+    }
+
+    function applyBlur(radius) {
+      backgroundLayer.style.filter = `blur(${radius}px)`;
+    }
+
     // ===== Lyrics Handling =====
     function parseLyrics(lyricText) {
       if (!lyricText) return [];
@@ -1400,7 +1648,6 @@
       // For lyric display, we only care about timed lyrics, non-timed can be displayed at the start if needed
       return res.filter(l => l.time !== -1).sort((a, b) => a.time - b.time);
     }
-
 
     function displayLyrics(lyricResponse) {
       lyricsContent.innerHTML = '';
@@ -1449,7 +1696,6 @@
 
       // Sort by time just in case, though merging logic should largely maintain order
       lyricsData.sort((a, b) => a.time - b.time);
-
 
       const fragment = document.createDocumentFragment(); // Use DocumentFragment for performance
       lyricsData.forEach(line => {
@@ -1535,7 +1781,6 @@
         }
       }
     }
-
 
     // ===== Playlist Management =====
     function initPlaylist() {
@@ -1689,53 +1934,69 @@
     }
 
     // ===== Network & API Calls =====
-    async function fetchLyrics(lyricId) {
-      if (!lyricId) return null;
+    async function fetchLyrics(lyricId, source = currentSettings.source) {
       try {
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=lyric&source=netease&id=${lyricId}`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=lyric&source=${source}&id=${lyricId}`);
         if (!r.ok) throw new Error('无法获取歌词');
         return await r.json();
       } catch (e) { console.error('Error fetching lyrics:', e); return null; }
     }
-    async function getAlbumArtUrl(picId) {
-      if (!picId) return null;
+
+    async function getAlbumArtUrl(picId, source = currentSettings.source) {
       try {
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=netease&id=${picId}&size=500`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=${source}&id=${picId}&size=500`);
         if (!r.ok) throw new Error('无法获取专辑图片');
         const data = await r.json();
         if (!data.url) throw new Error('无效的专辑图片URL');
         return data.url.replace(/\\/g, '');
       } catch (e) { console.error('Error fetching album art:', e); return null; }
     }
-    async function loadAlbumArt(picId) {
-      albumArt.classList.remove('loaded'); // Prepare for new image fade-in
-      albumArt.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // Placeholder transparent gif
-      if (!picId) return;
 
-      const url = await getAlbumArtUrl(picId);
+    async function loadAlbumArt(picId, source) {
+      albumArt.classList.remove('loaded');
+      albumArt.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      if (!picId) return null;
+      const url = await getAlbumArtUrl(picId, source);
       if (url) {
-        const img = new Image(); // Use Image object to pre-load
+        const img = new Image();
         img.src = url;
         img.onload = () => {
           albumArt.src = url;
           albumArt.classList.add('loaded');
+          currentAlbumArtUrl = url;
+          if (currentSettings.bgMode === 'albumBlur') {
+            setBackgroundImage(url);
+            applyBlur(currentSettings.blurRadius);
+          }
         };
-        img.onerror = () => { console.error('Failed to load album art image:', url); };
+        img.onerror = () => {
+          // fallback
+          albumArt.src = 'https://picsum.photos/500';
+          albumArt.classList.add('loaded');
+          if (currentSettings.bgMode === 'albumBlur') {
+            setBackgroundImage('https://picsum.photos/1920/1080');
+            applyBlur(currentSettings.blurRadius);
+          }
+        };
       } else {
-        // Fallback or clear if no URL
-        albumArt.src = 'https://picsum.photos/500'; // Default placeholder
+        albumArt.src = 'https://picsum.photos/500';
         albumArt.classList.add('loaded');
+        if (currentSettings.bgMode === 'albumBlur') {
+          setBackgroundImage('https://picsum.photos/1920/1080');
+          applyBlur(currentSettings.blurRadius);
+        }
       }
     }
-    async function getAudioUrl(id) {
-      if (!id) throw new Error('缺少歌曲ID');
+
+    async function getAudioUrl(id, source = currentSettings.source) {
       try {
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=netease&id=${id}&br=999`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${source}&id=${id}&br=${currentSettings.quality}`);
         const data = await r.json();
         if (!data.url) throw new Error('无法获取音频链接，可能是版权或VIP歌曲');
         return data.url.replace(/\\/g, '');
       } catch (e) { console.error('Error fetching audio URL:', e); throw e; }
     }
+
     async function getRandomBackground() {
       try {
         const types = ['wallpaper', 'acg'];
@@ -1746,17 +2007,17 @@
         return data.data;
       } catch (e) { console.error('Error fetching background:', e); return null; }
     }
+
     async function updateBackground() {
+      if (currentSettings.bgMode !== 'default') return;
       const url = await getRandomBackground();
       if (url) {
         const img = new Image();
         img.src = url;
         img.onload = () => {
-            document.body.style.backgroundImage = `url(${url})`;
-            currentWallpaperUrl = url;
-            saveWallpaperBtn.style.display = 'block';
+          setBackgroundImage(url);
         };
-        img.onerror = () => { console.error('Failed to load background image:', url); };
+        img.onerror = () => console.error('Failed to load background image:', url);
       }
     }
 
@@ -1766,7 +2027,7 @@
       try {
         showLoading();
         clearError();
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=netease&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
+        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=${currentSettings.source}&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
         if (!r.ok) throw new Error('搜索失败，请稍后再试');
         const data = await r.json();
         if (!data || data.length === 0) throw new Error('未找到相关歌曲');
@@ -1856,15 +2117,20 @@
             nowPlayingAlbum.textContent = song.album || '未知专辑';
 
             sendSongInfoToDesktop(); // Update desktop lyrics client
-            await loadAlbumArt(song.pic_id);
+            await loadAlbumArt(song.pic_id, song.source);
 
-            const lyr = await fetchLyrics(song.lyric_id); // Correct variable name
-            displayLyrics(lyr); // Correct variable name
+            const lyr = await fetchLyrics(song.lyric_id, song.source);
+            displayLyrics(lyr);
             sendFullLyricsToDesktop(lyr);
 
-            const audioUrl = await getAudioUrl(song.id);
+            const audioUrl = await getAudioUrl(song.id, song.source);
             audioPlayer.src = audioUrl;
             playerContainer.style.display = 'flex';
+
+            // 根据背景模式决定是否更新背景
+            if (currentSettings.bgMode === 'default') {
+              await updateBackground();
+            }
 
             await audioPlayer.play()
                 .then(() => {
@@ -1895,7 +2161,6 @@
                         showError('播放失败: ' + e.message);
                     }
                 });
-            await updateBackground();
         } catch (e) {
             showError(e.message);
             playButton.textContent = '▶';
@@ -1928,7 +2193,6 @@
         // Important: Reset currentPlaylistIdx to -1 since it's not part of the persistent playlist
         currentPlaylistIdx = -1;
     }
-
 
     // ===== Desktop Lyrics (WebSocket) =====
     function sendSongInfoToDesktop() {
@@ -1988,9 +2252,6 @@
     // ===== Event Listeners =====
     function showLoading() { loadingIndicator.classList.add('active'); }
     function hideLoading() { loadingIndicator.classList.remove('active'); }
-
-    // Removed: searchInput.addEventListener('input', debounce(...))
-    // Search will now only be triggered on button click or Enter key.
 
     searchButton.addEventListener('click', () => searchMusic(searchInput.value.trim()));
     searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchMusic(searchInput.value.trim()); });
@@ -2372,13 +2633,74 @@
       button.addEventListener('click', () => { collapsed = !collapsed; apply(); });
     }
 
+    // ===== 设置模态框相关 =====
+    function setupSettingsModal() {
+      if (!settingsToggle) return;
+      settingsToggle.addEventListener('click', showSettingsModal);
+      settingsCancel.addEventListener('click', hideSettingsModal);
+      settingsModalOverlay.addEventListener('click', e => {
+        if (e.target === settingsModalOverlay) hideSettingsModal();
+      });
+
+      bgModeRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          blurControl.style.display = radio.value === 'albumBlur' ? 'block' : 'none';
+        });
+      });
+
+      blurRange.addEventListener('input', e => {
+        blurValue.textContent = e.target.value;
+      });
+
+      settingsForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const newSettings = {
+          source: sourceSelect.value,
+          quality: qualitySelect.value,
+          bgMode: document.querySelector('input[name="bgMode"]:checked').value,
+          blurRadius: parseInt(blurRange.value),
+        };
+        currentSettings = newSettings;
+        saveSettings();
+        
+        // 异步应用设置
+        applySettings().then(() => {
+          hideSettingsModal();
+          showError('设置已保存', 1500);
+        }).catch(err => {
+          console.error('应用设置失败:', err);
+          hideSettingsModal();
+        });
+      });
+    }
+
+    function showSettingsModal() {
+      sourceSelect.value = currentSettings.source;
+      qualitySelect.value = currentSettings.quality;
+      document.querySelector(`input[name="bgMode"][value="${currentSettings.bgMode}"]`).checked = true;
+      blurControl.style.display = currentSettings.bgMode === 'albumBlur' ? 'block' : 'none';
+      blurRange.value = currentSettings.blurRadius;
+      blurValue.textContent = currentSettings.blurRadius;
+      settingsModalOverlay.style.display = 'flex';
+      requestAnimationFrame(() => settingsModalOverlay.classList.add('show'));
+    }
+
+    function hideSettingsModal() {
+      settingsModalOverlay.classList.remove('show');
+      setTimeout(() => {
+        settingsModalOverlay.style.display = 'none';
+      }, 300);
+    }
+
     // ===== Init =====
     function init() {
       initTheme();
-      updateBackground();
+      loadSettings();
+      applySettings();
       initPlaylist();
       optimizeMobileButtons();
       bindCollapsible(collapsePlaylistBtn, playlistCollapsible, 'musicPlaylistCollapsed', '展开列表', '收起列表');
+      setupSettingsModal();
     }
     init();
   </script>
