@@ -6,6 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Harmonia - 音乐播放器</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://music-api.gdstudio.xyz" crossorigin>
+  <link rel="preconnect" href="https://v2.xxapi.cn" crossorigin>
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <link rel="dns-prefetch" href="https://music-api.gdstudio.xyz">
+  <link rel="dns-prefetch" href="https://v2.xxapi.cn">
   <style>
     /* CSS Variables for better theming and consistency */
     :root {
@@ -869,6 +875,23 @@
     }
     .volume-slider::-webkit-slider-thumb:active {
       cursor: grabbing;
+    }
+
+    /* 为动画和变换元素添加will-change提示 */
+    .playlist-container, .container {
+      will-change: transform;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .album-art-container {
+      will-change: transform;
+      transform: translateZ(0); /* 触发GPU加速 */
+    }
+
+    /* 歌词滚动容器优化 */
+    .lyrics-scroll-container {
+      contain: content; /* 限制浏览器重排范围 */
     }
 
     .play-mode-btn {
@@ -1954,36 +1977,48 @@
 
     async function loadAlbumArt(picId, source) {
       albumArt.classList.remove('loaded');
-      albumArt.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      // 使用更小的SVG占位图（仅1KB）
+      albumArt.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iIzIyMiIvPjx0ZXh0IHg9IjI1MCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM4ODgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Mb2FkaW5nLi4uPC90ZXh0Pjwvc3ZnPg==';
+      
       if (!picId) return null;
-      const url = await getAlbumArtUrl(picId, source);
-      if (url) {
-        const img = new Image();
-        img.src = url;
-        img.onload = () => {
-          albumArt.src = url;
-          albumArt.classList.add('loaded');
-          currentAlbumArtUrl = url;
-          if (currentSettings.bgMode === 'albumBlur') {
-            setBackgroundImage(url);
-            applyBlur(currentSettings.blurRadius);
-          }
-        };
-        img.onerror = () => {
-          // fallback
-          albumArt.src = 'https://picsum.photos/500';
-          albumArt.classList.add('loaded');
-          if (currentSettings.bgMode === 'albumBlur') {
-            setBackgroundImage('https://picsum.photos/1920/1080');
-            applyBlur(currentSettings.blurRadius);
-          }
-        };
-      } else {
-        albumArt.src = 'https://picsum.photos/500';
-        albumArt.classList.add('loaded');
-        if (currentSettings.bgMode === 'albumBlur') {
-          setBackgroundImage('https://picsum.photos/1920/1080');
-          applyBlur(currentSettings.blurRadius);
+      
+      // 使用AbortController避免过时请求的竞争
+      if (window.albumArtAbortController) {
+        window.albumArtAbortController.abort();
+      }
+      window.albumArtAbortController = new AbortController();
+      
+      try {
+        const url = await getAlbumArtUrl(picId, source);
+        if (url) {
+          // 预加载图片
+          const img = new Image();
+          img.loading = "eager"; // 明确指定加载优先级
+          img.src = url;
+          
+          img.onload = () => {
+            albumArt.src = url;
+            albumArt.classList.add('loaded');
+            currentAlbumArtUrl = url;
+            if (currentSettings.bgMode === 'albumBlur') {
+              setBackgroundImage(url);
+              applyBlur(currentSettings.blurRadius);
+            }
+          };
+          
+          img.onerror = () => {
+            // 使用带时间戳的降级图片避免缓存
+            albumArt.src = `https://picsum.photos/seed/${Date.now()}/500`;
+            albumArt.classList.add('loaded');
+            if (currentSettings.bgMode === 'albumBlur') {
+              setBackgroundImage(`https://picsum.photos/seed/${Date.now()}/1920/1080`);
+              applyBlur(currentSettings.blurRadius);
+            }
+          };
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error loading album art:', error);
         }
       }
     }
@@ -2207,38 +2242,126 @@
       if (!desktopLyricsEnabled || !ws || ws.readyState !== WebSocket.OPEN) return;
       try { ws.send(JSON.stringify({ type: 'time', currentTime: t })); } catch (e) { console.error('Error sending current time to desktop:', e); }
     }
+    function sendLyricToDesktop(lyricText) {
+      if (!desktopLyricsEnabled || !ws || ws.readyState !== WebSocket.OPEN) return;
+      try {
+        ws.send(JSON.stringify({ 
+          type: 'lyric', 
+          text: lyricText || '' 
+        }));
+      } catch (e) {
+        console.error('Error sending lyric to desktop:', e);
+      }
+    }
+    let reconnectAttempts = 0;
+    let reconnectTimeout = null;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+
     function connectToDesktopLyrics() {
       desktopLyricsStatus.style.display = 'block';
+      
+      // 清理之前的连接和重连定时器
       if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         console.log('WebSocket already open or connecting.');
         return;
       }
-      if (ws) ws.close(); // Close existing connection if any
-      ws = new WebSocket('ws://localhost:8765'); // Standard port for desktop lyrics clients
+      
+      if (ws) {
+        ws.onclose = null; // 移除旧的事件处理器避免内存泄漏
+        ws.close();
+      }
+      
+      clearTimeout(reconnectTimeout);
+      
+      try {
+        ws = new WebSocket('ws://localhost:8765');
+        
+        // 设置合理的超时
+        const connectionTimeout = setTimeout(() => {
+          if (ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
+            handleWebSocketError(new Error('Connection timeout'));
+          }
+        }, 5000);
+        
+        ws.onopen = () => {
+          clearTimeout(connectionTimeout);
+          desktopLyricsStatus.textContent = '已连接到桌面歌词程序';
+          desktopLyricsStatus.classList.remove('disconnected');
+          desktopLyricsStatus.classList.add('connected');
+          desktopLyricsEnabled = true;
+          reconnectAttempts = 0; // 重置重连计数
+          
+          // 发送当前播放状态
+          if (nowPlayingTitle.textContent && nowPlayingTitle.textContent !== '歌曲标题') { 
+            sendSongInfoToDesktop(); 
+          }
+          if (currentLyricsResponse) { 
+            sendFullLyricsToDesktop(currentLyricsResponse); 
+          }
+          if (audioPlayer.currentTime) { 
+            sendCurrentTimeToDesktop(audioPlayer.currentTime); 
+          }
+        };
+        
+        ws.onerror = (e) => {
+          clearTimeout(connectionTimeout);
+          handleWebSocketError(e);
+        };
+        
+        ws.onclose = (e) => {
+          clearTimeout(connectionTimeout);
+          if (!e.wasClean && desktopLyricsEnabled) {
+            scheduleReconnect();
+          }
+          updateConnectionStatus(false);
+        };
+        
+      } catch (error) {
+        handleWebSocketError(error);
+      }
+    }
 
-      ws.onopen = () => {
+    function handleWebSocketError(error) {
+      console.error('Desktop Lyrics WebSocket error:', error);
+      updateConnectionStatus(false);
+      if (desktopLyricsEnabled) {
+        scheduleReconnect();
+      }
+    }
+
+    function updateConnectionStatus(connected) {
+      if (connected) {
         desktopLyricsStatus.textContent = '已连接到桌面歌词程序';
         desktopLyricsStatus.classList.remove('disconnected');
         desktopLyricsStatus.classList.add('connected');
         desktopLyricsEnabled = true;
-        if (nowPlayingTitle.textContent && nowPlayingTitle.textContent !== '歌曲标题') { sendSongInfoToDesktop(); }
-        if (currentLyricsResponse) { sendFullLyricsToDesktop(currentLyricsResponse); }
-        if (audioPlayer.currentTime) { sendCurrentTimeToDesktop(audioPlayer.currentTime); }
-      };
-      ws.onerror = (e) => {
-        console.error('Desktop Lyrics WebSocket error:', e);
-        desktopLyricsStatus.textContent = '连接桌面歌词失败';
-        desktopLyricsStatus.classList.add('disconnected');
-        desktopLyricsEnabled = false;
-        ws = null; // Clear websocket on error to allow reconnection
-      };
-      ws.onclose = () => {
+      } else {
         desktopLyricsStatus.textContent = '桌面歌词连接已断开';
         desktopLyricsStatus.classList.remove('connected');
         desktopLyricsStatus.classList.add('disconnected');
         desktopLyricsEnabled = false;
-        ws = null; // Clear websocket on close
-      };
+        ws = null;
+      }
+    }
+
+    function scheduleReconnect() {
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.log('Max reconnection attempts reached');
+        return;
+      }
+      
+      reconnectAttempts++;
+      // 指数退避：1s, 2s, 4s, 8s, 16s
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
+      
+      console.log(`Scheduling reconnection attempt ${reconnectAttempts} in ${delay}ms`);
+      
+      reconnectTimeout = setTimeout(() => {
+        if (desktopLyricsEnabled) {
+          connectToDesktopLyrics();
+        }
+      }, delay);
     }
     function disconnectDesktopLyrics() {
         if (ws) {
@@ -2255,6 +2378,15 @@
 
     searchButton.addEventListener('click', () => searchMusic(searchInput.value.trim()));
     searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchMusic(searchInput.value.trim()); });
+
+    const debouncedSearch = debounce(() => {
+      const query = searchInput.value.trim();
+      if (query.length >= 2) { // 至少2个字符才搜索
+        searchMusic(query);
+      }
+    }, 500);
+
+    searchInput.addEventListener('input', debouncedSearch);
 
     lyricsContent.addEventListener('click', e => {
       const target = e.target.closest('.lyric-line');
@@ -2337,12 +2469,18 @@
       }
     });
 
+    let lastTimeUpdate = 0;
     audioPlayer.addEventListener('timeupdate', () => {
+      const now = Date.now();
+      // 限制更新频率为每秒10次（100ms间隔）
+      if (now - lastTimeUpdate < 100) return;
+      lastTimeUpdate = now;
+      
       const { currentTime, duration } = audioPlayer;
       if (duration && !isNaN(duration)) {
         const p = (currentTime / duration) * 100;
         progress.style.width = `${p}%`;
-        progressBar.setAttribute('aria-valuenow', p); // Update ARIA value
+        progressBar.setAttribute('aria-valuenow', p);
         currentTimeDisplay.textContent = formatTime(currentTime);
         durationDisplay.textContent = formatTime(duration);
         updateLyricsHighlight(currentTime);
