@@ -2379,15 +2379,6 @@
     searchButton.addEventListener('click', () => searchMusic(searchInput.value.trim()));
     searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchMusic(searchInput.value.trim()); });
 
-    const debouncedSearch = debounce(() => {
-      const query = searchInput.value.trim();
-      if (query.length >= 2) { // 至少2个字符才搜索
-        searchMusic(query);
-      }
-    }, 500);
-
-    searchInput.addEventListener('input', debouncedSearch);
-
     lyricsContent.addEventListener('click', e => {
       const target = e.target.closest('.lyric-line');
       if (!target) return;
