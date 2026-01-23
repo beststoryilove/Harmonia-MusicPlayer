@@ -5,6 +5,8 @@
 
 与HarmoniaMusicplayer联动项目：[Harmonia-DesktopLyrics桌面歌词](https://github.com/beststoryilove/Harmonia-DesktopLyrics "你还在犹豫什么？块点点我！")
 
-当前版本：v1.1（20251219）
+当前版本：v1.3（20260118）
 
 预览版本：v1.2-pre-3（20260102）
+
+预览请前往：https://809blog.dpdns.org/Harmonia_Pre
