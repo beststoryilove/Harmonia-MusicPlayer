@@ -1951,7 +1951,7 @@
     const originalTitle = "Harmonia - 音乐播放器";
     const enableWordLyrics = document.getElementById('enableWordLyrics');
     const neteaseProxyInput = document.getElementById('neteaseProxyInput');
-    const BUILTIN_NETEASE_PROXIES = ['https://cors.isomorphic-git.org/','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://thingproxy.freeboard.io/fetch/'];
+    const BUILTIN_NETEASE_PROXIES = ['https://cors.isomorphic-git.org/','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://thingproxy.freeboard.io/fetch/','https://proxy.cors.sh/','https://api.codetabs.com/v1/proxy?quest=','https://cors.lol/','https://crossorigin.me/','https://cors-proxy.cloudflare.com/','https://cors-proxy.htmldriven.com/?url='];
 
     // ===== State =====
     let currentPage = 1;
@@ -3687,10 +3687,20 @@
       if (currentActivePlaylist.length === 0) return;
 
       if (currentPlayMode === 'repeat') {
-        if (currentPlaylistIdx >= 0 && currentPlaylistIdx < currentActivePlaylist.length) {
-          playSong(currentActivePlaylist[currentPlaylistIdx], true, currentPlaylistIdx);
-        } else {
-          playSong(currentActivePlaylist[0], true, 0);
+        // 单曲循环：重置当前时间并重新播放
+        try {
+          audioPlayer.currentTime = 0;
+          audioPlayer.play()
+            .then(() => {
+              playButton.innerHTML = '<i class="fas fa-pause"></i>';
+              isPlaying = true;
+              updatePageTitle();
+            })
+            .catch(e => {
+              console.error('单曲循环播放失败:', e);
+            });
+        } catch (err) {
+          console.error('设置当前时间失败:', err);
         }
       } else if (currentPlayMode === 'shuffle') {
         const randomIndex = Math.floor(Math.random() * currentActivePlaylist.length);
