@@ -651,6 +651,172 @@
       padding: 20px;
     }
 
+    .draggable-item {
+      cursor: grab;
+      user-select: none;
+    }
+
+    .draggable-item.dragging {
+      opacity: 0.5;
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(255, 45, 85, 0.3);
+      z-index: 10000;
+      cursor: grabbing;
+    }
+
+    .draggable-item.drag-over {
+      border-left: 3px solid var(--primary-color);
+      background: var(--active-item-bg-dark);
+      transform: translateX(5px);
+    }
+
+    .drag-handle {
+      margin-right: 10px;
+      color: var(--text-muted-dark);
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      transition: color 0.2s ease;
+    }
+
+    .drag-handle:hover {
+      color: var(--primary-color);
+    }
+
+    .draggable-item.dragging .drag-handle {
+      cursor: grabbing;
+    }
+
+    .sidebar-search-sort-container {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-dark);
+      background: var(--card-bg-dark);
+    }
+
+    .sidebar-search-container {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .sidebar-search-input {
+      width: 100%;
+      padding: 10px 15px;
+      padding-right: 40px;
+      border-radius: 20px;
+      border: 1px solid var(--border-dark);
+      background: var(--input-bg-dark);
+      color: var(--text-dark);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-search-input:focus {
+      border-color: var(--primary-color);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .sidebar-search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted-dark);
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-search-clear:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--error-color);
+    }
+
+    .sidebar-sort-controls {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .sidebar-sort-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border-dark);
+      background: var(--item-bg-dark);
+      color: var(--text-dark);
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-sort-btn:hover {
+      background: var(--item-hover-dark);
+      transform: translateY(-2px);
+    }
+
+    .sidebar-sort-btn.active {
+      background: var(--active-item-bg-dark);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .sidebar-sort-btn i {
+      font-size: 14px;
+    }
+
+    /* 拖拽排序样式 */
+    .sidebar-item.dragging {
+      opacity: 0.5;
+      transform: rotate(3deg);
+      z-index: 9999;
+    }
+
+    .sidebar-item.drag-over {
+      border: 2px dashed var(--primary-color);
+      background: var(--active-item-bg-dark);
+    }
+
+    .sidebar-item .drag-handle {
+      margin-right: 10px;
+      color: var(--text-muted-dark);
+      cursor: grab;
+      font-size: 14px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-item .drag-handle:hover {
+      color: var(--primary-color);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-item.dragging .drag-handle {
+      cursor: grabbing;
+    }
+
     .sidebar-items {
       display: flex;
       flex-direction: column;
@@ -1542,6 +1708,23 @@
         width: 280px;
       }
 
+      .sidebar-search-sort-container {
+        padding: 12px 15px;
+      }
+      
+      .sidebar-sort-controls {
+        gap: 6px;
+      }
+      
+      .sidebar-sort-btn {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+      
+      .sidebar-sort-btn i {
+        font-size: 12px;
+      }
+
       .time-display, .progress-container, .now-playing-title {
         max-width: 100%;
         width: 90%;
@@ -1658,6 +1841,32 @@
 
     body.light-theme .island-empty {
     color: rgba(0, 0, 0, 0.4);
+    }
+
+    body.light-theme .sidebar-search-sort-container {
+      background: var(--card-bg-light);
+    }
+
+    body.light-theme .sidebar-search-input {
+      background: var(--input-bg-light);
+      color: var(--text-light);
+      border-color: var(--border-light);
+    }
+
+    body.light-theme .sidebar-sort-btn {
+      background: var(--item-bg-light);
+      color: var(--text-light);
+      border-color: var(--border-light);
+    }
+
+    body.light-theme .sidebar-sort-btn:hover {
+      background: var(--item-hover-light);
+    }
+
+    body.light-theme .sidebar-sort-btn.active {
+      background: var(--active-item-bg-light);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
     }
   </style>
 </head>
@@ -1823,6 +2032,27 @@
       <div class="sidebar-tab" data-tab="history">播放历史</div>
     </div>
 
+    <div class="sidebar-search-sort-container">
+      <div class="sidebar-search-container">
+        <input type="text" class="sidebar-search-input" id="sidebarSearchInput" placeholder="搜索当前列表..." />
+        <button class="sidebar-search-clear" id="sidebarSearchClear" title="清除搜索">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="sidebar-sort-controls">
+        <button class="sidebar-sort-btn" id="sortAZBtn" title="A-Z排序">
+          <i class="fas fa-sort-alpha-down"></i> A-Z
+        </button>
+        <button class="sidebar-sort-btn" id="sortZABtn" title="Z-A排序">
+          <i class="fas fa-sort-alpha-up"></i> Z-A
+        </button>
+        <button class="sidebar-sort-btn" id="customOrderBtn" title="自定义排序（拖拽调整）">
+          <i class="fas fa-arrows-alt"></i> 自定义
+        </button>
+      </div>
+    </div>
+
     <div class="sidebar-content">
       <div class="sidebar-items" id="playlistItems"></div>
     </div>
@@ -1972,6 +2202,13 @@
     let isDynamicIslandExpanded = false;
     let lyricsVisible = true;
     let currentSongInfo = {name: '',artist: '',album: ''};
+    let sidebarSearchQuery = '';
+    let sidebarSortMode = 'none'; // 'none', 'az', 'za', 'custom'
+    let isDragging = false;
+    let dragSourceIndex = -1;
+    let customOrder = {}; // 存储每个列表的自定义顺序
+    let currentPlayingId = null;  // 当前播放的歌曲ID
+    let playlistOrder = [];       // 播放列表的当前顺序（ID数组）
 
     // Apple Music 歌词相关
     const LINE_HEIGHT = 20;
@@ -2309,53 +2546,500 @@
       return [];
     }
 
+    function addToPlaylist(track) {
+      const exists = playlist.some(x => x.id === track.id);
+      if (!exists) {
+        playlist.push(track);
+        savePlaylist();
+        updatePlaylistOrder(); // 更新顺序
+        if (currentTab === 'playlist') renderPlaylist();
+        showError('已添加到播放列表', 1500);
+      } else {
+        showError('歌曲已在播放列表中', 1500);
+      }
+    }
+
+    function removeFromPlaylist(index) {
+      const songToRemove = playlist[index];
+      const isCurrentPlaying = currentPlayingId === songToRemove?.id;
+      
+      if (isCurrentPlaying) {
+        // 如果删除的是当前正在播放的歌曲
+        audioPlayer.pause();
+        currentPlayingId = null;
+        currentPlaylistIdx = -1;
+        isPlaying = false;
+        updatePageTitle();
+      } else if (currentPlaylistIdx > index) {
+        // 如果删除的是当前播放歌曲之前的歌曲，更新索引
+        currentPlaylistIdx--;
+      }
+      
+      playlist.splice(index, 1);
+      savePlaylist();
+      updatePlaylistOrder(); // 更新顺序
+      
+      // 如果删除了当前播放歌曲，尝试播放下一首
+      if (isCurrentPlaying && playlist.length > 0) {
+        const nextSongId = getNextSongId(songToRemove.id);
+        if (nextSongId) {
+          const nextSong = getSongById(nextSongId);
+          if (nextSong) {
+            setTimeout(() => playSong(nextSong, true), 500);
+          }
+        }
+      }
+      
+      renderPlaylist();
+    }
+
     function renderPlaylist() {
       playlistItems.innerHTML = '';
-      const items = getActivePlaylistArray();
+      let items = getActivePlaylistArray();
 
+      // 应用搜索过滤
+      if (sidebarSearchQuery) {
+        items = items.filter(item => {
+          const name = (item.name || '').toLowerCase();
+          const artist = Array.isArray(item.artist) ? 
+            item.artist.join(' ').toLowerCase() : 
+            (item.artist || '').toLowerCase();
+          return name.includes(sidebarSearchQuery) || 
+                artist.includes(sidebarSearchQuery);
+        });
+      }
+
+      // 应用排序
+      if (sidebarSortMode === 'az') {
+        items.sort((a, b) => {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+      } else if (sidebarSortMode === 'za') {
+        items.sort((a, b) => {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameB.localeCompare(nameA);
+        });
+      } else if (sidebarSortMode === 'custom') {
+        // 应用自定义顺序
+        const listKey = currentTab;
+        if (customOrder[listKey]) {
+          const orderMap = {};
+          customOrder[listKey].forEach((id, index) => {
+            orderMap[id] = index;
+          });
+          
+          items.sort((a, b) => {
+            const orderA = orderMap[a.id] !== undefined ? orderMap[a.id] : Infinity;
+            const orderB = orderMap[b.id] !== undefined ? orderMap[b.id] : Infinity;
+            return orderA - orderB;
+          });
+        }
+      }
+
+      // 渲染项目
+      const fragment = document.createDocumentFragment();
+      
       if (items.length === 0) {
-        playlistItems.innerHTML = `<div style="padding:15px;color:var(--text-muted-dark);text-align:center;font-style:italic;">
-          ${currentTab === 'favorites' ? '收藏列表为空' : currentTab === 'history' ? '暂无播放历史' : '播放列表为空'}</div>`;
+        const emptyMsg = document.createElement('div');
+        emptyMsg.style.cssText = 'padding:15px;color:var(--text-muted-dark);text-align:center;font-style:italic;';
+        emptyMsg.textContent = sidebarSearchQuery ? 
+          '未找到相关歌曲' : 
+          (currentTab === 'favorites' ? '收藏列表为空' : currentTab === 'history' ? '暂无播放历史' : '播放列表为空');
+        playlistItems.appendChild(emptyMsg);
         return;
       }
 
-      const fragment = document.createDocumentFragment();
-      items.forEach((item, idx) => {
+      items.forEach((item, displayIndex) => {
+        // 找到实际在原始列表中的索引
+        let actualIndex = -1;
+        if (currentTab === 'playlist') {
+          actualIndex = playlist.findIndex(t => t.id === item.id);
+        } else if (currentTab === 'favorites') {
+          actualIndex = favorites.findIndex(t => t.id === item.id);
+        } else {
+          actualIndex = history.findIndex(t => t.id === item.id);
+        }
+        
         const d = document.createElement('div');
         d.className = 'sidebar-item';
-        if (currentTab === 'playlist' && idx === currentPlaylistIdx) {
+        if (sidebarSortMode === 'custom') {
+          d.classList.add('draggable-item');
+          d.draggable = true;
+        }
+        d.dataset.index = actualIndex;
+        d.dataset.id = item.id;
+        d.dataset.displayIndex = displayIndex;
+        
+        // 高亮当前播放项 - 基于歌曲ID
+        if (currentPlayingId && item.id === currentPlayingId && currentTab === 'playlist') {
           d.classList.add('active');
         }
 
         const artists = Array.isArray(item.artist) ? item.artist.join('、') : (item.artist || '未知歌手');
-        const extra = currentTab === 'history' ? `<div class="sidebar-item-time" style="font-size:11px;color:var(--text-muted-dark);margin-top:3px;">${formatDate(item.timestamp)}</div>` : '';
+        const extra = currentTab === 'history' ? 
+          `<div class="sidebar-item-time" style="font-size:11px;color:var(--text-muted-dark);margin-top:3px;">
+            ${formatDate(item.timestamp)}
+          </div>` : '';
+        
+        // 只在自定义排序模式下显示拖拽手柄
+        const dragHandle = sidebarSortMode === 'custom' ? 
+          '<div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>' : '';
+        
         d.innerHTML = `
+          ${dragHandle}
           <div class="sidebar-item-info">
             <div class="sidebar-item-title">${item.name || '未知歌曲'}</div>
             <div class="sidebar-item-artist">${artists}</div>
             ${extra}
           </div>
-          ${currentTab === 'playlist' ? `<button class="remove-from-playlist" data-index="${idx}">×</button>` : ''}
+          ${currentTab === 'playlist' ? `<button class="remove-from-playlist" data-id="${item.id}">×</button>` : ''}
         `;
-        d.addEventListener('click', () => {
+        
+        // 点击播放
+        d.addEventListener('click', (e) => {
+          if (e.target.closest('.drag-handle') || e.target.closest('.remove-from-playlist')) return;
+          
           if (currentTab === 'playlist') {
-            playFromPlaylist(idx);
+            // 在播放列表中查找实际索引
+            const actualPlaylistIndex = playlist.findIndex(track => track.id === item.id);
+            if (actualPlaylistIndex !== -1) {
+              playFromPlaylist(actualPlaylistIndex);
+            } else {
+              // 如果不在播放列表中，先添加到播放列表再播放
+              addToPlaylist(item);
+              const newIndex = playlist.findIndex(track => track.id === item.id);
+              if (newIndex !== -1) playFromPlaylist(newIndex);
+            }
           } else {
             playTrackFromItem(item);
           }
         });
+        
+        // 移除按钮事件
+        if (currentTab === 'playlist') {
+          const removeBtn = d.querySelector('.remove-from-playlist');
+          if (removeBtn) {
+            removeBtn.addEventListener('click', e => {
+              e.stopPropagation();
+              const id = removeBtn.dataset.id;
+              const index = playlist.findIndex(item => item.id === id);
+              if (index !== -1) removeFromPlaylist(index);
+            });
+          }
+        }
+        
         fragment.appendChild(d);
       });
+      
       playlistItems.appendChild(fragment);
+    }
 
-      if (currentTab === 'playlist') {
-        document.querySelectorAll('.remove-from-playlist').forEach(btn => {
-          btn.addEventListener('click', e => {
-            e.stopPropagation();
-            const i = parseInt(btn.dataset.index);
-            removeFromPlaylist(i);
-          });
+    // ===== 拖拽排序功能 =====
+    function initDragAndDrop() {
+      let draggedItem = null;
+      let draggedIndex = -1;
+      let dragStartY = 0;
+      let isTouchDragging = false;
+      let touchDraggedItem = null;
+      
+      // 添加全局事件监听
+      document.addEventListener('dragstart', handleDragStart);
+      document.addEventListener('dragover', handleDragOver);
+      document.addEventListener('drop', handleDrop);
+      document.addEventListener('dragend', handleDragEnd);
+      document.addEventListener('dragenter', handleDragEnter);
+      document.addEventListener('dragleave', handleDragLeave);
+      
+      // 添加触摸事件支持
+      document.addEventListener('touchstart', handleTouchStart, { passive: false });
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+      
+      function handleDragStart(e) {
+        if (sidebarSortMode !== 'custom') return;
+        
+        const item = e.target.closest('.draggable-item');
+        if (!item) return;
+        
+        draggedItem = item;
+        draggedIndex = parseInt(item.dataset.displayIndex);
+        
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedIndex.toString());
+        
+        setTimeout(() => {
+          item.classList.add('dragging');
+        }, 0);
+      }
+      
+      function handleDragOver(e) {
+        if (sidebarSortMode !== 'custom' || !draggedItem) return;
+        
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const targetItem = e.target.closest('.draggable-item');
+        if (targetItem && targetItem !== draggedItem) {
+          const targetIndex = parseInt(targetItem.dataset.displayIndex);
+          const items = document.querySelectorAll('.draggable-item');
+          
+          if (draggedIndex < targetIndex) {
+            targetItem.style.transform = 'translateY(-5px)';
+          } else {
+            targetItem.style.transform = 'translateY(5px)';
+          }
+          
+          targetItem.classList.add('drag-over');
+        }
+        
+        return false;
+      }
+      
+      function handleDrop(e) {
+        if (sidebarSortMode !== 'custom' || !draggedItem) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const dropTarget = e.target.closest('.draggable-item');
+        if (!dropTarget || dropTarget === draggedItem) return;
+        
+        const dropIndex = parseInt(dropTarget.dataset.displayIndex);
+        
+        updateCustomOrder(draggedIndex, dropIndex);
+        
+        document.querySelectorAll('.draggable-item').forEach(item => {
+          item.classList.remove('drag-over');
+          item.style.transform = '';
         });
+        
+        return false;
+      }
+      
+      function handleDragEnd(e) {
+        if (sidebarSortMode !== 'custom') return;
+        
+        if (draggedItem) {
+          draggedItem.classList.remove('dragging');
+        }
+        
+        document.querySelectorAll('.draggable-item').forEach(item => {
+          item.classList.remove('drag-over');
+          item.style.transform = '';
+        });
+        
+        draggedItem = null;
+        draggedIndex = -1;
+      }
+      
+      function handleDragEnter(e) {
+        if (sidebarSortMode !== 'custom' || !draggedItem) return;
+        
+        const targetItem = e.target.closest('.draggable-item');
+        if (targetItem && targetItem !== draggedItem) {
+          targetItem.classList.add('drag-over');
+        }
+      }
+      
+      function handleDragLeave(e) {
+        if (sidebarSortMode !== 'custom') return;
+        
+        const targetItem = e.target.closest('.draggable-item');
+        if (targetItem && targetItem !== draggedItem) {
+          targetItem.classList.remove('drag-over');
+          targetItem.style.transform = '';
+        }
+      }
+      
+      function handleTouchStart(e) {
+        if (sidebarSortMode !== 'custom') return;
+        
+        const touch = e.touches[0];
+        const item = document.elementFromPoint(touch.clientX, touch.clientY).closest('.draggable-item');
+        
+        if (!item) return;
+        
+        e.preventDefault();
+        touchDraggedItem = item;
+        dragStartY = touch.clientY;
+        draggedIndex = parseInt(item.dataset.displayIndex);
+        isTouchDragging = true;
+        
+        touchDraggedItem.classList.add('dragging');
+        touchDraggedItem.style.transform = 'translateY(0)';
+      }
+      
+      function handleTouchMove(e) {
+        if (!isTouchDragging || !touchDraggedItem) return;
+        
+        e.preventDefault();
+        const touch = e.touches[0];
+        const deltaY = touch.clientY - dragStartY;
+        
+        touchDraggedItem.style.transform = `translateY(${deltaY}px)`;
+        
+        const items = Array.from(document.querySelectorAll('.draggable-item'));
+        const currentRect = touchDraggedItem.getBoundingClientRect();
+        const currentCenterY = currentRect.top + currentRect.height / 2;
+        
+        for (let i = 0; i < items.length; i++) {
+          if (items[i] === touchDraggedItem) continue;
+          
+          const itemRect = items[i].getBoundingClientRect();
+          const itemCenterY = itemRect.top + itemRect.height / 2;
+          
+          if (Math.abs(currentCenterY - itemCenterY) < itemRect.height / 2) {
+            const targetIndex = parseInt(items[i].dataset.displayIndex);
+            
+            items[i].classList.add('drag-over');
+            if (draggedIndex < targetIndex) {
+              items[i].style.transform = 'translateY(-5px)';
+            } else {
+              items[i].style.transform = 'translateY(5px)';
+            }
+          } else {
+            items[i].classList.remove('drag-over');
+            items[i].style.transform = '';
+          }
+        }
+      }
+      
+      function handleTouchEnd(e) {
+        if (!isTouchDragging || !touchDraggedItem) return;
+        
+        e.preventDefault();
+        
+        const items = Array.from(document.querySelectorAll('.draggable-item'));
+        const currentRect = touchDraggedItem.getBoundingClientRect();
+        const currentCenterY = currentRect.top + currentRect.height / 2;
+        let dropIndex = draggedIndex;
+        
+        for (let i = 0; i < items.length; i++) {
+          if (items[i] === touchDraggedItem) continue;
+          
+          const itemRect = items[i].getBoundingClientRect();
+          const itemCenterY = itemRect.top + itemRect.height / 2;
+          
+          if (Math.abs(currentCenterY - itemCenterY) < itemRect.height / 2) {
+            dropIndex = parseInt(items[i].dataset.displayIndex);
+            break;
+          }
+        }
+        
+        if (dropIndex !== draggedIndex) {
+          updateCustomOrder(draggedIndex, dropIndex);
+        }
+        
+        touchDraggedItem.classList.remove('dragging');
+        touchDraggedItem.style.transform = '';
+        
+        items.forEach(item => {
+          item.classList.remove('drag-over');
+          item.style.transform = '';
+        });
+        
+        isTouchDragging = false;
+        touchDraggedItem = null;
+        draggedIndex = -1;
+      }
+      
+      function updateCustomOrder(fromIndex, toIndex) {
+        const listKey = currentTab;
+        const currentList = getActivePlaylistArray();
+        
+        if (!customOrder[listKey]) {
+          customOrder[listKey] = currentList.map(item => item.id);
+        }
+        
+        const order = customOrder[listKey];
+        
+        if (fromIndex < 0 || fromIndex >= order.length || toIndex < 0 || toIndex >= order.length) {
+          return;
+        }
+        
+        const movedId = order[fromIndex];
+        
+        order.splice(fromIndex, 1);
+        order.splice(toIndex, 0, movedId);
+        
+        localStorage.setItem('musicPlayerCustomOrder', JSON.stringify(customOrder));
+        
+        // 重新排序实际列表
+        reorderActualList(listKey, order);
+        
+        // 如果当前正在播放的歌曲在重新排序的列表中，需要重新获取它在列表中的位置
+        if (currentPlayingId && currentTab === 'playlist') {
+          const newIndex = playlist.findIndex(item => item.id === currentPlayingId);
+          if (newIndex !== -1) {
+            currentPlaylistIdx = newIndex;
+          }
+        }
+        
+        // 更新播放列表顺序
+        updatePlaylistOrder();
+        
+        renderPlaylist();
+        
+        showError('顺序已更新', 1000);
+      }
+
+      function reorderActualList(listKey, newOrder) {
+        const orderMap = {};
+        newOrder.forEach((id, index) => {
+          orderMap[id] = index;
+        });
+        
+        if (listKey === 'playlist') {
+          // 重新排序播放列表
+          playlist.sort((a, b) => (orderMap[a.id] || 0) - (orderMap[b.id] || 0));
+          savePlaylist();
+          
+          // 更新播放列表顺序
+          updatePlaylistOrder();
+        } else if (listKey === 'favorites') {
+          favorites.sort((a, b) => (orderMap[a.id] || 0) - (orderMap[b.id] || 0));
+          saveFavorites();
+        } else if (listKey === 'history') {
+          history.sort((a, b) => (orderMap[a.id] || 0) - (orderMap[b.id] || 0));
+          saveHistory();
+        }
+      }
+
+      function updateCurrentPlayIndexAfterReorder() {
+        if (currentTab !== 'playlist') return;
+        
+        // 如果当前正在播放歌曲，找到它在重新排序后的列表中的新位置
+        if (currentPlaylistIdx >= 0 && playlist.length > 0) {
+          const currentPlayingId = playlist[currentPlaylistIdx]?.id;
+          if (currentPlayingId) {
+            const newIndex = playlist.findIndex(item => item.id === currentPlayingId);
+            if (newIndex !== -1) {
+              currentPlaylistIdx = newIndex;
+              console.log(`播放索引已更新: ${currentPlaylistIdx}`);
+            }
+          }
+        }
+      }
+      
+      function reorderActualList(listKey, newOrder) {
+        const orderMap = {};
+        newOrder.forEach((id, index) => {
+          orderMap[id] = index;
+        });
+        
+        if (listKey === 'playlist') {
+          playlist.sort((a, b) => (orderMap[a.id] || 0) - (orderMap[b.id] || 0));
+          savePlaylist();
+        } else if (listKey === 'favorites') {
+          favorites.sort((a, b) => (orderMap[a.id] || 0) - (orderMap[b.id] || 0));
+          saveFavorites();
+        } else if (listKey === 'history') {
+          history.sort((a, b) => (orderMap[a.id] || 0) - (orderMap[b.id] || 0));
+          saveHistory();
+        }
       }
     }
 
@@ -2432,13 +3116,19 @@
       if (currentTab === 'playlist') {
         playlist = [];
         savePlaylist();
+        delete customOrder.playlist;
       } else if (currentTab === 'favorites') {
         favorites = [];
         saveFavorites();
+        delete customOrder.favorites;
       } else {
         history = [];
         saveHistory();
+        delete customOrder.history;
       }
+      
+      // 保存自定义顺序
+      localStorage.setItem('musicPlayerCustomOrder', JSON.stringify(customOrder));
       
       currentPlaylistIdx = -1;
       renderPlaylist();
@@ -3108,26 +3798,34 @@
       pagination.appendChild(next);
     }
 
-    async function playSong(song, isFromPlaylist = false, index = -1) {
+    async function playSong(song, isFromPlaylist = false) {
       try {
         showLoading();
         clearError();
 
         nowPlayingTitle.textContent = song.name || '未知歌曲';
         currentSongInfo = {
-            name: song.name || '未知歌曲',
-            artist: Array.isArray(song.artist) ? song.artist.join('、') : (song.artist || '未知歌手'),
-            album: song.album || ''
+          name: song.name || '未知歌曲',
+          artist: Array.isArray(song.artist) ? song.artist.join('、') : (song.artist || '未知歌手'),
+          album: song.album || ''
         };
+        
+        // 更新当前播放歌曲ID
+        currentPlayingId = song.id;
+        
+        // 如果从播放列表播放，更新索引
+        if (isFromPlaylist) {
+          currentPlaylistIdx = getPlaylistIndexById(song.id);
+        }
+        
         updateDynamicIslandWelcome();
-        sendCurrentSongToDesktop(); 
+        sendCurrentSongToDesktop();
         await loadAlbumArt(song.pic_id, song.source);
 
         // ===== 歌词获取：逐字歌词优先（若开启）=====
         let usedWordLyrics = false;
 
         if (lyricsSettings.wordLyricsEnabled) {
-          // 逐字歌词接口只对网易云 id 有意义；若当前不是网易云，也直接走原逻辑
           const isNetease = (song.source === 'netease' || currentSettings.source === 'netease');
 
           if (isNetease) {
@@ -3140,7 +3838,6 @@
                 usedWordLyrics = true;
                 displayAMWordLyrics(neteaseLyricJson);
               } else {
-                // 没有逐字歌词：回退到 lv=1（普通歌词）
                 const lrcText = neteaseLyricJson?.lrc?.lyric || '';
                 const tlyricText = neteaseLyricJson?.tlyric?.lyric || '';
                 displayAMLyrics({ lyric: lrcText, tlyric: tlyricText });
@@ -3152,7 +3849,6 @@
           }
         }
 
-        // 若没有使用逐字歌词（未开启 / 非网易云 / 请求失败），走原先 gd API 逻辑
         if (!usedWordLyrics) {
           const lyr = await fetchLyrics(song.lyric_id, song.source);
           if (lyr) {
@@ -3163,7 +3859,7 @@
           }
         }
 
-        sendCurrentLyricsToDesktop(); 
+        sendCurrentLyricsToDesktop();
         const audioUrl = await getAudioUrl(song.id, song.source);
         audioPlayer.src = audioUrl;
 
@@ -3173,13 +3869,15 @@
             isPlaying = true;
             updatePageTitle();
             addToHistory(song);
+            
             if (isFromPlaylist) {
-              currentPlaylistIdx = index;
               currentActivePlaylist = playlist;
-              renderPlaylist();
             } else {
               currentTrackIndex = -1;
-              currentPlaylistIdx = -1;
+            }
+            
+            if (currentTab === 'playlist') {
+              renderPlaylist();
             }
           })
           .catch(e => {
@@ -3204,8 +3902,8 @@
 
     async function playFromPlaylist(index) {
       if (index < 0 || index >= playlist.length) return;
-      currentActivePlaylist = playlist;
-      await playSong(playlist[index], true, index);
+      const song = playlist[index];
+      await playSong(song, true);
     }
 
     async function playTrackFromItem(item) {
@@ -3618,35 +4316,43 @@
       }
     });
 
-    prevButton.addEventListener('click', () => {
-      if (currentActivePlaylist.length === 0) {
+    prevButton.addEventListener('click', async () => {
+      if (!currentPlayingId || playlist.length === 0) {
         showError('播放列表为空，无法切换歌曲');
         return;
       }
 
-      if (currentPlayMode === 'shuffle') {
-        const randomIndex = Math.floor(Math.random() * currentActivePlaylist.length);
-        playSong(currentActivePlaylist[randomIndex], true, randomIndex);
+      const prevSongId = getPrevSongId(currentPlayingId);
+      if (!prevSongId) {
+        showError('无法获取上一首歌曲');
+        return;
+      }
+
+      const prevSong = getSongById(prevSongId);
+      if (prevSong) {
+        await playSong(prevSong, true);
       } else {
-        let newIndex = currentPlaylistIdx - 1;
-        if (newIndex < 0) newIndex = currentActivePlaylist.length - 1;
-        playSong(currentActivePlaylist[newIndex], true, newIndex);
+        showError('无法找到上一首歌曲');
       }
     });
 
-    nextButton.addEventListener('click', () => {
-      if (currentActivePlaylist.length === 0) {
+    nextButton.addEventListener('click', async () => {
+      if (!currentPlayingId || playlist.length === 0) {
         showError('播放列表为空，无法切换歌曲');
         return;
       }
 
-      if (currentPlayMode === 'shuffle') {
-        const randomIndex = Math.floor(Math.random() * currentActivePlaylist.length);
-        playSong(currentActivePlaylist[randomIndex], true, randomIndex);
+      const nextSongId = getNextSongId(currentPlayingId);
+      if (!nextSongId) {
+        showError('无法获取下一首歌曲');
+        return;
+      }
+
+      const nextSong = getSongById(nextSongId);
+      if (nextSong) {
+        await playSong(nextSong, true);
       } else {
-        let newIndex = currentPlaylistIdx + 1;
-        if (newIndex >= currentActivePlaylist.length) newIndex = 0;
-        playSong(currentActivePlaylist[newIndex], true, newIndex);
+        showError('无法找到下一首歌曲');
       }
     });
 
@@ -3680,35 +4386,31 @@
       }
     });
 
-    audioPlayer.addEventListener('ended', () => {
+    audioPlayer.addEventListener('ended', async () => {
       isPlaying = false;
       updatePageTitle();
       playButton.innerHTML = '<i class="fas fa-play"></i>';
-      if (currentActivePlaylist.length === 0) return;
+      
+      if (!currentPlayingId || playlist.length === 0) return;
 
       if (currentPlayMode === 'repeat') {
-        // 单曲循环：重置当前时间并重新播放
-        try {
-          audioPlayer.currentTime = 0;
-          audioPlayer.play()
-            .then(() => {
-              playButton.innerHTML = '<i class="fas fa-pause"></i>';
-              isPlaying = true;
-              updatePageTitle();
-            })
-            .catch(e => {
-              console.error('单曲循环播放失败:', e);
-            });
-        } catch (err) {
-          console.error('设置当前时间失败:', err);
+        // 单曲循环：重新播放当前歌曲
+        const currentSong = getSongById(currentPlayingId);
+        if (currentSong) {
+          setTimeout(() => {
+            playSong(currentSong, true);
+          }, 500);
         }
-      } else if (currentPlayMode === 'shuffle') {
-        const randomIndex = Math.floor(Math.random() * currentActivePlaylist.length);
-        playSong(currentActivePlaylist[randomIndex], true, randomIndex);
       } else {
-        let newIndex = currentPlaylistIdx + 1;
-        if (newIndex < currentActivePlaylist.length) {
-          playSong(currentActivePlaylist[newIndex], true, newIndex);
+        // 获取下一首歌曲
+        const nextSongId = getNextSongId(currentPlayingId);
+        if (nextSongId) {
+          const nextSong = getSongById(nextSongId);
+          if (nextSong) {
+            setTimeout(() => {
+              playSong(nextSong, true);
+            }, 500);
+          }
         }
       }
     });
@@ -3745,6 +4447,13 @@
         tab.classList.add('active');
         currentTab = tab.dataset.tab;
         currentActivePlaylist = getActivePlaylistArray();
+        
+        // 重置搜索和排序状态
+        sidebarSearchQuery = '';
+        sidebarSortMode = 'none';
+        document.getElementById('sidebarSearchInput').value = '';
+        updateSortButtons();
+        
         renderPlaylist();
       });
     });
@@ -4130,12 +4839,68 @@
     audioPlayer.addEventListener('pause', stopWordLyricLoop);
     audioPlayer.addEventListener('ended', stopWordLyricLoop);
 
+    function updatePlaylistOrder() {
+      playlistOrder = playlist.map(item => item.id);
+    }
+
+    function getNextSongId(currentId) {
+      if (!currentId || playlistOrder.length === 0) return null;
+      
+      const currentIndex = playlistOrder.indexOf(currentId);
+      if (currentIndex === -1) return null;
+      
+      if (currentPlayMode === 'repeat') {
+        // 单曲循环，返回当前歌曲ID
+        return currentId;
+      } else if (currentPlayMode === 'shuffle') {
+        // 随机播放，随机选择一首
+        const randomIndex = Math.floor(Math.random() * playlistOrder.length);
+        return playlistOrder[randomIndex];
+      } else {
+        // 正常播放，播放下一首
+        let nextIndex = currentIndex + 1;
+        if (nextIndex >= playlistOrder.length) {
+          nextIndex = 0; // 循环到第一首
+        }
+        return playlistOrder[nextIndex];
+      }
+    }
+
+    function getPrevSongId(currentId) {
+      if (!currentId || playlistOrder.length === 0) return null;
+      
+      const currentIndex = playlistOrder.indexOf(currentId);
+      if (currentIndex === -1) return null;
+      
+      if (currentPlayMode === 'shuffle') {
+        // 随机播放，随机选择一首
+        const randomIndex = Math.floor(Math.random() * playlistOrder.length);
+        return playlistOrder[randomIndex];
+      } else {
+        // 正常播放，播放上一首
+        let prevIndex = currentIndex - 1;
+        if (prevIndex < 0) {
+          prevIndex = playlistOrder.length - 1; // 循环到最后一首
+        }
+        return playlistOrder[prevIndex];
+      }
+    }
+
+    function getSongById(id) {
+      return playlist.find(item => item.id === id);
+    }
+
+    function getPlaylistIndexById(id) {
+      return playlist.findIndex(item => item.id === id);
+    }
+
     // ===== 初始化 =====
     function init() {
       initTheme();
       loadTranslationSettings();
       initPlaylist();
       updateDynamicIslandWelcome();
+      updatePlaylistOrder();
       
       // 移动端优化
       if (isMobile()) {
@@ -4145,6 +4910,9 @@
       // 初始计算偏移量
       LYRICS_OFFSET = calculateLyricsOffset();
       
+      // 初始化拖拽功能
+      initDragAndDrop();
+      
       // 监听窗口大小变化
       window.addEventListener('resize', debounce(() => {
         LYRICS_OFFSET = calculateLyricsOffset();
@@ -4153,6 +4921,64 @@
           UpdateLyricsLayout(lastLyric, amLyricsData, 0);
         }
       }, 200));
+    }
+      
+      // 初始化侧边栏搜索和排序控件
+      initSidebarControls();
+    function initSidebarControls() {
+      const sidebarSearchInput = document.getElementById('sidebarSearchInput');
+      const sidebarSearchClear = document.getElementById('sidebarSearchClear');
+      const sortAZBtn = document.getElementById('sortAZBtn');
+      const sortZABtn = document.getElementById('sortZABtn');
+      const customOrderBtn = document.getElementById('customOrderBtn');
+      
+      // 搜索框事件
+      sidebarSearchInput.addEventListener('input', debounce((e) => {
+        sidebarSearchQuery = e.target.value.trim().toLowerCase();
+        renderPlaylist();
+      }, 300));
+      
+      // 清除搜索
+      sidebarSearchClear.addEventListener('click', () => {
+        sidebarSearchInput.value = '';
+        sidebarSearchQuery = '';
+        renderPlaylist();
+      });
+      
+      // 排序按钮事件
+      sortAZBtn.addEventListener('click', () => {
+        sidebarSortMode = sidebarSortMode === 'az' ? 'none' : 'az';
+        updateSortButtons();
+        renderPlaylist();
+      });
+      
+      sortZABtn.addEventListener('click', () => {
+        sidebarSortMode = sidebarSortMode === 'za' ? 'none' : 'za';
+        updateSortButtons();
+        renderPlaylist();
+      });
+      
+      customOrderBtn.addEventListener('click', () => {
+        if (sidebarSortMode === 'custom') {
+          sidebarSortMode = 'none';
+        } else {
+          sidebarSortMode = 'custom';
+          showError('拖拽项目可以调整顺序', 2000);
+        }
+        updateSortButtons();
+        renderPlaylist();
+      });
+    }
+
+    // 更新排序按钮状态
+    function updateSortButtons() {
+      const sortAZBtn = document.getElementById('sortAZBtn');
+      const sortZABtn = document.getElementById('sortZABtn');
+      const customOrderBtn = document.getElementById('customOrderBtn');
+      
+      sortAZBtn.classList.toggle('active', sidebarSortMode === 'az');
+      sortZABtn.classList.toggle('active', sidebarSortMode === 'za');
+      customOrderBtn.classList.toggle('active', sidebarSortMode === 'custom');
     }
     init();
   </script>
