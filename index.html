@@ -2577,7 +2577,7 @@
       
       playlist.splice(index, 1);
       savePlaylist();
-      updatePlaylistOrder(); // 更新顺序
+      updatePlaylistOrder(); // 更新播放顺序
       
       // 如果删除了当前播放歌曲，尝试播放下一首
       if (isCurrentPlaying && playlist.length > 0) {
@@ -2616,12 +2616,22 @@
           const nameB = (b.name || '').toLowerCase();
           return nameA.localeCompare(nameB);
         });
+        
+        // 如果是播放列表，更新播放顺序
+        if (currentTab === 'playlist') {
+          playlistOrder = items.map(item => item.id);
+        }
       } else if (sidebarSortMode === 'za') {
         items.sort((a, b) => {
           const nameA = (a.name || '').toLowerCase();
           const nameB = (b.name || '').toLowerCase();
           return nameB.localeCompare(nameA);
         });
+        
+        // 如果是播放列表，更新播放顺序
+        if (currentTab === 'playlist') {
+          playlistOrder = items.map(item => item.id);
+        }
       } else if (sidebarSortMode === 'custom') {
         // 应用自定义顺序
         const listKey = currentTab;
@@ -2637,6 +2647,17 @@
             return orderA - orderB;
           });
         }
+        
+        // 如果是播放列表，更新播放顺序
+        if (currentTab === 'playlist') {
+          playlistOrder = items.map(item => item.id);
+        }
+      }
+
+      // 查找当前播放项在实际列表中的索引（用于高亮显示）
+      let currentItemId = null;
+      if (currentTab === 'playlist' && currentPlaylistIdx >= 0 && currentPlaylistIdx < playlist.length) {
+        currentItemId = playlist[currentPlaylistIdx]?.id;
       }
 
       // 渲染项目
@@ -2673,7 +2694,7 @@
         d.dataset.id = item.id;
         d.dataset.displayIndex = displayIndex;
         
-        // 高亮当前播放项 - 基于歌曲ID
+        // 高亮当前播放项
         if (currentPlayingId && item.id === currentPlayingId && currentTab === 'playlist') {
           d.classList.add('active');
         }
@@ -4454,6 +4475,11 @@
         document.getElementById('sidebarSearchInput').value = '';
         updateSortButtons();
         
+        // 如果是播放列表，更新播放顺序
+        if (currentTab === 'playlist') {
+          updatePlaylistOrder();
+        }
+        
         renderPlaylist();
       });
     });
@@ -4949,12 +4975,24 @@
       sortAZBtn.addEventListener('click', () => {
         sidebarSortMode = sidebarSortMode === 'az' ? 'none' : 'az';
         updateSortButtons();
+        
+        // 如果是播放列表标签，更新播放列表顺序
+        if (currentTab === 'playlist') {
+          updatePlaylistOrderFromDisplay();
+        }
+        
         renderPlaylist();
       });
       
       sortZABtn.addEventListener('click', () => {
         sidebarSortMode = sidebarSortMode === 'za' ? 'none' : 'za';
         updateSortButtons();
+        
+        // 如果是播放列表标签，更新播放列表顺序
+        if (currentTab === 'playlist') {
+          updatePlaylistOrderFromDisplay();
+        }
+        
         renderPlaylist();
       });
       
@@ -4966,8 +5004,65 @@
           showError('拖拽项目可以调整顺序', 2000);
         }
         updateSortButtons();
+        
+        // 如果是播放列表标签，更新播放列表顺序
+        if (currentTab === 'playlist') {
+          updatePlaylistOrderFromDisplay();
+        }
+        
         renderPlaylist();
       });
+    }
+
+    function updatePlaylistOrderFromDisplay() {
+      if (currentTab !== 'playlist') return;
+      
+      // 获取当前显示的项目（已过滤和排序的）
+      let displayedItems = playlist;
+      
+      // 应用搜索过滤
+      if (sidebarSearchQuery) {
+        displayedItems = displayedItems.filter(item => {
+          const name = (item.name || '').toLowerCase();
+          const artist = Array.isArray(item.artist) ? 
+            item.artist.join(' ').toLowerCase() : 
+            (item.artist || '').toLowerCase();
+          return name.includes(sidebarSearchQuery) || 
+                artist.includes(sidebarSearchQuery);
+        });
+      }
+      
+      // 应用排序
+      if (sidebarSortMode === 'az') {
+        displayedItems.sort((a, b) => {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+      } else if (sidebarSortMode === 'za') {
+        displayedItems.sort((a, b) => {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameB.localeCompare(nameA);
+        });
+      } else if (sidebarSortMode === 'custom' && customOrder.playlist) {
+        // 使用自定义顺序
+        const orderMap = {};
+        customOrder.playlist.forEach((id, index) => {
+          orderMap[id] = index;
+        });
+        
+        displayedItems.sort((a, b) => {
+          const orderA = orderMap[a.id] !== undefined ? orderMap[a.id] : Infinity;
+          const orderB = orderMap[b.id] !== undefined ? orderMap[b.id] : Infinity;
+          return orderA - orderB;
+        });
+      }
+      
+      // 更新播放列表顺序为当前显示顺序
+      playlistOrder = displayedItems.map(item => item.id);
+      
+      console.log('播放列表顺序已更新:', playlistOrder);
     }
 
     // 更新排序按钮状态
