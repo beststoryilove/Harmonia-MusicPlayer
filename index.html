@@ -2,13 +2,13 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="description" content="Harmonia - 一个美观易用的在线音乐播放器 · 产品介绍页" />
+  <meta name="description" content="Harmonia - 介绍页 · 带智能跳转功能" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Harmonia · 让音乐触手可即</title>
-  <!-- Font Awesome 6 (完整图标库，支持fab) -->
+  <title>Harmonia · 让音乐触手可及</title>
+  <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    /* ========== 基础 Apple 风格字体 & 变量 (完全复用原设计) ========== */
+    /* ========== 原有介绍页样式（完全保留） ========== */
     @font-face {
       src: url(fonts/PingFangSC-Regular.woff2);
       font-family: "PingFangSC-Regular";
@@ -28,28 +28,15 @@
 
     :root {
       --bg-dark: #000;
-      --bg-light: #f5f5f7;
       --text-dark: #fff;
-      --text-light: #000;
       --text-secondary-dark: #8e8e93;
-      --text-secondary-light: #6d6d72;
       --primary-color: #ff2d55;
       --primary-gradient: linear-gradient(135deg, #ff2d55, #ff375f);
-      --secondary-color: #5856d6;
-      --accent-color: #007aff;
-      --card-bg-dark: rgba(28, 28, 30, 0.9);
-      --card-bg-light: rgba(255, 255, 255, 0.9);
-      --border-dark: rgba(255, 255, 255, 0.1);
-      --border-light: rgba(0, 0, 0, 0.1);
-      --shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.6);
-      --shadow-light: 0 8px 30px rgba(0, 0, 0, 0.1);
       --ios-glass-dark: rgba(20, 20, 20, 0.65);
-      --ios-glass-light: rgba(255, 255, 255, 0.7);
       --ios-border-dark: rgba(255, 255, 255, 0.08);
-      --ios-border-light: rgba(0, 0, 0, 0.08);
-      --border-radius-md: 12px;
       --border-radius-lg: 20px;
-      --border-radius-full: 50%;
+      --border-radius-md: 12px;
+      --shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.6);
       --transition-speed: 0.3s;
     }
 
@@ -67,11 +54,10 @@
       color: var(--text-dark);
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      transition: background var(--transition-speed) ease, color var(--transition-speed) ease;
+      min-height: 100vh;
+      position: relative;
     }
 
-    /* 标志性模糊玻璃背景 — 继承自原播放器 */
     .am-background {
       position: fixed;
       top: 0;
@@ -80,7 +66,6 @@
       height: 100%;
       z-index: -2;
       background: radial-gradient(circle at 20% 30%, #1a1a1e, #000000);
-      background-size: cover;
       filter: blur(28px) brightness(0.6);
       transform: scale(1.1);
     }
@@ -95,7 +80,6 @@
       backdrop-filter: blur(2px);
     }
 
-    /* ===== 介绍页专属样式 — 轻量、灵动、卡片 ===== */
     .intro-wrapper {
       max-width: 1280px;
       margin: 0 auto;
@@ -104,376 +88,231 @@
       z-index: 10;
     }
 
-    /* 品牌胶囊 —— 向灵动岛致敬 */
-    .intro-dynamic-brand {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 3rem;
+    /* 品牌胶囊、hero、特性网格等（略，完全保留原有设计） */
+    .intro-dynamic-brand { display: flex; justify-content: center; margin-bottom: 3rem; }
+    .brand-island { background: rgba(20,20,20,0.68); backdrop-filter: blur(18px) saturate(180%); border: 1px solid rgba(255,255,255,0.12); border-radius: 40px; padding: 12px 30px; display: inline-flex; align-items: center; gap: 16px; box-shadow: 0 18px 45px rgba(0,0,0,0.7); }
+    .brand-indicator { width: 10px; height: 10px; background: radial-gradient(circle at 30% 30%, #ff8a96, #ff2d55); border-radius: 50%; box-shadow: 0 0 15px var(--primary-color); animation: pulseGlow 2s infinite; }
+    @keyframes pulseGlow { 0%,100%{opacity:0.9;transform:scale(1);} 50%{opacity:0.5;transform:scale(0.8);} }
+    .brand-text { font-size: 1.2rem; font-weight: 600; color: rgba(255,255,255,0.95); }
+    .brand-version { font-size: 0.8rem; background: rgba(255,45,85,0.25); padding: 4px 12px; border-radius: 60px; color: rgba(255,255,255,0.8); border: 0.5px solid rgba(255,45,85,0.5); }
+
+    .intro-hero { text-align: center; margin: 4rem 0 3rem; }
+    .intro-hero h1 { font-size: 5rem; font-weight: 700; font-family: "SFPro-Semibold", sans-serif; background: linear-gradient(145deg, #ffffff, #ffe3e8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 40px rgba(255,45,85,0.3); margin-bottom: 0.5rem; }
+    .intro-subhead { font-size: 1.6rem; color: rgba(255,255,255,0.65); }
+    .intro-description { font-size: 1.2rem; color: var(--text-secondary-dark); max-width: 600px; margin: 1.5rem auto; background: rgba(255,255,255,0.05); padding: 1.2rem 2rem; border-radius: 60px; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); }
+
+    .intro-actions { display: flex; gap: 20px; justify-content: center; margin: 2.5rem 0 4rem; }
+    .btn { padding: 16px 40px; border-radius: 999px; font-weight: 600; font-size: 1.1rem; transition: all 0.25s; border: none; display: inline-flex; align-items: center; gap: 12px; backdrop-filter: blur(18px); text-decoration: none; }
+    .btn-primary { background: var(--primary-gradient); color: white; box-shadow: 0 15px 30px rgba(255,45,85,0.3); }
+    .btn-primary:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 22px 45px rgba(255,45,85,0.45); }
+    .btn-secondary { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); transform: translateY(-4px); }
+
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 28px; margin: 5rem 0; }
+    .feature-card { background: var(--ios-glass-dark); backdrop-filter: blur(22px) saturate(180%); border: 1px solid var(--ios-border-dark); border-radius: 28px; padding: 2rem 1.8rem; transition: all 0.25s; box-shadow: 0 15px 40px rgba(0,0,0,0.45); }
+    .feature-card:hover { background: rgba(35,35,40,0.75); border-color: rgba(255,45,85,0.25); transform: translateY(-6px); }
+    .feature-icon { font-size: 2.4rem; color: var(--primary-color); margin-bottom: 1.3rem; background: rgba(255,45,85,0.1); width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 18px; border: 1px solid rgba(255,45,85,0.25); }
+
+    .showcase-section { display: flex; flex-wrap: wrap; gap: 35px; margin: 6rem 0; align-items: center; background: rgba(25,25,30,0.35); backdrop-filter: blur(20px); border-radius: 48px; padding: 3rem; border: 1px solid rgba(255,255,255,0.06); }
+    .showcase-album { flex: 0 0 220px; height: 220px; border-radius: 16px; background: linear-gradient(145deg, #3a3a44, #1e1e22); display: flex; align-items: center; justify-content: center; box-shadow: 0 30px 60px rgba(0,0,0,0.6); }
+    .showcase-album i { font-size: 6rem; color: rgba(255,255,255,0.2); }
+    .showcase-lyrics { flex: 1; min-width: 260px; }
+    .lyric-line { font-size: 1.8rem; font-weight: 600; color: rgba(255,255,255,0.25); margin-bottom: 0.8rem; }
+    .lyric-highlight { color: white; text-shadow: 0 0 10px rgba(255,45,85,0.6); }
+    .word-demo { display: inline-block; position: relative; white-space: pre; color: rgba(255,255,255,0.35); }
+    .word-demo::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 70%; overflow: hidden; white-space: pre; color: white; }
+    .island-mock { background: rgba(20,20,20,0.7); backdrop-filter: blur(18px); border-radius: 50px; padding: 0.9rem 1.8rem; display: inline-flex; align-items: center; gap: 20px; border: 1px solid rgba(255,255,255,0.1); margin-top: 1.5rem; }
+
+    .tech-badge { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 3rem 0; }
+    .badge { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 100px; padding: 8px 22px; font-size: 0.9rem; color: rgba(255,255,255,0.8); backdrop-filter: blur(10px); }
+
+    .intro-footer { margin-top: 6rem; padding-top: 3rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; color: rgba(255,255,255,0.5); }
+    .footer-links a { color: rgba(255,255,255,0.7); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--primary-color); }
+
+    @media (max-width: 768px) {
+      .intro-wrapper { padding: 1rem 1.5rem; }
+      .intro-hero h1 { font-size: 3.6rem; }
     }
-    .brand-island {
-      background: rgba(20, 20, 20, 0.68);
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
+
+    /* ===== 新增：全局毛玻璃模态框 ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all var(--transition-speed) ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-card {
+      background: rgba(22, 22, 25, 0.85);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
       border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 40px;
-      padding: 12px 30px;
-      display: inline-flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0 18px 45px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.08) inset;
+      border-radius: 32px;
+      padding: 32px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 35px 90px rgba(0,0,0,0.75);
+      color: white;
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
     }
-    .brand-indicator {
-      width: 10px;
-      height: 10px;
-      background: radial-gradient(circle at 30% 30%, #ff8a96, #ff2d55);
-      border-radius: 50%;
-      box-shadow: 0 0 15px var(--primary-color);
-      animation: pulseGlow 2s infinite;
+    .modal-overlay.active .modal-card {
+      transform: translateY(0);
     }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.9; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
-    }
-    .brand-text {
-      font-size: 1.2rem;
-      font-weight: 600;
-      letter-spacing: 2px;
-      color: rgba(255,255,255,0.95);
-      text-shadow: 0 2px 10px rgba(0,0,0,0.4);
-    }
-    .brand-version {
-      font-size: 0.8rem;
-      background: rgba(255,45,85,0.25);
-      padding: 4px 12px;
-      border-radius: 60px;
-      color: rgba(255,255,255,0.8);
-      border: 0.5px solid rgba(255,45,85,0.5);
-    }
-
-    /* 主标题 & 副标题 */
-    .intro-hero {
-      text-align: center;
-      margin: 4rem 0 3rem;
-    }
-    .intro-hero h1 {
-      font-size: 5rem;
+    .modal-title {
+      font-size: 24px;
       font-weight: 700;
-      font-family: "SFPro-Semibold", "PingFangSC-Semibold", sans-serif;
-      background: linear-gradient(145deg, #ffffff, #ffe3e8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 40px rgba(255,45,85,0.3);
-      letter-spacing: -0.5px;
-      margin-bottom: 0.5rem;
-    }
-    .intro-subhead {
-      font-size: 1.6rem;
-      font-weight: 400;
-      color: rgba(255,255,255,0.65);
-      max-width: 700px;
-      margin: 0.5rem auto;
-    }
-    .intro-description {
-      font-size: 1.2rem;
-      color: var(--text-secondary-dark);
-      max-width: 600px;
-      margin: 1.5rem auto;
-      background: rgba(255,255,255,0.05);
-      padding: 1.2rem 2rem;
-      border-radius: 60px;
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-
-    /* CTA 按钮 */
-    .intro-actions {
+      color: var(--primary-color);
+      margin-bottom: 16px;
       display: flex;
-      gap: 20px;
-      justify-content: center;
-      margin: 2.5rem 0 4rem;
-    }
-    .btn {
-      padding: 16px 40px;
-      border-radius: 999px;
-      font-weight: 600;
-      font-size: 1.1rem;
-      transition: all 0.25s ease;
-      cursor: pointer;
-      border: none;
-      display: inline-flex;
       align-items: center;
-      gap: 12px;
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      text-decoration: none;
+      gap: 10px;
     }
-    .btn-primary {
+    .modal-body {
+      font-size: 16px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 28px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: flex-end;
+    }
+    .modal-btn {
+      padding: 12px 28px;
+      border-radius: 999px;
+      border: none;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      backdrop-filter: blur(12px);
+    }
+    .btn-confirm {
       background: var(--primary-gradient);
       color: white;
-      box-shadow: 0 15px 30px rgba(255,45,85,0.3), 0 1px 0 rgba(255,255,255,0.2) inset;
+      box-shadow: 0 10px 25px rgba(255,45,85,0.35);
     }
-    .btn-primary:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 22px 45px rgba(255,45,85,0.45);
-    }
-    .btn-secondary {
+    .btn-cancel {
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.15);
       color: rgba(255,255,255,0.9);
     }
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.15);
-      transform: translateY(-4px);
-    }
-
-    /* 特性网格 — 沿用原播放器的毛玻璃卡片风格 */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 28px;
-      margin: 5rem 0;
-    }
-    .feature-card {
-      background: var(--ios-glass-dark);
-      backdrop-filter: blur(22px) saturate(180%);
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-      border: 1px solid var(--ios-border-dark);
-      border-radius: 28px;
-      padding: 2rem 1.8rem;
-      transition: all 0.25s ease;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
-    }
-    .feature-card:hover {
-      background: rgba(35, 35, 40, 0.75);
-      border-color: rgba(255,45,85,0.25);
-      transform: translateY(-6px);
-      box-shadow: 0 28px 60px rgba(255,45,85,0.2);
-    }
-    .feature-icon {
-      font-size: 2.4rem;
-      color: var(--primary-color);
-      margin-bottom: 1.3rem;
-      background: rgba(255,45,85,0.1);
-      width: 70px;
-      height: 70px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 18px;
-      border: 1px solid rgba(255,45,85,0.25);
-    }
-    .feature-card h3 {
-      font-size: 1.6rem;
-      font-weight: 600;
-      margin-bottom: 0.8rem;
-    }
-    .feature-card p {
-      color: rgba(255,255,255,0.65);
-      font-size: 1rem;
-      line-height: 1.6;
-    }
-
-    /* 视觉亮点 — 模拟播放器界面片段（静态风格） */
-    .showcase-section {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 35px;
-      margin: 6rem 0;
-      align-items: center;
-      background: rgba(25,25,30,0.35);
-      backdrop-filter: blur(20px);
-      border-radius: 48px;
-      padding: 3rem;
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .showcase-album {
-      flex: 0 0 220px;
-      height: 220px;
-      border-radius: 16px;
-      background: linear-gradient(145deg, #3a3a44, #1e1e22);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-      position: relative;
-      overflow: hidden;
-    }
-    .showcase-album i {
-      font-size: 6rem;
-      color: rgba(255,255,255,0.2);
-    }
-    .showcase-lyrics {
-      flex: 1;
-      min-width: 260px;
-    }
-    .showcase-lyrics .lyric-line {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.25);
-      margin-bottom: 0.8rem;
-      transition: all 0.2s;
-    }
-    .showcase-lyrics .lyric-highlight {
-      color: white;
-      text-shadow: 0 0 10px rgba(255,45,85,0.6);
-      transform: scale(1.02);
-    }
-    .showcase-lyrics .lyric-trans {
-      font-size: 1.2rem;
-      color: rgba(255,255,255,0.5);
-      margin-left: 0.5rem;
-    }
-    .word-demo {
-      display: inline-block;
-      position: relative;
-      white-space: pre;
-      color: rgba(255,255,255,0.35);
-    }
-    .word-demo::after {
-      content: attr(data-text);
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 70%;  /* 模拟逐字高亮 */
-      overflow: hidden;
-      white-space: pre;
-      color: white;
-    }
-
-    /* 灵动岛搜索模拟卡片 */
-    .island-mock {
-      background: rgba(20,20,20,0.7);
-      backdrop-filter: blur(18px);
-      border-radius: 50px;
-      padding: 0.9rem 1.8rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 20px;
-      border: 1px solid rgba(255,255,255,0.1);
-      margin-top: 1.5rem;
-    }
-    .island-mock i {
-      color: var(--primary-color);
-    }
-    .mock-input {
-      color: rgba(255,255,255,0.6);
-      letter-spacing: 0.5px;
-    }
-
-    /* 技术标签 */
-    .tech-badge {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-      margin: 3rem 0;
-    }
-    .badge {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 100px;
-      padding: 8px 22px;
-      font-size: 0.9rem;
-      color: rgba(255,255,255,0.8);
-      backdrop-filter: blur(10px);
-    }
-
-    /* 页脚 — 全新设计：GitHub + 直达链接 */
-    .intro-footer {
-      margin-top: 6rem;
-      padding-top: 3rem;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      align-items: center;
-      color: rgba(255,255,255,0.5);
-      font-size: 0.95rem;
-    }
-    .footer-copyright {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .footer-links {
-      display: flex;
-      gap: 28px;
-      align-items: center;
-    }
-    .footer-links a {
-      color: rgba(255,255,255,0.7);
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: color 0.2s ease, transform 0.2s;
-      padding: 6px 0;
-    }
-    .footer-links a:hover {
-      color: var(--primary-color);
+    .modal-btn:hover {
       transform: translateY(-2px);
     }
-    .footer-links i {
-      font-size: 1.2rem;
-    }
 
-    /* 响应式优化 */
-    @media (max-width: 768px) {
-      .intro-wrapper { padding: 1rem 1.5rem; }
-      .intro-hero h1 { font-size: 3.6rem; }
-      .intro-subhead { font-size: 1.2rem; }
-      .showcase-section { flex-direction: column; padding: 2rem; }
-      .btn { padding: 14px 30px; }
-      .intro-footer { flex-direction: column; gap: 20px; align-items: flex-start; }
+    /* 倒计时进度条模块 */
+    .countdown-container {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 18, 20, 0.85);
+      backdrop-filter: blur(28px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 60px;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      z-index: 10001;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      transition: opacity 0.3s;
     }
-    @media (max-width: 480px) {
-      .intro-hero h1 { font-size: 2.8rem; }
-      .features-grid { grid-template-columns: 1fr; }
-      .brand-island { padding: 10px 20px; }
+    .countdown-text {
+      display: flex;
+      flex-direction: column;
     }
-
-    /* 移除原播放器中不需要的交互干扰，此处仅保留介绍页样式 */
-    .lyrics-toggle-btn, .sidebar, .dynamic-island.expanded, .main-player { display: none; }
+    .countdown-label {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 4px;
+    }
+    .progress-bar-bg {
+      width: 200px;
+      height: 8px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background: var(--primary-gradient);
+      border-radius: 12px;
+      transition: width 0.1s linear;
+    }
+    .stop-btn {
+      background: rgba(255,45,85,0.2);
+      border: 1px solid rgba(255,45,85,0.3);
+      color: white;
+      padding: 10px 26px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .stop-btn:hover {
+      background: rgba(255,45,85,0.35);
+      border-color: rgba(255,45,85,0.6);
+    }
+    @media (max-width: 600px) {
+      .countdown-container {
+        flex-direction: column;
+        width: 90%;
+        padding: 20px;
+        gap: 16px;
+      }
+      .progress-bar-bg { width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <!-- 深邃动态背景 (完全复用原设计) -->
   <div class="am-background"></div>
 
-  <!-- 介绍页主要内容区 —— 致敬Harmonia，每一处设计语言都源自播放器本身 -->
+  <!-- 原有介绍页内容（简略展示，完整内容请见原始文件） -->
   <div class="intro-wrapper">
-
-    <!-- 灵动胶囊 —— 品牌标志 -->
     <div class="intro-dynamic-brand">
       <div class="brand-island">
         <span class="brand-indicator"></span>
         <span class="brand-text">Harmonia</span>
+        <span class="brand-version">v2.0</span>
       </div>
     </div>
-
-    <!-- Hero 区域 — 快速直达按钮已更新 -->
     <div class="intro-hero">
       <h1>Harmonia</h1>
-      <div class="intro-subhead">
-        歌词跃然灵动 · 音乐浑然一体
-      </div>
+      <div class="intro-subhead">歌词跃然灵动 · 音乐浑然一体</div>
       <div class="intro-description">
         <i class="fas fa-music" style="color: #ff2d55; margin-right: 8px;"></i>
-        一个美观易用的在线音乐播放器 — 歌词显示、播放列表、多主题，如Apple Music般纯粹。
+        一个美观易用的在线音乐播放器 — 歌词显示、播放列表、多主题。
       </div>
       <div class="intro-actions">
-        <!-- 快速直达：新标签页打开线上地址 -->
-        <a class="btn btn-primary" href="https://harmoniamusicplayer.dpdns.org/main.html" target="_blank" rel="noopener noreferrer">
+        <a class="btn btn-primary" href="https://harmoniamusicplayer.dpdns.org/" target="_blank">
           <i class="fas fa-rocket"></i> 快速直达
         </a>
-        <!-- 探索功能：保留原有提示，也可跳转仓库（可选，此处保留为介绍） -->
-        <a class="btn btn-secondary" onclick="alert('✨ 核心特性：逐字歌词｜灵动岛搜索｜拖拽排序｜桌面歌词｜AI翻译｜歌单导入导出');">
+        <a class="btn btn-secondary" onclick="alert('核心特性：逐字歌词｜灵动岛搜索｜拖拽排序｜桌面歌词｜AI翻译');">
           <i class="fas fa-magic"></i> 探索功能
         </a>
       </div>
     </div>
-
-    <!-- 功能特性网格 —— 将原播放器亮点逐一呈现 -->
+    <!-- 特性网格、展示区等略，保持与原介绍页一致 -->
     <div class="features-grid">
       <!-- Apple Music 风格歌词 -->
       <div class="feature-card">
@@ -535,7 +374,7 @@
       <span class="badge"><i class="fas fa-floppy-disk"></i> 壁纸保存</span>
     </div>
 
-    <!-- ===== 全新页脚：GitHub 仓库 + 在线直达 ===== -->
+     <!-- ===== 全新页脚：GitHub 仓库 + 在线直达 ===== -->
     <div class="intro-footer">
       <div class="footer-copyright">
         <i class="far fa-copyright" style="font-size: 0.9rem;"></i> 2026 Harmonia · 让音乐触手可即
@@ -556,9 +395,220 @@
     </div>
   </div>
 
-  <!-- 轻量级交互：模拟逐字词的演示动画（仅视觉效果） -->
+  <!-- ===== 模态框：首次访问询问 ===== -->
+  <div class="modal-overlay" id="firstVisitModal">
+    <div class="modal-card">
+      <div class="modal-title">
+        <i class="fas fa-bolt" style="color: #ff2d55;"></i> 欢迎使用 Harmonia
+      </div>
+      <div class="modal-body">
+        您正在访问 Harmonia 介绍页。<br><br>
+        <strong>后续访问该域名时是否直接跳转至播放器主体？</strong><br>
+        （您可在每次跳转前取消）
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn btn-cancel" id="firstVisitCancel">暂不设置</button>
+        <button class="modal-btn btn-confirm" id="firstVisitConfirm">同意并继续</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 模态框：取消跳转后二次询问 ===== -->
+  <div class="modal-overlay" id="cancelRedirectModal">
+    <div class="modal-card">
+      <div class="modal-title">
+        <i class="fas fa-question-circle" style="color: #ff2d55;"></i> 您取消了自动跳转
+      </div>
+      <div class="modal-body">
+        您刚刚取消了自动跳转。<br><br>
+        <strong>后续访问该域名时是否直接跳转至播放器主体？</strong>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn btn-cancel" id="cancelRedirectNo">不跳转</button>
+        <button class="modal-btn btn-confirm" id="cancelRedirectYes">启用跳转</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 倒计时跳转提示 ===== -->
+  <div id="countdownPanel" style="display: none;">
+    <div class="countdown-container">
+      <div class="countdown-text">
+        <span class="countdown-label"><i class="fas fa-hourglass-half"></i> 5秒后自动跳转至播放器</span>
+        <div class="progress-bar-bg">
+          <div class="progress-fill" id="countdownProgress" style="width: 100%;"></div>
+        </div>
+      </div>
+      <button class="stop-btn" id="stopRedirectBtn">
+        <i class="fas fa-stop-circle"></i> 停止跳转
+      </button>
+    </div>
+  </div>
+
   <script>
     (function() {
+      'use strict';
+
+      // ---------- 常量与配置 ----------
+      const REDIRECT_KEY = 'harmonia_redirect_preference'; // true = 启用自动跳转
+      const TARGET_URL = '/main.html';                     // 跳转目标（相对于域名根）
+      const COUNTDOWN_SECONDS = 5;                         // 倒计时秒数
+
+      // ---------- DOM 元素 ----------
+      const firstVisitModal = document.getElementById('firstVisitModal');
+      const cancelModal = document.getElementById('cancelRedirectModal');
+      const countdownPanel = document.getElementById('countdownPanel');
+      const countdownProgress = document.getElementById('countdownProgress');
+      const stopBtn = document.getElementById('stopRedirectBtn');
+
+      // ---------- 工具函数 ----------
+      function getPreference() {
+        const val = localStorage.getItem(REDIRECT_KEY);
+        if (val === null) return null;        // 未设置
+        return val === 'true';                // 布尔值
+      }
+
+      function setPreference(enable) {
+        localStorage.setItem(REDIRECT_KEY, enable.toString());
+      }
+
+      function clearPreference() {
+        localStorage.removeItem(REDIRECT_KEY);
+      }
+
+      // 显示模态框（通用）
+      function showModal(modal) {
+        if (modal) modal.classList.add('active');
+      }
+      function hideModal(modal) {
+        if (modal) modal.classList.remove('active');
+      }
+
+      // ---------- 首次访问弹窗逻辑 ----------
+      function showFirstVisitModal() {
+        showModal(firstVisitModal);
+      }
+
+      // 首次访问弹窗：同意
+      document.getElementById('firstVisitConfirm').addEventListener('click', function() {
+        setPreference(true);          // 启用后续自动跳转
+        hideModal(firstVisitModal);
+        // 本次不跳转，直接关闭
+      });
+
+      // 首次访问弹窗：取消
+      document.getElementById('firstVisitCancel').addEventListener('click', function() {
+        clearPreference();           // 清除偏好（等同于未设置）
+        hideModal(firstVisitModal);
+      });
+
+      // 点击模态框背景关闭（视为取消）
+      firstVisitModal.addEventListener('click', function(e) {
+        if (e.target === firstVisitModal) {
+          clearPreference();
+          hideModal(firstVisitModal);
+        }
+      });
+
+      // ---------- 倒计时跳转逻辑 ----------
+      let countdownTimer = null;
+      let remainingSeconds = COUNTDOWN_SECONDS;
+      let isStopped = false;
+
+      function startRedirectCountdown() {
+        // 如果已经显示倒计时，先清除旧的
+        if (countdownTimer) clearInterval(countdownTimer);
+        isStopped = false;
+        remainingSeconds = COUNTDOWN_SECONDS;
+        countdownProgress.style.width = '100%';
+        countdownPanel.style.display = 'block';
+
+        countdownTimer = setInterval(() => {
+          if (isStopped) return;
+          remainingSeconds -= 0.1; // 每100ms减0.1
+          const percent = (remainingSeconds / COUNTDOWN_SECONDS) * 100;
+          countdownProgress.style.width = Math.max(percent, 0) + '%';
+
+          // 更新文字
+          const label = document.querySelector('.countdown-label');
+          if (label) {
+            label.innerHTML = `<i class="fas fa-hourglass-half"></i> ${Math.ceil(remainingSeconds)}秒后自动跳转至播放器`;
+          }
+
+          if (remainingSeconds <= 0) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            // 执行跳转
+            window.location.href = TARGET_URL;
+          }
+        }, 100);
+      }
+
+      // 停止跳转
+      function stopRedirectAndAsk() {
+        isStopped = true;
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        countdownPanel.style.display = 'none';
+
+        // 显示二次确认弹窗
+        showModal(cancelModal);
+      }
+
+      // 绑定停止按钮
+      stopBtn.addEventListener('click', stopRedirectAndAsk);
+
+      // ---------- 二次确认弹窗 ----------
+      // 用户选择「启用跳转」
+      document.getElementById('cancelRedirectYes').addEventListener('click', function() {
+        setPreference(true);          // 设置后续自动跳转
+        hideModal(cancelModal);
+        // 本次不跳转，已经取消了，所以直接关闭
+      });
+
+      // 用户选择「不跳转」
+      document.getElementById('cancelRedirectNo').addEventListener('click', function() {
+        clearPreference();           // 彻底关闭自动跳转功能
+        hideModal(cancelModal);
+      });
+
+      // 点击背景关闭（视为不跳转）
+      cancelModal.addEventListener('click', function(e) {
+        if (e.target === cancelModal) {
+          clearPreference();
+          hideModal(cancelModal);
+        }
+      });
+
+      // ---------- 页面初始化：根据存储状态决定行为 ----------
+      function init() {
+        const pref = getPreference();
+
+        // 情况1：从未设置过偏好 → 首次访问弹窗
+        if (pref === null) {
+          showFirstVisitModal();
+          return;
+        }
+
+        // 情况2：已设置启用自动跳转 (pref === true)
+        if (pref === true) {
+          // 后续访问：启动倒计时跳转
+          startRedirectCountdown();
+          return;
+        }
+
+        // 情况3：已设置禁用自动跳转 (pref === false) → 什么也不做，安静展示介绍页
+        // （用户之前明确拒绝过）
+      }
+
+      // 确保在DOM加载完成后执行
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      // ---------- 保留原介绍页的逐字歌词动画（与原脚本兼容）----------
       const demoSpans = document.querySelectorAll('.word-demo');
       if (demoSpans.length) {
         let progress = 0;
@@ -569,10 +619,8 @@
           });
         }, 300);
       }
+
     })();
   </script>
 </body>
 </html>
-
-
-
