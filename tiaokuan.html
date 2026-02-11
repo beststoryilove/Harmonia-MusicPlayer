@@ -1,62 +1,117 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Harmonia - 隐私政策与用户条款</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Harmonia · 隐私政策与用户条款</title>
+  <!-- Font Awesome 6 (与播放器完全一致) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* CSS Variables from main player for consistency */
+    /* ===== 完全复用播放器的 Apple 深色风格变量 & 毛玻璃 ===== */
+    @font-face {
+      src: url(fonts/PingFangSC-Regular.woff2);
+      font-family: "PingFangSC-Regular";
+    }
+    @font-face {
+      src: url(fonts/sf-pro-display_regular.woff2);
+      font-family: "SFPro-Regular";
+    }
+    @font-face {
+      src: url(fonts/PingFangSC-Semibold.woff2);
+      font-family: "PingFangSC-Semibold";
+    }
+    @font-face {
+      src: url(fonts/sf-pro-display_semibold.woff2);
+      font-family: "SFPro-Semibold";
+    }
+
     :root {
-      --bg-light: linear-gradient(135deg, #e0e7ff, #dbeafe, #d1d5db);
-      --text-light: #1e293b;
-      --primary-color: #9b59b6; /* Purple */
-      --primary-gradient: linear-gradient(135deg, #8e44ad, #9b59b6);
-      --card-bg-light: rgba(255, 255, 255, 0.85);
-      --border-light: rgba(0, 0, 0, 0.1);
-      --shadow-light: 0 12px 30px rgba(0, 0, 0, 0.15);
+      --bg-dark: #000;
+      --text-dark: #fff;
+      --text-secondary-dark: #8e8e93;
+      --primary-color: #ff2d55;
+      --primary-gradient: linear-gradient(135deg, #ff2d55, #ff375f);
+      --card-bg-dark: rgba(28, 28, 30, 0.9);
+      --border-dark: rgba(255, 255, 255, 0.1);
+      --shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.6);
+      --ios-glass-dark: rgba(20, 20, 20, 0.65);
+      --ios-border-dark: rgba(255, 255, 255, 0.08);
+      --border-radius-lg: 20px;
+      --border-radius-md: 12px;
       --transition-speed: 0.3s;
-      --border-radius-lg: 16px;
-      --border-radius-sm: 8px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      margin: 0;
-      padding: 24px;
-      line-height: 1.8; /* Slightly increased line-height for readability */
-      color: var(--text-light);
-      background: var(--bg-light);
-      min-height: 100vh; /* Ensure full viewport height */
+      font-family: "SFPro-Regular", "PingFangSC-Regular", -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-dark);
+      line-height: 1.7;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center; /* Center content vertically */
-      box-sizing: border-box; /* Include padding in element's total width and height */
+      align-items: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
     }
 
+    /* 标志性模糊背景 (与主播放器一致) */
+    .am-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      background: radial-gradient(circle at 20% 30%, #1a1a1e, #000000);
+      background-size: cover;
+      filter: blur(28px) brightness(0.6);
+      transform: scale(1.1);
+    }
+    .am-background::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(2px);
+    }
+
+    /* 主卡片 —— iOS 玻璃态 */
     .card {
-      background: var(--card-bg-light);
-      max-width: 900px;
-      width: 100%; /* Ensure it takes full width on small screens */
-      margin: 0 auto;
+      background: var(--ios-glass-dark);
+      backdrop-filter: blur(22px) saturate(180%);
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+      border: 1px solid var(--ios-border-dark);
       border-radius: var(--border-radius-lg);
-      padding: 30px; /* Increased padding */
-      box-shadow: var(--shadow-light);
-      border: 1px solid var(--border-light);
-      backdrop-filter: blur(8px); /* Subtle blur effect */
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 40px;
+      box-shadow: var(--shadow-dark);
       transition: all var(--transition-speed) ease;
+      position: relative;
+      z-index: 10;
     }
 
     h1 {
-      margin: 0 0 20px; /* Adjusted margin */
+      margin: 0 0 16px;
       color: var(--primary-color);
       font-size: 32px;
-      font-weight: 800;
-      text-shadow: 0 2px 10px rgba(155, 89, 182, 0.3);
-      letter-spacing: 1px;
+      font-weight: 700;
+      font-family: "SFPro-Semibold", "PingFangSC-Semibold", sans-serif;
+      letter-spacing: 0.5px;
+      text-align: center;
       position: relative;
-      padding-bottom: 15px;
-      text-align: center; /* Center h1 */
+      padding-bottom: 16px;
     }
     h1::after {
       content: '';
@@ -71,102 +126,197 @@
     }
 
     h2 {
-      margin: 30px 0 15px; /* Adjusted margin */
-      color: var(--primary-color); /* Consistent with h1 */
-      font-size: 24px; /* Slightly larger */
-      font-weight: 700;
+      margin: 32px 0 16px;
+      color: var(--primary-color);
+      font-size: 24px;
+      font-weight: 600;
+      border-left: 5px solid var(--primary-color);
+      padding-left: 15px;
     }
 
     p {
-      margin-bottom: 15px; /* Consistent paragraph spacing */
-      color: var(--text-light);
+      margin-bottom: 16px;
+      color: rgba(255, 255, 255, 0.85);
     }
-    ul {
-      list-style-type: disc;
-      margin: 15px 0 20px 20px; /* Adjusted list spacing */
-      padding: 0;
-      color: var(--text-light);
+
+    ul, ol {
+      margin: 16px 0 20px 25px;
+      color: rgba(255, 255, 255, 0.8);
     }
     li {
       margin-bottom: 8px;
     }
 
     a {
-      color: var(--primary-color);
+      color: #5ac8fa;
       text-decoration: none;
-      transition: color var(--transition-speed) ease, text-decoration var(--transition-speed) ease;
+      transition: color var(--transition-speed) ease;
+      border-bottom: 1px solid rgba(90, 200, 250, 0.3);
     }
     a:hover {
-      text-decoration: underline;
-      color: #8e44ad; /* Slightly darker primary on hover */
+      color: #ff2d55;
+      border-bottom-color: var(--primary-color);
     }
 
     .update-time {
       font-size: 13px;
-      color: #777; /* Softer color for meta info */
-      text-align: right; /* Align to the right */
-      margin-top: 25px; /* Space above */
-      margin-bottom: 25px; /* Space below before the button */
+      color: var(--text-secondary-dark);
+      text-align: right;
+      margin-top: 30px;
+      margin-bottom: 25px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 20px;
     }
 
+    /* 返回按钮 —— 与播放器控件风格一致 */
     .back {
-      display: inline-flex; /* Use inline-flex for button styling */
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 12px 25px; /* Button-like padding */
-      background: var(--primary-gradient);
-      color: #fff; /* White text for contrast */
-      border-radius: 30px; /* Pill-shaped button */
+      padding: 12px 30px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      color: rgba(255,255,255,0.9);
       font-weight: 600;
+      font-size: 15px;
       text-decoration: none;
-      box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
-      transition: all var(--transition-speed) ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.45);
+      transition: all 0.22s ease;
+      gap: 8px;
+    }
+    .back i {
+      font-size: 14px;
     }
     .back:hover {
-      background: linear-gradient(135deg, #9b59b6, #8e44ad); /* Gradient reverse on hover */
+      background: rgba(255, 255, 255, 0.15);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(142, 68, 173, 0.4);
-      text-decoration: none; /* Remove underline on hover for button */
-    }
-    .back i { /* For potential icon */
-        margin-right: 8px;
+      border-color: rgba(255,45,85,0.3);
+      color: white;
+      text-decoration: none;
     }
 
-    /* Responsive adjustments */
+    /* 响应式优化 */
     @media (max-width: 768px) {
-      body { padding: 15px; }
-      .card { padding: 20px; }
+      body { padding: 16px; }
+      .card { padding: 25px; }
       h1 { font-size: 28px; }
       h2 { font-size: 20px; }
       .back {
-        width: 100%; /* Full width button on mobile */
-        max-width: 250px; /* Limit max width */
-        margin-left: auto;
-        margin-right: auto;
-        display: flex; /* Override inline-flex to center with margin:auto */
+        width: 100%;
+        justify-content: center;
       }
-      .update-time {
-        text-align: center; /* Center on mobile */
-      }
+      .update-time { text-align: center; }
+    }
+
+    /* 高亮关键词 */
+    strong, .highlight {
+      color: #ff2d55;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
+  <div class="am-background"></div>
   <div class="card">
-    <h1>隐私政策与用户条款</h1>
-    <p>Harmonia 音乐播放器为个人/学习用途设计。本页面用于示例部署，非商用。</p>
-    <h2>数据来源</h2>
-    <p>播放器将通过本站的 /api 代理访问第三方公共音乐与壁纸接口，本站仅作转发，不保存内容。</p>
-    <h2>使用规范</h2>
+    <h1>隐私政策 & 用户条款</h1>
+    <p style="text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 25px;">最后更新：2026年2月12日</p>
+
+    <!-- 隐私政策部分 -->
+    <h2>🔒 隐私政策</h2>
+    <p><strong>Harmonia 音乐播放器</strong>（以下简称“本项目”）非常重视您的隐私。本隐私政策旨在透明地说明我们如何处理信息。</p>
+    
+    <h3>1. 本地存储数据</h3>
+    <p>本项目<strong>不会收集或上传任何个人信息</strong>。所有用户数据仅存储在您设备的浏览器本地（通过 <code>localStorage</code>），包括：</p>
     <ul>
-      <li>严禁倒卖、商业化使用。</li>
-      <li>请遵守所在地区与平台的版权政策。</li>
-      <li>如第三方接口不可用，功能可能暂时受限。</li>
+      <li>您的播放列表、收藏歌曲、播放历史；</li>
+      <li>播放设置（音量、播放模式、主题偏好）；</li>
+      <li>歌词翻译设置及您自行填入的 API 令牌（仅存本地，用于请求翻译服务）；</li>
+      <li>自定义歌单排序（拖拽顺序）。</li>
     </ul>
-    <h2>免责声明</h2>
-    <p>第三方接口的内容与可用性由其各自服务提供方负责。</p>
-    <p class="update-time">条款最后更新时间：2025年11月22日</p>
-    <a class="back" href="./"><i class="fas fa-arrow-left"></i>返回播放器</a>
+    <p>上述数据由您完全控制，清除浏览器缓存或使用隐私模式将导致数据丢失。本项目无法访问、存储或共享这些数据。</p>
+
+    <h3>2. 第三方接口调用</h3>
+    <p>为提供音乐、歌词、专辑封面等功能，本项目会向以下第三方服务发起请求：</p>
+    <ul>
+      <li><strong>项目托管平台</strong>（本项目使用Github Pages托管 <code>github.com</code>）</li>
+      <li><strong>域名托管平台</strong>（本项目域名使用cloudflare托管 <code>cloudflare.com</code>、网易云音乐API）</li>
+      <li><strong>音乐元数据接口</strong>（如 <code>music-api.gdstudio.xyz</code>、网易云音乐API）</li>
+      <li><strong>歌词翻译接口</strong>（智谱 GLM-4-Flashx —— 需您自行提供API密钥）</li>
+      <li><strong>CORS 代理</strong>（仅在获取逐字歌词时轮询内置公共代理）</li>
+    </ul>
+    <p>所有请求均<strong>由您的浏览器直接发起</strong>，本项目本身无后端服务器，不代理、不中转、不记录您的任何请求内容，但我们无法确保这些第三方服务不会收集或泄露您的个人信息。第三方服务的数据收集行为请参阅其自身隐私政策。</p>
+
+    <h3>3. 桌面歌词功能</h3>
+    <p>若您使用“桌面歌词”功能，本项目将通过 WebSocket 连接您本地运行的歌词客户端（如 <code>HarmoniaLyrics.exe</code>）。通信仅限于发送当前歌曲信息、歌词文本及播放进度，<strong>不传输任何身份信息</strong>。此连接仅在本地进行，不经过互联网。</p>
+
+    <h3>4. 个人隐私</h3>
+      <ul class="term-list">
+    <li>
+      本项目*不会对您个人的所有隐私信息进行收集。
+    </li>
+    <li>
+      <span class="asterisk-note">（*此处的”本项目“，其范围仅限于Harmonia音乐播放器本身，不包括任何第三方接口服务提供商或项目托管平台。）</span>
+    </li>
+    <li>
+      <span class="asterisk-note">（包括但不限于：您当前所在国家、您当前访问Harmonia音乐播放器所使用的IP、您的系统信息、您的浏览器信息、您的设备信息、您的操作记录等。）</span>
+    </li>
+  </ul>
+
+    <!-- 用户条款部分 -->
+    <h2 style="margin-top: 48px;">📜 用户条款</h2>
+    <p>使用 Harmonia 即表示您同意以下条款：</p>
+    
+    <h3>1. 许可与用途</h3>
+    <ul>
+      <li>本项目为<strong>个人学习、研究、非商业用途</strong>开源项目，遵循 MIT 许可证。您可以在遵守协议的前提下自由修改、分发。</li>
+      <li><strong class="highlight">严禁任何形式的倒卖、商业化使用或将其嵌入付费服务。</strong></li>
+    </ul>
+
+    <h3>2. 内容版权与责任</h3>
+    <ul>
+      <li>本项目本身<strong>不存储任何受版权保护的音乐文件、歌词或图片</strong>，所有内容均来自第三方公开接口。</li>
+      <li>音乐版权归原作者/唱片公司所有。本项目仅作为技术演示，<strong>请支持正版音乐</strong>，下载后请于24小时内删除。</li>
+      <li>因使用第三方接口可能导致的内容可用性、准确性、版权合规性问题，本项目不承担法律责任。</li>
+    </ul>
+
+    <h3>3. 用户行为</h3>
+    <ul>
+      <li>您不得利用本项目传播违法信息、侵犯他人知识产权或进行任何形式的网络攻击。</li>
+      <li>您需自行承担使用未获得授权的音乐文件、歌词或图片带来的风险。</li>
+    </ul>
+
+    <h3>4. 免责声明</h3>
+    <ul>
+      <li>本项目按“现状”提供服务，不提供任何形式的担保，不保证服务永不中断、无错误或不受攻击。</li>
+      <li>因第三方接口失效、政策变更或网络问题导致的功能不可用，本项目不承担责任。</li>
+      <li>任何由于使用本项目造成的直接或间接损失，开发者不承担责任。</li>
+    </ul>
+
+    <h3>5. 条款修改</h3>
+    <p>我们保留根据需要更新本条款的权利。重大变更将在页面显著位置公示。继续使用即视为接受更新后的条款。</p>
+
+    <p style="margin-top: 30px; padding: 18px; background: rgba(255,45,85,0.08); border-radius: 12px; border-left: 4px solid var(--primary-color);">
+      <i class="fas fa-heart" style="color: #ff2d55; margin-right: 8px;"></i>
+      <strong>致用户：</strong> Harmonia 始终将您的数据自主权放在首位。我们坚信用户愉快的音乐体验不应以隐私为代价。
+    </p>
+
+    <div class="update-time">
+      <i class="far fa-clock"></i> 本政策与条款最后修订：2026年2月12日 · 条款版本 v0.2
+    </div>
+
+    <!-- 返回主播放器按钮，链接指向线上地址 -->
+    <div style="display: flex; justify-content: center;">
+      <a class="back" href="https://harmoniamusicplayer.dpdns.org/" target="_blank" rel="noopener noreferrer">
+        <i class="fas fa-arrow-left"></i> 返回 Harmonia 播放器
+      </a>
+    </div>
+    <p style="font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; margin-top: 20px;">
+      本项目仓库 · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" style="color: rgba(255,255,255,0.5);">GitHub</a>
+    </p>
   </div>
+  <!-- 无额外脚本，干净透明 -->
 </body>
 </html>
