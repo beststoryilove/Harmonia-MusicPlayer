@@ -2150,6 +2150,8 @@
 
       .lyrics > .item {
         padding: 15px !important;
+        content-visibility: auto;
+        contain-intrinsic-size: 0px 80px; /* 初始高度，后续动态更新 */
       }
 
       /* 移动端全屏歌词的特殊样式 */
@@ -3997,6 +3999,17 @@
           });
         }, 50);
       });
+
+      if (isMobile()) {
+        setTimeout(() => {
+          document.querySelectorAll('.lyrics .item').forEach(el => {
+            const height = el.offsetHeight;
+            if (height > 0) {
+              el.style.containIntrinsicSize = `0px ${height}px`; // 内联覆盖
+            }
+          });
+        }, 100);
+      }
     }
 
     function updateWordFillInActiveLine(currentTime) {
@@ -4713,6 +4726,16 @@
           });
         }, 50);
       });
+      if (isMobile()) {
+        setTimeout(() => {
+          document.querySelectorAll('.lyrics .item').forEach(el => {
+            const height = el.offsetHeight;
+            if (height > 0) {
+              el.style.containIntrinsicSize = `0px ${height}px`; // 内联覆盖
+            }
+          });
+        }, 100);
+      }
     }
 
     function median(arr) {
@@ -4814,33 +4837,27 @@
     }
 
     function UpdateLyricsLayout(index, data, init = 1) {
-      // 统一使用白色歌词，适应动态背景
       const activeColor = "rgba(255, 255, 255, 1)";
       const inactiveColor = "rgba(255, 255, 255, 0.2)";
-      
+
       for (let i = 0; i < data.length; i++) {
         if (!data[i] || !data[i].ele) continue;
-        
-        if (i === index && init) {
-          data[i].ele.style.color = activeColor;
-        } else {
-          data[i].ele.style.color = inactiveColor;
-        }
-        
-        const blurAmount = isMobile() ? 0 : Math.abs(i - index);       
+
+        // 颜色高亮
+        data[i].ele.style.color = i === index ? activeColor : inactiveColor;
+
+        // 模糊效果（桌面端保留，移动端已通过 isMobile 移除）
+        const blurAmount = isMobile() ? 0 : Math.abs(i - index);
         data[i].ele.style.filter = `blur(${blurAmount}px)`;
-        
+
+        // 计算目标位置
         const position = GetLyricsLayout(index, i, data);
-        
-        let n = (i - index) + 1;
-        if (n > 10) n = 0;
-        
-        const delay = init ? (n * 70 - n * 10) : 0;
-        setTimeout(() => {
-          if (data[i] && data[i].ele) {
-            data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
-          }
-        }, delay);
+        const delay = init ? (Math.abs(i - index) * 70 - Math.abs(i - index) * 10) : 0;
+          setTimeout(() => {
+            if (data[i] && data[i].ele) {
+              data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
+            }
+          }, delay);
       }
     }
 
