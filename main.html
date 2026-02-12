@@ -4827,11 +4827,7 @@
           data[i].ele.style.color = inactiveColor;
         }
         
-        // 移动端全屏模式下减少模糊以提高性能
-        const blurAmount = (isMobile() && isMobileLyricsFullscreen) ? 
-          Math.min(Math.abs(i - index) * 0.3, 2) : 
-          (isMobile() ? Math.min(Math.abs(i - index) * 0.5, 3) : Math.abs(i - index));
-        
+        const blurAmount = isMobile() ? 0 : Math.abs(i - index);       
         data[i].ele.style.filter = `blur(${blurAmount}px)`;
         
         const position = GetLyricsLayout(index, i, data);
@@ -5068,6 +5064,21 @@
       }
     });
 
+    let lastLyricUpdate = 0;
+    const LYRIC_UPDATE_THROTTLE = isMobile() ? 100 : 0; // 移动端100ms，桌面端无限制
+
+    function throttledUpdateAMLyricsHighlight(currentTime) {
+      if (!isMobile()) {
+        updateAMLyricsHighlight(currentTime);
+        return;
+      }
+      const now = performance.now();
+      if (now - lastLyricUpdate >= LYRIC_UPDATE_THROTTLE) {
+        updateAMLyricsHighlight(currentTime);
+        lastLyricUpdate = now;
+      }
+    }
+
     // 音频事件
     audioPlayer.addEventListener('timeupdate', () => {
       const { currentTime, duration } = audioPlayer;
@@ -5078,7 +5089,7 @@
         durationDisplay.textContent = formatTime(duration);
         
         // 更新 Apple Music 风格歌词
-        updateAMLyricsHighlight(currentTime);
+        throttledUpdateAMLyricsHighlight(audioPlayer.currentTime);
       
         // 逐字歌词按词高亮（若当前行含逐字 span）
         updateWordFillInActiveLine(currentTime);
