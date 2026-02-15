@@ -4843,21 +4843,28 @@
       for (let i = 0; i < data.length; i++) {
         if (!data[i] || !data[i].ele) continue;
 
-        // 颜色高亮
+        // 设置颜色
         data[i].ele.style.color = i === index ? activeColor : inactiveColor;
 
-        // 模糊效果（桌面端保留，移动端已通过 isMobile 移除）
+        // 模糊效果（移动端可禁用）
         const blurAmount = isMobile() ? 0 : Math.abs(i - index);
         data[i].ele.style.filter = `blur(${blurAmount}px)`;
 
         // 计算目标位置
         const position = GetLyricsLayout(index, i, data);
-        const delay = init ? (Math.abs(i - index) * 70 - Math.abs(i - index) * 10) : 0;
+
+        if (init) {
+          // 需要延迟时，延迟时间简化为 |i-index| * 20ms，最大不超过300ms
+          const delay = Math.min(Math.abs(i - index) * 20, 300);
           setTimeout(() => {
             if (data[i] && data[i].ele) {
               data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
             }
           }, delay);
+        } else {
+          // 立即更新
+          data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
+        }
       }
     }
 
@@ -4873,15 +4880,27 @@
       }
 
       if (activeIndex !== -1 && lastLyric !== activeIndex) {
+        // 重置上一行的逐字歌词填充
         if (lastLyric >= 0 && lastLyric < amLyricsData.length && amLyricsData[lastLyric].ele) {
           const prevSpans = amLyricsData[lastLyric].ele.querySelectorAll('span.word-lyric');
           prevSpans.forEach(span => {
             span.style.setProperty('--p', '0%');
           });
         }
-        UpdateLyricsLayout(activeIndex, amLyricsData, 1);
+
+        // 判断是否需要立即更新（时间差小于0.3秒）
+        let useDelay = true;
+        if (lastLyric >= 0 && lastLyric < amLyricsData.length && activeIndex < amLyricsData.length) {
+          const timeDiff = Math.abs(amLyricsData[activeIndex].time - amLyricsData[lastLyric].time);
+          if (timeDiff < 0.3) { // 阈值可根据实际效果调整
+            useDelay = false;
+          }
+        }
+
+        UpdateLyricsLayout(activeIndex, amLyricsData, useDelay ? 1 : 0);
         lastLyric = activeIndex;
-        
+
+        // 更新页面标题为当前歌词（可选）
         const lyricText = amLyricsData[activeIndex].text;
         if (lyricText && lyricText.trim() !== '') {
           document.title = lyricText;
@@ -5117,22 +5136,28 @@
     });
 
     audioPlayer.addEventListener('ended', async () => {
+      // 先更新播放按钮状态
+      playButton.innerHTML = '<i class="fas fa-play"></i>';
       isPlaying = false;
       updatePageTitle();
-      playButton.innerHTML = '<i class="fas fa-play"></i>';
-      
+
       if (!currentPlayingId || playlist.length === 0) return;
 
       if (currentPlayMode === 'repeat') {
-        // 单曲循环：重新播放当前歌曲
-        const currentSong = getSongById(currentPlayingId);
-        if (currentSong) {
-          setTimeout(() => {
-            playSong(currentSong, true);
-          }, 500);
+        // 单曲循环：直接重新播放，不重新请求歌词和封面
+        try {
+          audioPlayer.currentTime = 0;          // 重置到开头
+          await audioPlayer.play();              // 尝试播放
+          // 播放成功则更新按钮
+          playButton.innerHTML = '<i class="fas fa-pause"></i>';
+          isPlaying = true;
+          updatePageTitle();
+        } catch (e) {
+          console.error('单曲循环自动播放失败:', e);
+          // 自动播放失败（例如浏览器限制），保持暂停状态
         }
       } else {
-        // 获取下一首歌曲
+        // 其他模式：正常切换到下一首
         const nextSongId = getNextSongId(currentPlayingId);
         if (nextSongId) {
           const nextSong = getSongById(nextSongId);
