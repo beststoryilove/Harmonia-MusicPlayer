@@ -3990,7 +3990,7 @@
 
       requestAnimationFrame(() => {
         LYRICS_OFFSET = calculateLyricsOffset();
-        UpdateLyricsLayout(0, amLyricsData, 0);
+        UpdateLyricsLayout(0, [0], amLyricsData, 0);
         setTimeout(() => {
           const items = amLyrics.querySelectorAll('.item');
           items.forEach(item => {
@@ -4716,7 +4716,7 @@
       requestAnimationFrame(() => {
         LYRICS_OFFSET = calculateLyricsOffset();
         // 初始化歌词布局
-        UpdateLyricsLayout(0, lyrics, 0);
+        UpdateLyricsLayout(0, [0], lyrics, 0);
         
         // 添加过渡效果
         setTimeout(() => {
@@ -4836,33 +4836,31 @@
       return res + LYRICS_OFFSET;
     }
 
-    function UpdateLyricsLayout(index, data, init = 1) {
+    function UpdateLyricsLayout(mainIndex, highlightIndices, data, init = 1) {
       const activeColor = "rgba(255, 255, 255, 1)";
       const inactiveColor = "rgba(255, 255, 255, 0.2)";
 
       for (let i = 0; i < data.length; i++) {
         if (!data[i] || !data[i].ele) continue;
 
-        // 设置颜色
-        data[i].ele.style.color = i === index ? activeColor : inactiveColor;
+        // 颜色：如果在高亮集合中则使用 activeColor，否则使用 inactiveColor
+        data[i].ele.style.color = highlightIndices.includes(i) ? activeColor : inactiveColor;
 
-        // 模糊效果（移动端可禁用）
-        const blurAmount = isMobile() ? 0 : Math.abs(i - index);
+        // 模糊：高亮行不模糊，其他行按距离主行计算
+        const blurAmount = highlightIndices.includes(i) ? 0 : Math.abs(i - mainIndex);
         data[i].ele.style.filter = `blur(${blurAmount}px)`;
 
-        // 计算目标位置
-        const position = GetLyricsLayout(index, i, data);
+        // 计算目标位置（始终以 mainIndex 为基准）
+        const position = GetLyricsLayout(mainIndex, i, data);
 
         if (init) {
-          // 需要延迟时，延迟时间简化为 |i-index| * 20ms，最大不超过300ms
-          const delay = Math.min(Math.abs(i - index) * 20, 300);
+          const delay = Math.min(Math.abs(i - mainIndex) * 20, 300);
           setTimeout(() => {
             if (data[i] && data[i].ele) {
               data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
             }
           }, delay);
         } else {
-          // 立即更新
           data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
         }
       }
@@ -4888,16 +4886,51 @@
           });
         }
 
+        const THRESHOLD = 0.4; // 时间差阈值（秒），可根据需要调整
+
+        // 从 activeIndex 开始向两边扩展，收集所有连续且间隔小于阈值的歌词行
+        let minIdx = activeIndex;
+        let maxIdx = activeIndex;
+
+        // 向后扩展
+        while (maxIdx + 1 < amLyricsData.length) {
+          const diff = amLyricsData[maxIdx + 1].time - amLyricsData[maxIdx].time;
+          if (diff < THRESHOLD) {
+            maxIdx++;
+          } else {
+            break;
+          }
+        }
+        // 向前扩展
+        while (minIdx - 1 >= 0) {
+          const diff = amLyricsData[minIdx].time - amLyricsData[minIdx - 1].time;
+          if (diff < THRESHOLD) {
+            minIdx--;
+          } else {
+            break;
+          }
+        }
+
+        // 构建高亮索引集合（从 minIdx 到 maxIdx 的所有行）
+        let highlightIndices = [];
+        for (let i = minIdx; i <= maxIdx; i++) {
+          highlightIndices.push(i);
+        }
+
+        // 滚动基准取集合中的最后一句（使最后一句居中）
+        let scrollBaseIndex = maxIdx;
+
         // 判断是否需要立即更新（时间差小于0.3秒）
         let useDelay = true;
         if (lastLyric >= 0 && lastLyric < amLyricsData.length && activeIndex < amLyricsData.length) {
           const timeDiff = Math.abs(amLyricsData[activeIndex].time - amLyricsData[lastLyric].time);
-          if (timeDiff < 0.3) { // 阈值可根据实际效果调整
+          if (timeDiff < 0.3) {
             useDelay = false;
           }
         }
 
-        UpdateLyricsLayout(activeIndex, amLyricsData, useDelay ? 1 : 0);
+        // 传入 scrollBaseIndex 作为滚动基准，高亮集合为 highlightIndices
+        UpdateLyricsLayout(scrollBaseIndex, highlightIndices, amLyricsData, useDelay ? 1 : 0);
         lastLyric = activeIndex;
 
         // 更新页面标题为当前歌词（可选）
