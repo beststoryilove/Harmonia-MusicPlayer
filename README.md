@@ -102,7 +102,7 @@ http://localhost:8000
 ### API 集成
 - **音乐 API** - music-api.gdstudio.xyz
 - **歌词翻译** - GLM-4-Flashx (Bigmodel)
-- **网易云代理** - 多个 CORS 代理轮询
+- **网易云代理** - dev自建代理
 
 ### 浏览器特性
 - **Web Storage** - 本地数据存储
@@ -133,13 +133,10 @@ Harmonia-MusicPlayer/
 3. 在设置中填入令牌即可使用翻译功能
 
 ### 代理服务器
-内置多个网易云代理服务器，可按需在设置中自定义：
+由dev自建，可按需在设置中自定义：
 ```javascript
 const BUILTIN_NETEASE_PROXIES = [
-  'https://cors.isomorphic-git.org/',
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url=',
-  // ... 更多代理
+  'https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url=',
 ];
 ```
 
