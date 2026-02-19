@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Harmonia · 常见问题及解决方案</title>
+  <!-- Font Awesome 6 (与播放器完全一致) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ===== 完全复用播放器的 Apple 深色风格变量 & 毛玻璃 ===== */
+    @font-face {
+      src: url(fonts/PingFangSC-Regular.woff2);
+      font-family: "PingFangSC-Regular";
+    }
+    @font-face {
+      src: url(fonts/sf-pro-display_regular.woff2);
+      font-family: "SFPro-Regular";
+    }
+    @font-face {
+      src: url(fonts/PingFangSC-Semibold.woff2);
+      font-family: "PingFangSC-Semibold";
+    }
+    @font-face {
+      src: url(fonts/sf-pro-display_semibold.woff2);
+      font-family: "SFPro-Semibold";
+    }
+
+    :root {
+      --bg-dark: #000;
+      --text-dark: #fff;
+      --text-secondary-dark: #8e8e93;
+      --primary-color: #ff2d55;
+      --primary-gradient: linear-gradient(135deg, #ff2d55, #ff375f);
+      --card-bg-dark: rgba(28, 28, 30, 0.9);
+      --border-dark: rgba(255, 255, 255, 0.1);
+      --shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.6);
+      --ios-glass-dark: rgba(20, 20, 20, 0.65);
+      --ios-border-dark: rgba(255, 255, 255, 0.08);
+      --border-radius-lg: 20px;
+      --border-radius-md: 12px;
+      --transition-speed: 0.3s;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "SFPro-Regular", "PingFangSC-Regular", -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-dark);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
+    }
+
+    /* 标志性模糊背景 (与主播放器一致) */
+    .am-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      background: radial-gradient(circle at 20% 30%, #1a1a1e, #000000);
+      background-size: cover;
+      filter: blur(28px) brightness(0.6);
+      transform: scale(1.1);
+    }
+    .am-background::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(2px);
+    }
+
+    /* 主卡片 —— iOS 玻璃态 */
+    .card {
+      background: var(--ios-glass-dark);
+      backdrop-filter: blur(22px) saturate(180%);
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+      border: 1px solid var(--ios-border-dark);
+      border-radius: var(--border-radius-lg);
+      max-width: 1000px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 40px;
+      box-shadow: var(--shadow-dark);
+      transition: all var(--transition-speed) ease;
+      position: relative;
+      z-index: 10;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      color: var(--primary-color);
+      font-size: 32px;
+      font-weight: 700;
+      font-family: "SFPro-Semibold", "PingFangSC-Semibold", sans-serif;
+      letter-spacing: 0.5px;
+      text-align: center;
+      position: relative;
+      padding-bottom: 16px;
+    }
+    h1::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+      border-radius: 3px;
+    }
+
+    h2 {
+      margin: 40px 0 16px;
+      color: var(--primary-color);
+      font-size: 26px;
+      font-weight: 600;
+      border-left: 5px solid var(--primary-color);
+      padding-left: 15px;
+    }
+
+    h3 {
+      margin: 28px 0 12px;
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    h4 {
+      margin: 20px 0 8px;
+      color: #ffb3c6; /* 浅粉强调 */
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h4 i {
+      color: var(--primary-color);
+      font-size: 20px;
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    ul, ol {
+      margin: 16px 0 20px 25px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    li {
+      margin-bottom: 10px;
+    }
+
+    a {
+      color: #5ac8fa;
+      text-decoration: none;
+      transition: color var(--transition-speed) ease;
+      border-bottom: 1px solid rgba(90, 200, 250, 0.3);
+    }
+    a:hover {
+      color: #ff2d55;
+      border-bottom-color: var(--primary-color);
+    }
+
+    .update-time {
+      font-size: 13px;
+      color: var(--text-secondary-dark);
+      text-align: right;
+      margin-top: 30px;
+      margin-bottom: 25px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 20px;
+    }
+
+    /* 返回按钮 —— 与播放器控件风格一致 */
+    .back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 30px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      color: rgba(255,255,255,0.9);
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.45);
+      transition: all 0.22s ease;
+      gap: 8px;
+    }
+    .back i {
+      font-size: 14px;
+    }
+    .back:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+      border-color: rgba(255,45,85,0.3);
+      color: white;
+      text-decoration: none;
+    }
+
+    /* 响应式优化 */
+    @media (max-width: 768px) {
+      body { padding: 16px; }
+      .card { padding: 25px; }
+      h1 { font-size: 28px; }
+      h2 { font-size: 22px; }
+      h3 { font-size: 20px; }
+      .back {
+        width: 100%;
+        justify-content: center;
+      }
+      .update-time { text-align: center; }
+    }
+
+    /* 高亮关键词 */
+    strong, .highlight {
+      color: #ff2d55;
+      font-weight: 600;
+    }
+
+    /* 原因列表块样式 */
+    .cause-list {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 16px;
+      padding: 20px 25px;
+      margin: 20px 0;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .cause-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 20px;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+      padding-bottom: 16px;
+    }
+    .cause-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .cause-num {
+      background: var(--primary-color);
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+    .cause-content {
+      flex: 1;
+    }
+    .cause-content p {
+      margin-bottom: 8px;
+    }
+    .solution-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 14px;
+      background: rgba(255, 45, 85, 0.15);
+      padding: 4px 14px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,45,85,0.3);
+      color: #ff8a9f;
+    }
+    .solution-link i {
+      font-size: 12px;
+      margin-left: 5px;
+    }
+    .solution-link:hover {
+      background: rgba(255, 45, 85, 0.25);
+      color: white;
+    }
+
+    /* 解决方案卡片 */
+    .solution-card {
+      background: rgba(20, 20, 30, 0.5);
+      border-radius: 20px;
+      padding: 18px 22px;
+      margin: 25px 0 30px;
+      border: 1px solid rgba(255,45,85,0.2);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+    }
+    .solution-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ff2d55;
+      font-weight: 600;
+      font-size: 18px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 8px;
+    }
+    .solution-desc {
+      margin-left: 10px;
+    }
+    .solution-desc ul {
+      margin-top: 8px;
+    }
+
+    /* 幽默备注 */
+    .funny-note {
+      background: rgba(255, 200, 0, 0.1);
+      border-left: 4px solid #ffb340;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+      font-style: italic;
+    }
+    .funny-note i {
+      color: #ffb340;
+      margin-right: 8px;
+    }
+
+    /* ISP 列表小卡片 */
+    .isp-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 15px 0;
+    }
+    .isp-item {
+      background: rgba(0,0,0,0.3);
+      border-radius: 40px;
+      padding: 8px 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 15px;
+    }
+    .isp-item strong {
+      color: #5ac8fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="am-background"></div>
+  <div class="card">
+    <h1>❓ 常见问题及解决方案</h1>
+    <p style="text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 25px;">让问题停留在这里 · 最后一次更新：2026年2月20日</p>
+
+    <!-- 前言 -->
+    <div style="background: rgba(255,45,85,0.05); padding: 18px 22px; border-radius: 18px; margin-bottom: 30px;">
+      <i class="fas fa-hand-peace" style="color: #ff2d55; margin-right: 8px;"></i>
+      欢迎您使用 Harmonia 音乐播放器。在使用过程中，您可能会遇到一些问题。不用担心，开发者已经为您准备好了一套解决方案，您可自行查找。
+    </div>
+
+    <!-- 分区1：网络请求问题 -->
+    <h2>🌐 分区1：网络请求问题</h2>
+
+    <h3>📡 1. 请求失败问题</h3>
+    <p>当您遇到请求失败问题时，可能是由于以下原因导致的（可能性由上至下递减）：</p>
+
+    <!-- 原因列表（带内部锚点） -->
+    <div class="cause-list">
+      <!-- 原因1 -->
+      <div class="cause-item">
+        <span class="cause-num">1</span>
+        <div class="cause-content">
+          <p><strong>您的请求速率过快</strong>，触发了音乐API提供商“GDstudio”的限制。</p>
+          <a href="#solution1" class="solution-link">查看解决方案 <i class="fas fa-arrow-down"></i></a>
+        </div>
+      </div>
+      <!-- 原因2 -->
+      <div class="cause-item">
+        <span class="cause-num">2</span>
+        <div class="cause-content">
+          <p><strong>您当前所处网络环境不良</strong>。</p>
+          <a href="#solution2" class="solution-link">查看解决方案 <i class="fas fa-arrow-down"></i></a>
+        </div>
+      </div>
+      <!-- 原因3 -->
+      <div class="cause-item">
+        <span class="cause-num">3</span>
+        <div class="cause-content">
+          <p><strong>您的设备所设置的DNS</strong>（尤其是运营商DNS）将 GDstudio 解析到一个错误的IP/无解析。</p>
+          <a href="#solution3" class="solution-link">查看解决方案 <i class="fas fa-arrow-down"></i></a>
+        </div>
+      </div>
+      <!-- 原因4 -->
+      <div class="cause-item">
+        <span class="cause-num">4</span>
+        <div class="cause-content">
+          <p><strong>您断网了。</strong></p>
+          <a href="#solution4" class="solution-link">查看解决方案 <i class="fas fa-arrow-down"></i></a>
+        </div>
+      </div>
+    </div>
+
+    <p>请根据您的问题阅读下面的对应解决方案：</p>
+
+    <!-- 解决方案1 -->
+    <div id="solution1" class="solution-card">
+      <div class="solution-title">
+        <i class="fas fa-exclamation-circle"></i> 问题①：请求速率过快
+      </div>
+      <div class="solution-desc">
+        <p>对于该问题，您有两种解决方案：</p>
+        <ul>
+          <li><strong>更换您的网络IP</strong>（例如切换Wi-Fi/移动网络，或重启路由器获取新IP）。</li>
+          <li><strong>等待一段时间</strong>，至 GDstudio 解除对当前IP的请求速率限制。<br>
+            <span style="color: #aaa; font-size: 0.9em;">（注：一般是在 30~40 分钟之间，具体时间请自行查找。）</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 解决方案2 -->
+    <div id="solution2" class="solution-card">
+      <div class="solution-title">
+        <i class="fas fa-exclamation-circle"></i> 问题②：网络环境不良
+      </div>
+      <div class="solution-desc">
+        <p>对于该问题，您有两种解决方案：</p>
+        <ul>
+          <li><strong>更换质量更优的网络</strong>（例如靠近路由器、使用有线连接）。</li>
+          <li><strong>尝试使用移动网络/蜂窝网络</strong>改善连接质量。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 解决方案3 -->
+    <div id="solution3" class="solution-card">
+      <div class="solution-title">
+        <i class="fas fa-exclamation-circle"></i> 问题③：DNS解析异常
+      </div>
+      <div class="solution-desc">
+        <p>对于该问题，您有一种解决方案：</p>
+        <ul>
+          <li><strong>更改您设备的DNS</strong>，指定非运营商DNS（如 114.114.114.114、谷歌 8.8.8.8、腾讯云、阿里云等公共DNS）。<br>
+            <span style="color: #aaa; font-size: 0.9em;">（具体设置方法请自行搜索“如何修改DNS”。）</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 解决方案4 + 幽默彩蛋 -->
+    <div id="solution4" class="solution-card">
+      <div class="solution-title">
+        <i class="fas fa-exclamation-circle"></i> 问题④：您断网了
+      </div>
+      <div class="solution-desc">
+        <p>对于该问题，您有一种解决方案：</p>
+        <ul>
+          <li><strong>重启你家的路由器/光猫</strong>等网络设备，或检查网线是否松动。</li>
+        </ul>
+        <div class="funny-note">
+          <i class="fas fa-face-smile-wink"></i>
+          您说啥？您连您自己所使用的运营商的电话都不知道？<br>
+          以下为中国大陆范围内的各家运营商联系电话：
+          <div class="isp-grid">
+            <span class="isp-item"><strong>中国移动</strong> 10086</span>
+            <span class="isp-item"><strong>中国联通</strong> 10010</span>
+            <span class="isp-item"><strong>中国电信</strong> 10000</span>
+            <span class="isp-item"><strong>中国广电</strong> 10099</span>
+          </div>
+          <p style="margin-top: 10px;">如果您身处海外地区，请您自行百度您所在地区的网络运营商。<br>
+          您说啥？您连你所使用的运营商是啥都不知道？<br>
+          <i class="fas fa-hand-peace"></i> 那我没招了。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分区2：敬请期待 -->
+    <h2 style="margin-top: 50px;">⏳ 分区2：敬请期待</h2>
+    <div style="background: rgba(255,255,255,0.03); border-radius: 24px; padding: 30px; text-align: center; border: 1px dashed rgba(255,255,255,0.1);">
+      <i class="fas fa-sparkles" style="font-size: 36px; color: #ff2d55; opacity: 0.6; margin-bottom: 10px; display: block;"></i>
+      <p style="font-size: 18px; color: rgba(255,255,255,0.5);">是的，这一块没有内容。因为目前只有这些可以写了。<br>但我们会持续更新，敬请期待！</p>
+    </div>
+
+    <!-- 团队脚注 -->
+    <div class="update-time">
+      <i class="far fa-clock"></i> Harmonia团队 · 最后一次更新：2026.02.20 · 本页版本 v0.1
+    </div>
+
+    <!-- 返回主播放器按钮 -->
+    <div style="display: flex; justify-content: center;">
+      <a class="back" href="https://harmoniamusicplayer.dpdns.org/" target="_blank" rel="noopener noreferrer">
+        <i class="fas fa-arrow-left"></i> 返回 Harmonia 播放器
+      </a>
+    </div>
+    <p style="font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; margin-top: 20px;">
+      开源仓库 · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" style="color: rgba(255,255,255,0.5);">GitHub</a>
+    </p>
+  </div>
+  <!-- 无额外脚本，干净透明 -->
+</body>
+</html>
