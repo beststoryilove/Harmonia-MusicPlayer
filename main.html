@@ -2456,10 +2456,6 @@
       
       <div class="island-error" id="errorMessage"></div>
       
-      <div class="island-loading" id="loadingIndicator" style="display: none;">
-        <i class="fas fa-spinner fa-spin"></i> 加载中...
-      </div>
-      
       <div class="island-results-container" id="searchResults">
         <div class="island-empty">
           <i class="fas fa-music"></i>
@@ -2736,8 +2732,9 @@
     const originalTitle = "Harmonia - 音乐播放器";
     const enableWordLyrics = document.getElementById('enableWordLyrics');
     const neteaseProxyInput = document.getElementById('neteaseProxyInput');
-    const BUILTIN_NETEASE_PROXIES = ['https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url='];
+    const BUILTIN_NETEASE_PROXIES = ['https://cors.isomorphic-git.org/','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://thingproxy.freeboard.io/fetch/','https://proxy.cors.sh/','https://api.codetabs.com/v1/proxy?quest=','https://cors.lol/','https://crossorigin.me/','https://cors-proxy.cloudflare.com/','https://cors-proxy.htmldriven.com/?url='];
     const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const collapsedTextSpan = document.querySelector('.collapsed-text'); // 灵动岛折叠文字
 
     // ===== State =====
     let currentPage = 1;
@@ -2766,6 +2763,10 @@
     let currentPlayingId = null;  // 当前播放的歌曲ID
     let playlistOrder = [];       // 播放列表的当前顺序（ID数组）
     let isMobileLyricsFullscreen = false;
+    let activeRequests = 0;                 // 当前正在进行的请求数
+    let hasAnyRequestFailed = false;        // 当前请求组中是否有失败
+    let requestStatusTimeout = null;        // 用于3秒后恢复文字的定时器
+    let hasShownFirstRequestFailure = false;// 首次请求失败提示是否已弹出
 
     // Apple Music 歌词相关
     const LINE_HEIGHT = 20;
@@ -2864,6 +2865,138 @@
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), delay);
       };
+    }
+
+    // 更新灵动岛折叠区域的文字
+    function updateCollapsedText(text) {
+        const collapsedTextSpan = document.querySelector('.collapsed-text');
+        if (collapsedTextSpan) {
+            collapsedTextSpan.textContent = text;
+        }
+    }
+
+    // 根据当前是否有歌曲在播放，更新折叠文字
+    function updateCollapsedTextByPlayingState() {
+        if (currentPlayingId) {
+            updateCollapsedText('正在播放');
+        } else {
+            updateCollapsedText('Harmonia');
+        }
+    }
+
+    // 请求开始
+    function startRequest() {
+        if (activeRequests === 0) {
+            // 清除可能存在的恢复定时器
+            if (requestStatusTimeout) {
+                clearTimeout(requestStatusTimeout);
+                requestStatusTimeout = null;
+            }
+            // 收缩灵动岛（如果展开），直接操作 DOM
+            if (dynamicIsland.classList.contains('expanded')) {
+                dynamicIsland.classList.remove('expanded');
+                isDynamicIslandExpanded = false;
+            }
+            // 更新折叠文字
+            updateCollapsedText('正在请求中');
+        }
+        activeRequests++;
+    }
+
+    // 请求结束，success: 该请求是否成功
+    function endRequest(success) {
+        activeRequests--;
+        if (!success) {
+            hasAnyRequestFailed = true;
+            // 首次失败弹出提示（仅弹一次）
+            if (!hasShownFirstRequestFailure) {
+                showFirstRequestFailureModal();
+            }
+        }
+        if (activeRequests === 0) {
+            // 所有请求结束，显示最终状态
+            const finalStatus = hasAnyRequestFailed ? '请求失败' : '请求成功';
+            updateCollapsedText(finalStatus);
+            // 清除之前的定时器
+            if (requestStatusTimeout) clearTimeout(requestStatusTimeout);
+            requestStatusTimeout = setTimeout(() => {
+                updateCollapsedTextByPlayingState();
+                requestStatusTimeout = null;
+            }, 3000);
+            // 重置失败标志（为下一次请求组做准备）
+            hasAnyRequestFailed = false;
+        }
+    }
+
+    // 显示首次请求失败提示
+
+    function showFirstRequestFailureModal() {
+    if (hasShownFirstRequestFailure) return;
+
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'modal-overlay';
+    modalOverlay.style.cssText = `
+        position: fixed; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.7); display:flex; align-items:center;
+        justify-content:center; z-index:2100; opacity:1; visibility:visible;
+    `;
+
+    const modalBox = document.createElement('div');
+    modalBox.className = 'modal-content';
+    modalBox.style.cssText = `
+        background: var(--card-bg-dark); border-radius:28px; padding:28px;
+        max-width:400px; width:90%; border:1px solid rgba(255,255,255,0.1);
+        backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+        box-shadow:0 40px 110px rgba(0,0,0,0.75);
+        color: var(--text-dark); line-height:1.6;
+    `;
+
+    modalBox.innerHTML = `
+        <h3 style="color:var(--primary-color); margin-top:0; margin-bottom:16px;">⚠️ 我们遇到了一些问题。</h3>
+        <p style="margin:0 0 20px; font-size:15px;">
+            Harmonia发现您的网络请求失败。您可以前往
+            <a href="#" style="color:var(--primary-color); text-decoration:underline;" target="_blank">Harmonia音乐播放器常见问题及处理方法</a>
+            寻找解决方案。
+        </p>
+        <div style="text-align:right;">
+            <button id="closeFailureModal" style="
+                background:var(--primary-color); color:white; border:none;
+                padding:10px 24px; border-radius:999px; font-weight:600;
+                cursor:pointer;
+            ">知道了</button>
+        </div>
+    `;
+
+    modalOverlay.appendChild(modalBox);
+    document.body.appendChild(modalOverlay);
+
+    document.getElementById('closeFailureModal').addEventListener('click', () => {
+        modalOverlay.remove();
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) modalOverlay.remove();
+    });
+
+    hasShownFirstRequestFailure = true;
+}
+
+    // 包装 fetch，自动处理请求开始/结束
+    async function wrappedFetch(input, init) {
+        startRequest();
+        try {
+            const response = await fetch(input, init);
+            // 如果响应不成功（非2xx），也视为请求失败
+            if (!response.ok) {
+                endRequest(false);
+            } else {
+                endRequest(true);
+            }
+            return response;
+        } catch (error) {
+            endRequest(false);
+            throw error; // 重新抛出，让调用者继续处理
+        }
     }
 
     // ===== 歌词切换功能 =====
@@ -3129,6 +3262,15 @@
       toggleDynamicIsland();
     }
 
+    function expandDynamicIsland() {
+        if (!dynamicIsland.classList.contains('expanded')) {
+            dynamicIsland.classList.add('expanded');
+            isDynamicIslandExpanded = true;
+            // 聚焦搜索框，提升用户体验
+            setTimeout(() => searchInput.focus(), 50);
+        }
+    }
+
     // ===== 侧拉抽屉功能 =====
     function openSidebar() {
       sidebar.classList.add('active');
@@ -3176,6 +3318,7 @@
         // 如果删除的是当前正在播放的歌曲
         audioPlayer.pause();
         currentPlayingId = null;
+        updateCollapsedTextByPlayingState();
         currentPlaylistIdx = -1;
         isPlaying = false;
         updatePageTitle();
@@ -3743,37 +3886,46 @@
     }
 
     function clearCurrentTabItems() {
-      if (currentTab === 'playlist') {
-        playlist = [];
-        savePlaylist();
-        delete customOrder.playlist;
-      } else if (currentTab === 'favorites') {
-        favorites = [];
-        saveFavorites();
-        delete customOrder.favorites;
-      } else {
-        history = [];
-        saveHistory();
-        delete customOrder.history;
-      }
-      
-      // 保存自定义顺序
-      localStorage.setItem('musicPlayerCustomOrder', JSON.stringify(customOrder));
-      
-      currentPlaylistIdx = -1;
-      renderPlaylist();
+        if (currentTab === 'playlist') {
+            playlist = [];
+            savePlaylist();
+            delete customOrder.playlist;
+
+            // 清空播放列表时，如果正在播放歌曲，则停止播放并重置状态
+            if (currentPlayingId) {
+                audioPlayer.pause();
+                currentPlayingId = null;
+                currentPlaylistIdx = -1;
+                isPlaying = false;
+                playButton.innerHTML = '<i class="fas fa-play"></i>';
+                updatePageTitle();
+                updateCollapsedTextByPlayingState();
+            }
+        } else if (currentTab === 'favorites') {
+            favorites = [];
+            saveFavorites();
+            delete customOrder.favorites;
+        } else {
+            history = [];
+            saveHistory();
+            delete customOrder.history;
+        }
+
+        localStorage.setItem('musicPlayerCustomOrder', JSON.stringify(customOrder));
+
+        renderPlaylist();
     }
 
     // ===== 网络请求 =====
     async function fetchLyrics(lyricId, source = currentSettings.source) {
-      try {
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=lyric&source=${source}&id=${lyricId}`);
-        if (!r.ok) throw new Error('无法获取歌词');
-        return await r.json();
-      } catch (e) {
-        console.error('Error fetching lyrics:', e);
-        return null;
-      }
+        try {
+            const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=lyric&source=${source}&id=${lyricId}`);
+            if (!r.ok) throw new Error('无法获取歌词');
+            return await r.json();
+        } catch (e) {
+            console.error('Error fetching lyrics:', e);
+            return null;
+        }
     }
 
     function parseWordLyrics(yrcText) {
@@ -4136,43 +4288,40 @@
 
     // 调用GLM-4-Flashx API翻译歌词
     async function translateLyrics(lyricText) {
-      if (!translationSettings.apiToken) {
-        throw new Error('请先设置API令牌');
-      }
-
-      // 使用用户提供的提示词
-      const prompt = `帮我将下面这段的歌词富有文采地翻译为中文，并保留时间轴；按照原格式输出结果；我只要翻译后的结果，别的一律不要\n\n${lyricText}`;
-
-      try {
-        const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${translationSettings.apiToken}`
-          },
-          body: JSON.stringify({
-            model: 'glm-4-flashx',
-            messages: [{ role: 'user', content: prompt }],
-            stream: false,  // 采用非流式，确保完整获取翻译结果
-            temperature: 0.3
-          })
-        });
-
-        if (!response.ok) {
-          const error = await response.text();
-          throw new Error(`API请求失败: ${response.status} ${error}`);
+        if (!translationSettings.apiToken) {
+            throw new Error('请先设置API令牌');
         }
 
-        const data = await response.json();
-        if (data.choices && data.choices[0] && data.choices[0].message) {
-          return data.choices[0].message.content.trim();
-        } else {
-          throw new Error('API返回格式异常');
+        const prompt = `帮我将下面这段的歌词富有文采地翻译为中文，并保留时间轴；按照原格式输出结果；我只要翻译后的结果，别的一律不要\n\n${lyricText}`;
+
+        try {
+            const response = await wrappedFetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${translationSettings.apiToken}`
+                },
+                body: JSON.stringify({
+                    model: 'glm-4-flashx',
+                    messages: [{ role: 'user', content: prompt }],
+                    stream: false,
+                    temperature: 0.3
+                })
+            });
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`API请求失败: ${response.status} ${error}`);
+            }
+            const data = await response.json();
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content.trim();
+            } else {
+                throw new Error('API返回格式异常');
+            }
+        } catch (error) {
+            console.error('翻译失败:', error);
+            throw error;
         }
-      } catch (error) {
-        console.error('翻译失败:', error);
-        throw error;
-      }
     }
 
     // 处理歌词翻译
@@ -4226,16 +4375,16 @@
     }
 
     async function getAlbumArtUrl(picId, source = currentSettings.source) {
-      try {
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=${source}&id=${picId}&size=500`);
-        if (!r.ok) throw new Error('无法获取专辑图片');
-        const data = await r.json();
-        if (!data.url) throw new Error('无效的专辑图片URL');
-        return data.url.replace(/\\/g, '');
-      } catch (e) {
-        console.error('Error fetching album art:', e);
-        return null;
-      }
+        try {
+            const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=${source}&id=${picId}&size=500`);
+            if (!r.ok) throw new Error('无法获取专辑图片');
+            const data = await r.json();
+            if (!data.url) throw new Error('无效的专辑图片URL');
+            return data.url.replace(/\\/g, '');
+        } catch (e) {
+            console.error('Error fetching album art:', e);
+            return null;
+        }
     }
 
     async function loadAlbumArt(picId, source) {
@@ -4377,41 +4526,59 @@
     }
 
     async function getAudioUrl(id, source = currentSettings.source) {
-      try {
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${source}&id=${id}&br=${currentSettings.quality}`);
-        const data = await r.json();
-        if (!data.url) throw new Error('无法获取音频链接');
-        return data.url.replace(/\\/g, '');
-      } catch (e) {
-        console.error('Error fetching audio URL:', e);
-        throw e;
-      }
+        try {
+            const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${source}&id=${id}&br=${currentSettings.quality}`);
+            const data = await r.json();
+            if (!data.url) throw new Error('无法获取音频链接');
+            return data.url.replace(/\\/g, '');
+        } catch (e) {
+            console.error('Error fetching audio URL:', e);
+            throw e;
+        }
     }
 
     // ===== 搜索与播放逻辑 =====
     async function searchMusic(query, page = 1) {
-      if (!query.trim()) {
-        showError('请输入搜索内容');
-        return;
-      }
-      try {
-        showLoading();
-        clearError();
-        const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=${currentSettings.source}&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
-        if (!r.ok) throw new Error('搜索失败');
-        const data = await r.json();
-        if (!data || data.length === 0) throw new Error('未找到相关歌曲');
-        currentSearchResults = data;
-        displaySearchResults(data);
-        updatePagination(page);
-        currentPage = page;
-      } catch (e) {
-        showError(e.message);
-        searchResults.innerHTML = '';
-        pagination.style.display = 'none';
-      } finally {
-        hideLoading();
-      }
+        if (!query.trim()) {
+            showError('请输入搜索内容');
+            return;
+        }
+
+        startRequest(); // 开始请求，收缩岛并显示“正在请求中”
+
+        try {
+            clearError();
+            const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=${currentSettings.source}&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
+            
+            if (!r.ok) throw new Error('搜索失败');
+            const data = await r.json();
+            if (!data || data.length === 0) throw new Error('未找到相关歌曲');
+
+            currentSearchResults = data;
+            displaySearchResults(data);
+            updatePagination(page);
+            currentPage = page;
+
+            // 请求成功，手动结束请求（不触发3秒恢复）
+            activeRequests--; // 因为 startRequest 已经 +1
+            if (activeRequests === 0) {
+                // 清除可能存在的恢复定时器
+                if (requestStatusTimeout) {
+                    clearTimeout(requestStatusTimeout);
+                    requestStatusTimeout = null;
+                }
+                // 重置失败标志（因为是成功）
+                hasAnyRequestFailed = false;
+                // 立即展开灵动岛，显示搜索结果
+                expandDynamicIsland();
+            }
+        } catch (e) {
+            // 请求失败：使用原有的 endRequest(false) 处理（会弹窗并显示“请求失败”3秒后恢复）
+            endRequest(false);
+            showError(e.message);
+            searchResults.innerHTML = '';
+            pagination.style.display = 'none';
+        }
     }
 
     function displaySearchResults(results) {
@@ -4501,7 +4668,6 @@
 
     async function playSong(song, isFromPlaylist = false) {
       try {
-        showLoading();
         clearError();
 
         nowPlayingTitle.textContent = song.name || '未知歌曲';
@@ -4580,6 +4746,7 @@
             if (currentTab === 'playlist') {
               renderPlaylist();
             }
+            updateCollapsedTextByPlayingState();
           })
           .catch(e => {
             playButton.innerHTML = '<i class="fas fa-play"></i>';
@@ -4591,14 +4758,12 @@
               showError('播放失败: ' + e.message);
             }
           });
-      } catch (e) {
-        showError(e.message);
-        playButton.innerHTML = '<i class="fas fa-play"></i>';
-        isPlaying = false;
-        updatePageTitle();
-      } finally {
-        hideLoading();
-      }
+          } catch (e) {
+            showError(e.message);
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            isPlaying = false;
+            updatePageTitle();
+        }
     }
 
     async function playFromPlaylist(index) {
@@ -5015,36 +5180,36 @@
 
     // 测试API连接
     testApiBtn.addEventListener('click', async () => {
-      const token = apiTokenInput.value.trim();
-      if (!token) {
-        showError('请输入API令牌', 2000);
-        return;
-      }
-
-      try {
-        showError('测试API连接中...', 2000);
-        const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            model: 'glm-4-flashx',
-            messages: [{ role: 'user', content: '你好' }],
-            stream: false,
-            max_tokens: 10
-          })
-        });
-
-        if (response.ok) {
-          showError('API连接成功', 2000);
-        } else {
-          throw new Error(`HTTP ${response.status}`);
+        const token = apiTokenInput.value.trim();
+        if (!token) {
+            showError('请输入API令牌', 2000);
+            return;
         }
-      } catch (error) {
-        showError(`API连接失败: ${error.message}`, 3000);
-      }
+
+        try {
+            showError('测试API连接中...', 2000);
+            const response = await wrappedFetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    model: 'glm-4-flashx',
+                    messages: [{ role: 'user', content: '你好' }],
+                    stream: false,
+                    max_tokens: 10
+                })
+            });
+
+            if (response.ok) {
+                showError('API连接成功', 2000);
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            showError(`API连接失败: ${error.message}`, 3000);
+        }
     });
 
     // Tab键支持
@@ -5169,38 +5334,48 @@
     });
 
     audioPlayer.addEventListener('ended', async () => {
-      // 先更新播放按钮状态
-      playButton.innerHTML = '<i class="fas fa-play"></i>';
-      isPlaying = false;
-      updatePageTitle();
+        // 先更新播放按钮状态
+        playButton.innerHTML = '<i class="fas fa-play"></i>';
+        isPlaying = false;
+        updatePageTitle();
 
-      if (!currentPlayingId || playlist.length === 0) return;
+        // 如果没有歌曲在播放或播放列表为空，恢复折叠文字并返回
+        if (!currentPlayingId || playlist.length === 0) {
+            currentPlayingId = null;
+            updateCollapsedTextByPlayingState();
+            return;
+        }
 
-      if (currentPlayMode === 'repeat') {
-        // 单曲循环：直接重新播放，不重新请求歌词和封面
-        try {
-          audioPlayer.currentTime = 0;          // 重置到开头
-          await audioPlayer.play();              // 尝试播放
-          // 播放成功则更新按钮
-          playButton.innerHTML = '<i class="fas fa-pause"></i>';
-          isPlaying = true;
-          updatePageTitle();
-        } catch (e) {
-          console.error('单曲循环自动播放失败:', e);
-          // 自动播放失败（例如浏览器限制），保持暂停状态
+        if (currentPlayMode === 'repeat') {
+            // 单曲循环：直接重新播放，不重新请求歌词和封面
+            try {
+                audioPlayer.currentTime = 0;
+                await audioPlayer.play();
+                playButton.innerHTML = '<i class="fas fa-pause"></i>';
+                isPlaying = true;
+                updatePageTitle();
+            } catch (e) {
+                console.error('单曲循环自动播放失败:', e);
+                currentPlayingId = null;
+                updateCollapsedTextByPlayingState();
+            }
+        } else {
+            const nextSongId = getNextSongId(currentPlayingId);
+            if (nextSongId) {
+                const nextSong = getSongById(nextSongId);
+                if (nextSong) {
+                    setTimeout(() => {
+                        playSong(nextSong, true);
+                    }, 500);
+                } else {
+                    currentPlayingId = null;
+                    updateCollapsedTextByPlayingState();
+                }
+            } else {
+                currentPlayingId = null;
+                updateCollapsedTextByPlayingState();
+            }
         }
-      } else {
-        // 其他模式：正常切换到下一首
-        const nextSongId = getNextSongId(currentPlayingId);
-        if (nextSongId) {
-          const nextSong = getSongById(nextSongId);
-          if (nextSong) {
-            setTimeout(() => {
-              playSong(nextSong, true);
-            }, 500);
-          }
-        }
-      }
     });
 
     audioPlayer.addEventListener('loadedmetadata', () => {
@@ -5696,6 +5871,7 @@
       initPlaylist();
       updateDynamicIslandWelcome();
       updatePlaylistOrder();
+      currentPlayingId = null;
       
       // 移动端优化
       if (isMobile()) {
@@ -5728,6 +5904,7 @@
           isMobileLyricsFullscreen = false;
         }
       }, 200));
+      updateCollapsedText('Harmonia');   // 初始显示 Harmonia
     }
       
       // 初始化侧边栏搜索和排序控件
