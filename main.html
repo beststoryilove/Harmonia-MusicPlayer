@@ -2150,8 +2150,10 @@
 
       .lyrics > .item {
         padding: 15px !important;
-        content-visibility: auto;
-        contain-intrinsic-size: 0px 80px; /* 初始高度，后续动态更新 */
+        content-visibility: visible;
+        contain: layout paint style;
+        backface-visibility: hidden;
+        transform: translateZ(0);
       }
 
       /* 移动端全屏歌词的特殊样式 */
@@ -2167,6 +2169,12 @@
 
       body.mobile-lyrics-fullscreen .lyrics > .item {
         padding: 20px !important;
+      }
+
+      .lyrics > .item,
+      body.mobile-lyrics-fullscreen .lyrics > .item {
+        filter: none !important;
+        transition: transform 0.28s cubic-bezier(.2,.7,0,1), color 0.18s linear !important;
       }
     }
 
@@ -2772,6 +2780,25 @@
     const LINE_HEIGHT = 20;
     let LYRICS_OFFSET = window.innerHeight / 3;
     let lastLyric = -1;
+    let lyricsHeightsPrefix = [0];
+
+    function rebuildLyricsMetrics(data = amLyricsData) {
+      if (!Array.isArray(data) || data.length === 0) {
+        lyricsHeightsPrefix = [0];
+        return;
+      }
+
+      const prefix = new Array(data.length + 1);
+      prefix[0] = 0;
+
+      for (let i = 0; i < data.length; i++) {
+        const el = data[i]?.ele;
+        const h = el ? el.offsetHeight : 0;
+        prefix[i + 1] = prefix[i] + h + LINE_HEIGHT;
+      }
+
+      lyricsHeightsPrefix = prefix;
+    }
 
     // 桌面歌词
     let desktopLyricsWs = null;
@@ -3022,7 +3049,7 @@
           // 歌词容器从隐藏变为显示，重新计算偏移并刷新布局
           LYRICS_OFFSET = calculateLyricsOffset();
           if (amLyricsData.length > 0 && lastLyric >= 0) {
-            UpdateLyricsLayout(lastLyric, amLyricsData, 0);
+            UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
           }
         } else {
           rightcontent.classList.add('hidden');
@@ -3052,8 +3079,9 @@
 
       // 无论进入/退出全屏，重新计算偏移并刷新歌词布局
       LYRICS_OFFSET = calculateLyricsOffset();
+      rebuildLyricsMetrics(amLyricsData);
       if (amLyricsData.length > 0 && lastLyric >= 0) {
-        UpdateLyricsLayout(lastLyric, amLyricsData, 0);
+        UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
       }
     }
 
@@ -4142,18 +4170,22 @@
 
       requestAnimationFrame(() => {
         LYRICS_OFFSET = calculateLyricsOffset();
+        rebuildLyricsMetrics(amLyricsData);
         UpdateLyricsLayout(0, [0], amLyricsData, 0);
         setTimeout(() => {
           const items = amLyrics.querySelectorAll('.item');
+          const transitionStr = isMobile()
+            ? 'transform 0.28s cubic-bezier(.2,.7,0,1), color 0.18s linear'
+            : 'transform 0.7s cubic-bezier(.19,.11,0,1), color 0.5s ease-in-out, filter 0.5s ease-in-out';
           items.forEach(item => {
-            item.style.transition =
-              'transform 0.7s cubic-bezier(.19,.11,0,1), color 0.5s ease-in-out, filter 0.5s ease-in-out';
+            item.style.transition = transitionStr;
           });
         }, 50);
       });
 
       if (isMobile()) {
         setTimeout(() => {
+          rebuildLyricsMetrics(amLyricsData);
           document.querySelectorAll('.lyrics .item').forEach(el => {
             const height = el.offsetHeight;
             if (height > 0) {
@@ -4880,19 +4912,25 @@
       // 重新计算偏移量（确保容器已渲染）
       requestAnimationFrame(() => {
         LYRICS_OFFSET = calculateLyricsOffset();
+        rebuildLyricsMetrics(lyrics);
         // 初始化歌词布局
         UpdateLyricsLayout(0, [0], lyrics, 0);
         
         // 添加过渡效果
         setTimeout(() => {
           const items = amLyrics.querySelectorAll('.item');
+          const transitionStr = isMobile()
+            ? 'transform 0.28s cubic-bezier(.2,.7,0,1), color 0.18s linear'
+            : 'transform 0.7s cubic-bezier(.19,.11,0,1), color 0.5s ease-in-out, filter 0.5s ease-in-out';
           items.forEach(item => {
-            item.style.transition = 'transform 0.7s cubic-bezier(.19,.11,0,1), color 0.5s ease-in-out, filter 0.5s ease-in-out';
+            item.style.transition = transitionStr;
           });
         }, 50);
       });
+
       if (isMobile()) {
         setTimeout(() => {
+          rebuildLyricsMetrics(amLyricsData);
           document.querySelectorAll('.lyrics .item').forEach(el => {
             const height = el.offsetHeight;
             if (height > 0) {
@@ -4980,45 +5018,54 @@
     }
 
     function GetLyricsLayout(now, to, data) {
-      let res = 0;
-      
-      // 判断滚动方向
-      if (to > now) { // 向下滚动
-        for (let i = now; i < to; i++) {
-          if (data[i] && data[i].ele) {
-            res += data[i].ele.offsetHeight + LINE_HEIGHT;
-          }
-        }
-      } else { // 向上滚动
-        for (let i = now; i > to; i--) {
-          if (data[i - 1] && data[i - 1].ele) {
-            res -= data[i - 1].ele.offsetHeight + LINE_HEIGHT;
-          }
-        }
+      if (!Array.isArray(data) || data.length === 0) return LYRICS_OFFSET;
+
+      const maxIndex = data.length - 1;
+      now = Math.max(0, Math.min(now, maxIndex));
+      to = Math.max(0, Math.min(to, maxIndex));
+
+      if (lyricsHeightsPrefix.length !== data.length + 1) {
+        rebuildLyricsMetrics(data);
       }
-      
-      // 使用动态计算的偏移值
+
+      let res = 0;
+      if (to > now) {
+        res = lyricsHeightsPrefix[to] - lyricsHeightsPrefix[now];
+      } else if (to < now) {
+        res = -(lyricsHeightsPrefix[now] - lyricsHeightsPrefix[to]);
+      }
+
       return res + LYRICS_OFFSET;
     }
 
     function UpdateLyricsLayout(mainIndex, highlightIndices, data, init = 1) {
       const activeColor = "rgba(255, 255, 255, 1)";
       const inactiveColor = "rgba(255, 255, 255, 0.2)";
+      const mobile = isMobile();
+      const useStagger = !!init && !mobile;
+      const highlightSet = new Set(Array.isArray(highlightIndices) ? highlightIndices : [mainIndex]);
+
+      if (!Array.isArray(data) || data.length === 0) return;
+      if (lyricsHeightsPrefix.length !== data.length + 1) {
+        rebuildLyricsMetrics(data);
+      }
 
       for (let i = 0; i < data.length; i++) {
         if (!data[i] || !data[i].ele) continue;
 
-        // 颜色：如果在高亮集合中则使用 activeColor，否则使用 inactiveColor
-        data[i].ele.style.color = highlightIndices.includes(i) ? activeColor : inactiveColor;
+        const isHighlight = highlightSet.has(i);
+        data[i].ele.style.color = isHighlight ? activeColor : inactiveColor;
 
-        // 模糊：高亮行不模糊，其他行按距离主行计算
-        const blurAmount = highlightIndices.includes(i) ? 0 : Math.abs(i - mainIndex);
-        data[i].ele.style.filter = `blur(${blurAmount}px)`;
+        if (mobile) {
+          data[i].ele.style.filter = 'none';
+        } else {
+          const blurAmount = isHighlight ? 0 : Math.abs(i - mainIndex);
+          data[i].ele.style.filter = `blur(${blurAmount}px)`;
+        }
 
-        // 计算目标位置（始终以 mainIndex 为基准）
         const position = GetLyricsLayout(mainIndex, i, data);
 
-        if (init) {
+        if (useStagger) {
           const delay = Math.min(Math.abs(i - mainIndex) * 20, 300);
           setTimeout(() => {
             if (data[i] && data[i].ele) {
@@ -5086,8 +5133,8 @@
         let scrollBaseIndex = maxIdx;
 
         // 判断是否需要立即更新（时间差小于0.3秒）
-        let useDelay = true;
-        if (lastLyric >= 0 && lastLyric < amLyricsData.length && activeIndex < amLyricsData.length) {
+        let useDelay = !isMobile(); // 移动端直接关闭级联延迟动画
+        if (useDelay && lastLyric >= 0 && lastLyric < amLyricsData.length && activeIndex < amLyricsData.length) {
           const timeDiff = Math.abs(amLyricsData[activeIndex].time - amLyricsData[lastLyric].time);
           if (timeDiff < 0.3) {
             useDelay = false;
@@ -5895,7 +5942,7 @@
         LYRICS_OFFSET = calculateLyricsOffset();
         // 如果有歌词数据，重新布局
         if (amLyricsData.length > 0 && lastLyric >= 0) {
-          UpdateLyricsLayout(lastLyric, amLyricsData, 0);
+          UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
         }
         
         // 如果窗口大小变化导致不再是移动端，退出移动端全屏模式
