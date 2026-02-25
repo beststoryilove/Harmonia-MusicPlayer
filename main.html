@@ -1227,14 +1227,125 @@
     }
 
     .progress-bar {
-      width: 100%;
-      height: 6px;
-      background: rgba(255,255,255,0.14);
-      border-radius: 999px;
-      cursor: pointer;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+        -webkit-appearance: none;
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        overflow: visible;
+        cursor: pointer;
+    }
+
+    /* 已播放部分的进度条颜色 */
+    .progress-bar::-webkit-slider-runnable-track {
+        background: linear-gradient(to right, #fff var(--progress), rgba(255,255,255,0.2) var(--progress));
+        height: 4px;
+        border-radius: 10px;
+    }
+
+    .progress-bar::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 12px;
+        width: 12px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        margin-top: -4px; /* 居中对齐 */
+        opacity: 0; /* 平时隐藏 */
+        transition: opacity 0.2s;
+    }
+
+    /* 鼠标悬浮或拖动时显示滑块，并加粗进度条 */
+    .progress-container:hover .progress-bar { height: 6px; }
+    .progress-container:hover .progress-bar::-webkit-slider-thumb { opacity: 1; }
+
+    /* 歌词容器遮罩：实现上下边缘淡出 */
+    .lyrics-container {
+        mask-image: linear-gradient(to bottom, 
+            transparent 0%, 
+            black 15%, 
+            black 85%, 
+            transparent 100%);
+        -webkit-mask-image: linear-gradient(to bottom, 
+            transparent 0%, 
+            black 15%, 
+            black 85%, 
+            transparent 100%);
+    }
+
+    .lyric-line {
+        opacity: 0.2;         /* 非活动行大幅度变暗 */
+        filter: blur(1px);    /* 增加微弱模糊，消除“截断线”的视觉生硬感 */
+        transform: scale(0.9);
+        transition: all 0.8s cubic-bezier(0.2, 0, 0.2, 1);
+        margin: 20px 0;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    /* 当前播放行：变亮、放大、取消模糊 */
+    .lyric-line.active {
+        opacity: 1;
+        filter: blur(0);
+        transform: scale(1);
+        color: #fff;
+        text-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+
+    /* 译文样式：稍微变细一点 */
+    .lyric-line .translation {
+        font-size: 1.4rem;
+        opacity: 0.8;
+        margin-top: 4px;
+        display: block;
+    }
+
+    /* 1. 歌词主容器：撑满全屏 */
+    .lyrics-wrapper {
+        position: fixed; /* 或者 absolute */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh; /* 扩展到整个设备高度 */
+        overflow-y: scroll;
+        scrollbar-width: none; /* 隐藏滚动条 */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        
+        /* 核心：极其平滑的遮罩 */
+        /* 将渐变区间拉长到 25%，让淡出更自然 */
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(0, 0, 0, 0.2) 5%,
+            black 25%, 
+            black 75%,
+            rgba(0, 0, 0, 0.2) 95%,
+            transparent 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(0, 0, 0, 0.2) 5%,
+            black 25%,
+            black 75%,
+            rgba(0, 0, 0, 0.2) 95%,
+            transparent 100%
+        );
+    }
+
+    .lyrics-wrapper::-webkit-scrollbar {
+        display: none; /* 隐藏滚动条 */
+    }
+
+    /* 2. 歌词内容承载区 */
+    .lyrics-content {
+        padding-top: 40vh;    /* 初始行起始位置在屏幕接近中间 */
+        padding-bottom: 50vh; /* 结尾行也能滚到上方，不被遮挡 */
+        width: 90%;
+        max-width: 600px;     /* 保持宽度不变 */
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); /* 丝滑位移 */
     }
 
     body.light-theme .progress-bar {
@@ -2431,6 +2542,125 @@
     .sidebar-action-btn {
       -webkit-tap-highlight-color: transparent;
     }
+
+    /* 播放控制栏容器 */
+    .player-controls {
+        backdrop-filter: blur(25px) saturate(180%);
+        -webkit-backdrop-filter: blur(25px) saturate(180%);
+        background: rgba(255, 255, 255, 0.15); /* 暗色模式下建议用 rgba(30, 30, 30, 0.7) */
+        border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+        padding: 20px 25px;
+        border-radius: 24px 24px 0 0; /* 顶部大圆角 */
+    }
+
+    /* 按钮组 */
+    .control-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px; /* 增加呼吸感 */
+    }
+
+    /* 所有控制按钮基础样式 */
+    .control-btn {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.2s;
+        font-size: 24px;
+    }
+
+    /* 按钮点击时的“软缩放”效果，这是 Apple 的精髓 */
+    .control-btn:active {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+
+    /* 播放/暂停按钮要更突出 */
+    #playBtn {
+        font-size: 48px;
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+    }
+
+    #lyrics-container {
+        height: 100vh !important;
+        position: fixed;
+        top: 0;
+        left: 0;
+        padding-top: 35vh !important; /* 让第一行从中间偏上开始 */
+        padding-bottom: 40vh !important;
+        mask-image: linear-gradient(to bottom, 
+            transparent 0%, 
+            rgba(0,0,0,0.1) 8%, 
+            black 25%, 
+            black 75%, 
+            rgba(0,0,0,0.1) 92%, 
+            transparent 100%) !important;
+        -webkit-mask-image: linear-gradient(to bottom, 
+            transparent 0%, 
+            rgba(0,0,0,0.1) 8%, 
+            black 25%, 
+            black 75%, 
+            rgba(0,0,0,0.1) 92%, 
+            transparent 100%) !important;
+    }
+
+    /* 流体背景基础 */
+    .fluid-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -2; /* 放在原本 bg-blur 的下面 */
+        overflow: hidden;
+        background: #000;
+        display: none; /* 默认隐藏，由 JS 开启 */
+    }
+
+    .fluid-blob {
+        position: absolute;
+        width: 100vmax;
+        height: 100vmax;
+        filter: blur(80px);
+        opacity: 0.5;
+        mix-blend-mode: screen;
+        animation: fluid-move 30s linear infinite;
+    }
+
+    .blob-1 { top: -50%; left: -50%; background: var(--color-1, #444); }
+    .blob-2 { top: -50%; right: -50%; background: var(--color-2, #333); animation-duration: 25s; }
+    .blob-3 { bottom: -50%; left: -50%; background: var(--color-3, #222); animation-duration: 35s; }
+    .blob-4 { bottom: -50%; right: -50%; background: var(--color-4, #111); animation-duration: 20s; }
+
+    @keyframes fluid-move {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(10%, 15%) rotate(180deg); }
+        100% { transform: translate(0, 0) rotate(360deg); }
+    }
+
+    /* 强制“背景显示模式”下拉框为黑底白字 */
+    #bg-mode-select {
+      -webkit-appearance: none;          /* 移除默认样式，避免干扰 */
+      -moz-appearance: none;
+      appearance: none;
+      background: #000000 !important;     /* 纯黑背景 */
+      color: #ffffff !important;          /* 白色文字 */
+      border: 1px solid #333333 !important;
+      color-scheme: dark;                 /* 强制下拉菜单使用深色系统配色（黑底白字） */
+      padding: 10px 30px 10px 15px;       /* 与输入框内边距一致，为箭头留空间 */
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+    }
+
+    /* 可选：去除焦点外框，可根据需要保留或删除 */
+    #bg-mode-select:focus {
+      outline: none;
+      border-color: #ff2d55; /* 或保持原色 */
+    }
   </style>
 </head>
 <body>
@@ -2494,89 +2724,108 @@
     <i class="fas fa-align-left"></i>
   </div>
 
-  <!-- 设置模态框 -->
-  <div class="modal-overlay settings-modal-overlay" id="settingsModalOverlay">
-    <div class="modal-content settings-modal-content">
-      <h2 class="modal-title">设置</h2>
-      <div class="settings-tabs">
-        <div class="settings-tab active" data-tab="lyrics">歌词</div>
-      </div>
-      <div class="settings-content">
-        <div class="settings-tab-content active" data-tab="lyrics">
-          <div class="settings-section">
-            <h3 class="settings-section-title">歌曲翻译（点一下就可以应用了）</h3>
-            <div class="settings-option">
-              <label class="switch">
-                <input type="checkbox" id="enableTranslation">
-                <span class="slider"></span>
+  <div id="fluid-bg-container" class="fluid-bg">
+  <div class="fluid-blob blob-1"></div>
+  <div class="fluid-blob blob-2"></div>
+  <div class="fluid-blob blob-3"></div>
+  <div class="fluid-blob blob-4"></div>
+</div>
+
+<div class="modal-overlay settings-modal-overlay" id="settingsModalOverlay">
+  <div class="modal-content settings-modal-content">
+    <h2 class="modal-title">设置</h2>
+    
+    <div class="settings-tabs">
+      <div class="settings-tab active" data-tab="lyrics">歌词</div>
+      <div class="settings-tab" data-tab="visual">视觉</div>
+    </div>
+
+    <div class="settings-content">
+      <div class="settings-tab-content active" data-tab="lyrics">
+        <div class="settings-section">
+          <h3 class="settings-section-title">歌曲翻译（点一下就可以应用了）</h3>
+          <div class="settings-option">
+            <label class="switch">
+              <input type="checkbox" id="enableTranslation">
+              <span class="slider"></span>
+            </label>
+            <span class="settings-option-label">启用歌曲翻译</span>
+          </div>
+          <div class="settings-option">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="translationScope" value="no-translation" checked>
+                <span>仅翻译没有翻译的外语歌（推荐）</span>
               </label>
-              <span class="settings-option-label">启用歌曲翻译</span>
-            </div>
-            <div class="settings-option">
-              <div class="radio-group">
-                <label class="radio-label">
-                  <input type="radio" name="translationScope" value="no-translation" checked>
-                  <span>仅翻译没有翻译的外语歌（推荐）</span>
-                </label>
-                <label class="radio-label">
-                  <input type="radio" name="translationScope" value="all-foreign">
-                  <span>翻译所有外语歌（图一乐而已，不建议）</span>
-                </label>
-              </div>
-            </div>
-            <div class="settings-option">
-              <label class="settings-option-label">GLM-4-Flashx API令牌</label>
-              <input type="password" class="api-token-input" id="apiTokenInput" placeholder="请输入您的API令牌">
-              <p class="settings-hint">请前往 Bigmodel 注册账号并创建API令牌</p>
-            </div>
-            <div class="settings-option">
-              <button class="test-api-btn" id="testApiBtn">测试API连接</button>
-              <button class="save-settings-btn" id="saveSettingsBtn">保存设置</button>
+              <label class="radio-label">
+                <input type="radio" name="translationScope" value="all-foreign">
+                <span>翻译所有外语歌（图一乐而已，不建议）</span>
+              </label>
             </div>
           </div>
-          <div class="settings-section">
-            <h3 class="settings-section-title">逐字歌词（仅部分歌曲）</h3>
-
-            <div class="settings-option">
-              <label class="switch">
-                <input type="checkbox" id="enableWordLyrics">
-                <span class="slider"></span>
-              </label>
-              <span class="settings-option-label">启用逐字歌词</span>
-            </div>
-
-            <p class="settings-hint">
-              * 开启后将尝试从网易云接口获取 yv=1 逐字歌词；若该曲无逐字歌词会自动使用普通歌词（lv=1），下一首继续尝试逐字歌词。
-            </p>
-            <p class="settings-hint">
-              * 由于网易云方面原因，目前无法实现所有歌曲的逐字歌词，请谅解。
-            </p>
+          <div class="settings-option">
+            <label class="settings-option-label">GLM-4-Flashx API令牌</label>
+            <input type="password" class="api-token-input" id="apiTokenInput" placeholder="请输入您的API令牌">
+            <p class="settings-hint">请前往 Bigmodel 注册账号并创建API令牌</p>
           </div>
-          <div class="settings-section">
-            <h3 class="settings-section-title">网易云歌词代理</h3>
+          <div class="settings-option">
+            <button class="test-api-btn" id="testApiBtn">测试API连接</button>
+            <button class="save-settings-btn" id="saveSettingsBtn">保存设置</button>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h3 class="settings-section-title">逐字歌词（仅部分歌曲）</h3>
+          <div class="settings-option">
+            <label class="switch">
+              <input type="checkbox" id="enableWordLyrics">
+              <span class="slider"></span>
+            </label>
+            <span class="settings-option-label">启用逐字歌词</span>
+          </div>
+          <p class="settings-hint">* 开启后将尝试从网易云接口获取 yv=1 逐字歌词</p>
+        </div>
 
-            <div class="settings-option" style="flex-direction:column;align-items:flex-start;">
-              <label class="settings-option-label" style="margin-bottom:6px;">
-                代理地址（留空使用内置代理）
-              </label>
-              <input
-                type="text"
-                id="neteaseProxyInput"
-                class="api-token-input"
-                placeholder="2333..."
-              />
-              <p class="settings-hint">
-                用于解决CORS问题
-              </p>
-            </div>
+        <div class="settings-section">
+          <h3 class="settings-section-title">网易云歌词代理</h3>
+          <div class="settings-option" style="flex-direction:column;align-items:flex-start;">
+            <label class="settings-option-label" style="margin-bottom:6px;">代理地址（留空使用内置代理）</label>
+            <input type="text" id="neteaseProxyInput" class="api-token-input" placeholder="2333..." />
+            <p class="settings-hint">用于解决CORS问题</p>
           </div>
         </div>
       </div>
-      <button class="modal-close" id="settingsModalClose">
-        <i class="fas fa-times"></i>
-      </button>
+
+      <div class="settings-tab-content" data-tab="visual">
+        <div class="settings-section">
+          <h3 class="settings-section-title">背景视觉效果</h3>
+          
+          <div class="settings-option" style="flex-direction:column; align-items:flex-start;">
+            <label class="settings-option-label" style="margin-bottom:8px;">背景显示模式</label>
+            <select id="bg-mode-select" class="api-token-input" style="width: 100%; height: 40px; cursor: pointer;">
+              <option value="static">静态模糊专辑图 (默认)</option>
+              <option value="fluid">动态流体渐变 (Apple Music 风格)</option>
+            </select>
+            <p class="settings-hint" style="margin-top: 10px;">
+              * 动态流体模式会实时提取封面颜色并生成动画，对 GPU 性能有一定要求。
+            </p>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">性能优化</h3>
+          <div class="settings-option">
+             <p class="settings-hint">如果开启流体背景后设备发热或掉帧，请切换回静态模式。</p>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <button class="modal-close" id="settingsModalClose">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
+</div>
 
   <!-- 侧拉抽屉 -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -4264,7 +4513,7 @@
         if (!trimmedLine) continue;
         
         // 检查是否为时间轴行
-        const timeMatch = trimmedLine.match(/^\[(\d{2}):(\d{2})\.(\d{3})\]/);
+        const timeMatch = trimmedLine.match(/^\[(\d{2}):(\d{2})[\.:](\d{2,3})\]/);
         if (!timeMatch) {
           // 非时间轴行：检查是否为元数据行
           const isMetadata = metadataKeywords.some(keyword => 
@@ -4505,6 +4754,58 @@
         }
       }
     }
+
+    const bgModeSelect = document.getElementById('bg-mode-select');
+    const fluidBg = document.getElementById('fluid-bg-container');
+    const staticBg = document.getElementById('bg-blur');
+
+    bgModeSelect.addEventListener('change', function() {
+        const mode = this.value;
+        localStorage.setItem('settings-bg-mode', mode);
+        updateBgVisual(mode);
+    });
+
+    function updateBgVisual(mode) {
+        if (mode === 'fluid') {
+            fluidBg.style.display = 'block';
+            staticBg.style.opacity = '0'; // 隐藏原本的静态模糊图
+            extractColorsFromCover(); // 提取颜色
+        } else {
+            fluidBg.style.display = 'none';
+            staticBg.style.opacity = '1';
+        }
+    }
+
+    // 提取封面颜色并应用到流体气泡
+    function extractColorsFromCover() {
+        const albumCover = document.getElementById('album-cover-img'); // 对应你代码里的封面 ID
+        if (!albumCover || !albumCover.src) return;
+
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = albumCover.src;
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 10, 10);
+            const data = ctx.getImageData(0, 0, 10, 10).data;
+            
+            // 分别取样四个点的颜色
+            for(let i=0; i<4; i++) {
+                const r = data[i*10];
+                const g = data[i*10+1];
+                const b = data[i*10+2];
+                document.documentElement.style.setProperty(`--color-${i+1}`, `rgb(${r},${g},${b})`);
+            }
+        };
+    }
+
+    // 页面加载时读取配置
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedMode = localStorage.getItem('settings-bg-mode') || 'static';
+        bgModeSelect.value = savedMode;
+        updateBgVisual(savedMode);
+    });
 
     function extractColorsFromImage(img) {
       const tempCanvas = document.createElement('canvas');
@@ -4822,7 +5123,7 @@
         if (!lyricText) return [];
         const lines = lyricText.split('\n');
         const res = [];
-        const re = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+        const re = /\[(\d{2}):(\d{2})[\.:](\d{2,3})\]/g;
 
         for (const line of lines) {
             let match;
@@ -5913,45 +6214,50 @@
 
     // ===== 初始化 =====
     function init() {
-      initTheme();
-      loadTranslationSettings();
-      initPlaylist();
-      updateDynamicIslandWelcome();
-      updatePlaylistOrder();
-      currentPlayingId = null;
-      
-      // 移动端优化
-      if (isMobile()) {
-        desktopLyricsBtn.style.display = 'none';
-        
-        // 确保初始状态下歌词是隐藏的
-        if (!lyricsVisible) {
-          rightcontent.classList.add('hidden');
-          lyricsToggleBtn.innerHTML = '<i class="fas fa-align-left"></i>';
+        initTheme();
+        loadTranslationSettings();
+        initPlaylist();
+        updateDynamicIslandWelcome();
+        updatePlaylistOrder();
+        currentPlayingId = null;
+
+        if (isMobile()) {
+            desktopLyricsBtn.style.display = 'none';
+            if (!lyricsVisible) {
+                rightcontent.classList.add('hidden');
+                lyricsToggleBtn.innerHTML = '<i class="fas fa-align-left"></i>';
+            }
         }
-      }
-      
-      // 初始计算偏移量
-      LYRICS_OFFSET = calculateLyricsOffset();
-      
-      // 初始化侧边栏搜索和排序控件
-      initSidebarControls();
-      
-      // 监听窗口大小变化
-      window.addEventListener('resize', debounce(() => {
+
         LYRICS_OFFSET = calculateLyricsOffset();
-        // 如果有歌词数据，重新布局
-        if (amLyricsData.length > 0 && lastLyric >= 0) {
-          UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
-        }
-        
-        // 如果窗口大小变化导致不再是移动端，退出移动端全屏模式
-        if (!isMobile() && isMobileLyricsFullscreen) {
-          document.body.classList.remove('mobile-lyrics-fullscreen');
-          isMobileLyricsFullscreen = false;
-        }
-      }, 200));
-      updateCollapsedText('Harmonia');   // 初始显示 Harmonia
+        initSidebarControls();
+
+        // ---------- 新增：设置选项卡切换 ----------
+        document.querySelectorAll('.settings-tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                const target = this.dataset.tab;
+                document.querySelectorAll('.settings-tab-content').forEach(content => content.classList.remove('active'));
+                const activeContent = document.querySelector(`.settings-tab-content[data-tab="${target}"]`);
+                if (activeContent) activeContent.classList.add('active');
+            });
+        });
+        // ---------------------------------------
+
+        window.addEventListener('resize', debounce(() => {
+            LYRICS_OFFSET = calculateLyricsOffset();
+            if (amLyricsData.length > 0 && lastLyric >= 0) {
+                UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
+            }
+            if (!isMobile() && isMobileLyricsFullscreen) {
+                document.body.classList.remove('mobile-lyrics-fullscreen');
+                isMobileLyricsFullscreen = false;
+            }
+        }, 200));
+
+        updateCollapsedText('Harmonia');
     }
       
       // 初始化侧边栏搜索和排序控件
