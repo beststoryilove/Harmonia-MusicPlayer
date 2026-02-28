@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Harmonia - 音乐播放器</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <style>
+<style>
     /* ===== Apple Music 字体 ===== */
     @font-face {
       src: url(fonts/PingFangSC-Regular.woff2);
@@ -96,6 +96,19 @@
       --mobile-lyrics-bottom: 80px;
       --mobile-lyrics-left: 20px;
       --mobile-lyrics-right: 20px;
+
+      /* ===== iOS 26 Liquid Glass 核心变量 ===== */
+      --liquid-glass-bg-dark: rgba(255, 255, 255, 0.085);
+      --liquid-glass-bg-light: rgba(255, 255, 255, 0.78);
+      --liquid-blur: blur(42px);
+      --liquid-saturate: saturate(225%) contrast(118%) brightness(1.08);
+      --liquid-border-dark: 1px solid rgba(255, 255, 255, 0.22);
+      --liquid-border-light: 1px solid rgba(0, 0, 0, 0.15);
+      --glass-highlight: linear-gradient(145deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.08) 45%, transparent 80%);
+      --glass-inner-glow: inset 0 1.5px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(0,0,0,0.25);
+      --glass-depth-shadow: 0 28px 70px rgba(0,0,0,0.65), 0 8px 25px rgba(0,0,0,0.35);
+      --border-radius-liquid: 32px;
+      --transition-liquid: all 0.32s cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     * {
@@ -123,6 +136,33 @@
     body.light-theme {
       background: var(--bg-light);
       color: var(--text-light);
+    }
+
+    /* ===== 通用液态玻璃类 ===== */
+    .liquid-glass {
+      background: var(--liquid-glass-bg-dark) !important;
+      backdrop-filter: var(--liquid-blur) var(--liquid-saturate) !important;
+      -webkit-backdrop-filter: var(--liquid-blur) var(--liquid-saturate) !important;
+      border: var(--liquid-border-dark) !important;
+      box-shadow: var(--glass-depth-shadow), var(--glass-inner-glow) !important;
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--border-radius-liquid) !important;
+    }
+    .liquid-glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--glass-highlight) !important;
+      pointer-events: none;
+      z-index: 1;
+      mix-blend-mode: screen;
+      opacity: 0.85;
+    }
+    body.light-theme .liquid-glass {
+      background: var(--liquid-glass-bg-light) !important;
+      border: var(--liquid-border-light) !important;
+      box-shadow: 0 28px 70px rgba(0,0,0,0.25), var(--glass-inner-glow) !important;
     }
 
     .am-background {
@@ -225,14 +265,17 @@
       border: 2px solid rgba(0, 0, 0, 0.2);
     }
 
-    /* ===== 灵动岛样式 ===== */
+    /* ===== 灵动岛液态玻璃升级 ===== */
     .dynamic-island {
       position: fixed;
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(10, 10, 10, 0.72);
-      border-radius: 40px;
+      background: rgba(15, 15, 18, 0.68) !important;
+      backdrop-filter: blur(42px) saturate(230%) contrast(120%) !important;
+      -webkit-backdrop-filter: blur(42px) saturate(230%) contrast(120%) !important;
+      border: 1px solid rgba(255,255,255,0.25) !important;
+      border-radius: 50px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -244,29 +287,23 @@
       width: 180px;
       height: 40px;
       padding: 0;
-
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-
-      box-shadow:
-        0 18px 50px rgba(0, 0, 0, 0.55),
-        0 1px 0 rgba(255, 255, 255, 0.08) inset,
-        0 -1px 0 rgba(0, 0, 0, 0.55) inset;
+      box-shadow: 
+        0 35px 90px rgba(0,0,0,0.75),
+        inset 0 2px 0 rgba(255,255,255,0.45),
+        inset 0 -2px 0 rgba(0,0,0,0.55) !important;
     }
 
     .dynamic-island.expanded {
       width: 520px;
       height: 460px;
-      border-radius: 46px;
+      border-radius: 52px;
       padding: 22px 26px;
       align-items: flex-start;
       cursor: default;
-
-      background: rgba(15, 15, 15, 0.72);
-      box-shadow:
-        0 35px 90px rgba(0, 0, 0, 0.75),
-        0 2px 0 rgba(255, 255, 255, 0.08) inset,
-        0 -2px 0 rgba(0, 0, 0, 0.55) inset;
+      background: rgba(15, 15, 18, 0.72) !important;
+      box-shadow: 
+        0 50px 120px rgba(0,0,0,0.82),
+        inset 0 2.5px 0 rgba(255,255,255,0.5) !important;
     }
 
     .dynamic-island::before {
@@ -277,8 +314,8 @@
       padding: 1px;
       background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.22),
-        rgba(255, 255, 255, 0.06),
+        rgba(255, 255, 255, 0.32),
+        rgba(255, 255, 255, 0.08),
         rgba(255, 255, 255, 0.0)
       );
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -295,11 +332,11 @@
       border-radius: inherit;
       background: radial-gradient(
         circle at 30% 20%,
-        rgba(255, 255, 255, 0.14),
-        rgba(255, 255, 255, 0.02) 45%,
+        rgba(255, 255, 255, 0.18),
+        rgba(255, 255, 255, 0.04) 45%,
         transparent 70%
       );
-      opacity: 0.85;
+      opacity: 0.9;
       pointer-events: none;
       mix-blend-mode: screen;
     }
@@ -457,16 +494,17 @@
       padding: 14px 16px;
       border-radius: 16px;
       margin-bottom: 10px;
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--liquid-glass-bg-dark) !important;
       cursor: pointer;
       transition: all 0.22s ease;
       display: flex;
       align-items: center;
       justify-content: space-between;
 
-      border: 1px solid rgba(255,255,255,0.06);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      border: var(--liquid-border-dark) !important;
+      backdrop-filter: var(--liquid-blur) var(--liquid-saturate) !important;
+      -webkit-backdrop-filter: var(--liquid-blur) var(--liquid-saturate) !important;
+      box-shadow: var(--glass-depth-shadow), var(--glass-inner-glow) !important;
     }
 
     .island-result-item:hover {
@@ -628,7 +666,7 @@
       max-width: 100%;
     }
 
-    /* ===== 侧拉抽屉 ===== */
+    /* ===== 侧拉抽屉液态玻璃 ===== */
     .sidebar-overlay {
       position: fixed;
       top: 0;
@@ -655,15 +693,13 @@
       left: -100%;
       width: var(--sidebar-width);
       height: 100%;
-      background: rgba(18, 18, 18, 0.55);
-      backdrop-filter: blur(22px) saturate(180%);
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-      border-right: 1px solid rgba(255,255,255,0.08);
+      background: rgba(22, 22, 27, 0.68) !important;
+      backdrop-filter: blur(40px) saturate(210%) !important;
+      -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
+      border-right: var(--liquid-border-dark) !important;
       z-index: 1003;
       transition: left var(--transition-speed) ease;
-      box-shadow:
-        0 35px 90px rgba(0,0,0,0.75),
-        0 1px 0 rgba(255,255,255,0.10) inset;
+      box-shadow: var(--glass-depth-shadow), var(--glass-inner-glow) !important;
       display: flex;
       flex-direction: column;
     }
@@ -925,18 +961,19 @@
     .sidebar-item {
       padding: 13px 15px;
       border-radius: 16px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.06);
+      background: var(--liquid-glass-bg-dark) !important;
+      border: var(--liquid-border-dark) !important;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
 
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: var(--liquid-blur) var(--liquid-saturate) !important;
+      -webkit-backdrop-filter: var(--liquid-blur) var(--liquid-saturate) !important;
 
       transition: all 0.22s ease;
       animation: fadeIn 0.5s ease;
+      box-shadow: var(--glass-depth-shadow), var(--glass-inner-glow) !important;
     }
 
     .sidebar-item:hover {
@@ -1108,12 +1145,21 @@
       position: relative;
       z-index: 2;
       overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom,
+          transparent,
+          black 35%,
+          black 65%,
+          transparent);
+      mask-image: linear-gradient(to bottom,
+          transparent,
+          black 10%,
+          black 90%,
+          transparent);
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
     }
-
     .lyrics {
       max-width: 100%;
-      font-size: 24px;
-      line-height: 40px;
       z-index: 2;
       position: relative;
       height: 100%;
@@ -1121,14 +1167,12 @@
 
     .lyrics > .item {
       position: absolute;
-      padding: 20px;
+      padding: 25px;
       box-sizing: border-box;
       background-color: transparent;
-      border-radius: 18px;
+      border-radius: 15px;
       color: rgba(255, 255, 255, 0.2);
-      cursor: pointer;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-      transition: transform 0.25s ease, opacity 0.25s ease;
+      line-height: 250%;
       will-change: transform;
     }
 
@@ -1142,9 +1186,11 @@
     }
 
     .lyrics > .item > p {
-      font-size: 45px;
+      font-size: 40px;
       margin: 0;
-      font-weight: 600;
+      font-weight: 700;
+      word-wrap: break-word;
+      letter-spacing: 0.6px;
     }
 
     .word-lyric {
@@ -1236,7 +1282,6 @@
         cursor: pointer;
     }
 
-    /* 已播放部分的进度条颜色 */
     .progress-bar::-webkit-slider-runnable-track {
         background: linear-gradient(to right, #fff var(--progress), rgba(255,255,255,0.2) var(--progress));
         height: 4px;
@@ -1250,16 +1295,14 @@
         border-radius: 50%;
         background: #fff;
         box-shadow: 0 0 10px rgba(0,0,0,0.3);
-        margin-top: -4px; /* 居中对齐 */
-        opacity: 0; /* 平时隐藏 */
+        margin-top: -4px;
+        opacity: 0;
         transition: opacity 0.2s;
     }
 
-    /* 鼠标悬浮或拖动时显示滑块，并加粗进度条 */
     .progress-container:hover .progress-bar { height: 6px; }
     .progress-container:hover .progress-bar::-webkit-slider-thumb { opacity: 1; }
 
-    /* 歌词容器遮罩：实现上下边缘淡出 */
     .lyrics-container {
         mask-image: linear-gradient(to bottom, 
             transparent 0%, 
@@ -1274,8 +1317,8 @@
     }
 
     .lyric-line {
-        opacity: 0.2;         /* 非活动行大幅度变暗 */
-        filter: blur(1px);    /* 增加微弱模糊，消除“截断线”的视觉生硬感 */
+        opacity: 0.2;
+        filter: blur(1px);
         transform: scale(0.9);
         transition: all 0.8s cubic-bezier(0.2, 0, 0.2, 1);
         margin: 20px 0;
@@ -1283,7 +1326,6 @@
         font-weight: 600;
     }
 
-    /* 当前播放行：变亮、放大、取消模糊 */
     .lyric-line.active {
         opacity: 1;
         filter: blur(0);
@@ -1292,7 +1334,6 @@
         text-shadow: 0 0 20px rgba(255,255,255,0.1);
     }
 
-    /* 译文样式：稍微变细一点 */
     .lyric-line .translation {
         font-size: 1.4rem;
         opacity: 0.8;
@@ -1300,21 +1341,18 @@
         display: block;
     }
 
-    /* 1. 歌词主容器：撑满全屏 */
     .lyrics-wrapper {
-        position: fixed; /* 或者 absolute */
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
-        height: 100vh; /* 扩展到整个设备高度 */
+        height: 100vh;
         overflow-y: scroll;
-        scrollbar-width: none; /* 隐藏滚动条 */
+        scrollbar-width: none;
         display: flex;
         flex-direction: column;
         align-items: center;
         
-        /* 核心：极其平滑的遮罩 */
-        /* 将渐变区间拉长到 25%，让淡出更自然 */
         -webkit-mask-image: linear-gradient(
             to bottom,
             transparent 0%,
@@ -1336,16 +1374,15 @@
     }
 
     .lyrics-wrapper::-webkit-scrollbar {
-        display: none; /* 隐藏滚动条 */
+        display: none;
     }
 
-    /* 2. 歌词内容承载区 */
     .lyrics-content {
-        padding-top: 40vh;    /* 初始行起始位置在屏幕接近中间 */
-        padding-bottom: 50vh; /* 结尾行也能滚到上方，不被遮挡 */
+        padding-top: 40vh;
+        padding-bottom: 50vh;
         width: 90%;
-        max-width: 600px;     /* 保持宽度不变 */
-        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); /* 丝滑位移 */
+        max-width: 600px;
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     body.light-theme .progress-bar {
@@ -1377,10 +1414,10 @@
     }
 
     .control-button {
-      background: rgba(255,255,255,0.06);
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.095) !important;
+      backdrop-filter: blur(32px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
       color: var(--text-dark);
       font-size: 24px;
       cursor: pointer;
@@ -1390,16 +1427,14 @@
       align-items: center;
       justify-content: center;
       border-radius: var(--border-radius-full);
-      transition: transform 0.22s ease, background 0.22s ease;
-
-      box-shadow:
-        0 12px 30px rgba(0,0,0,0.45),
-        0 1px 0 rgba(255,255,255,0.10) inset;
+      transition: var(--transition-liquid);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.45), var(--glass-inner-glow) !important;
     }
 
     .control-button:hover {
-      background: rgba(255,255,255,0.10);
-      transform: translateY(-2px) scale(1.06);
+      background: rgba(255,255,255,0.10) !important;
+      transform: scale(1.06);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.45) !important;
     }
 
     .play-button {
@@ -1454,10 +1489,10 @@
     }
 
     .play-mode-btn {
-      background: rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(15px) saturate(180%);
-      -webkit-backdrop-filter: blur(15px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255,255,255,0.095) !important;
+      backdrop-filter: blur(32px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
       color: var(--text-muted-dark);
       font-size: 20px;
       cursor: pointer;
@@ -1467,12 +1502,14 @@
       align-items: center;
       justify-content: center;
       border-radius: var(--border-radius-full);
-      transition: all var(--transition-speed) ease;
+      transition: var(--transition-liquid);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.45), var(--glass-inner-glow) !important;
     }
 
     .play-mode-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.15) !important;
       color: var(--primary-color);
+      transform: scale(1.06);
     }
 
     /* 歌词切换按钮 */
@@ -1483,10 +1520,10 @@
       width: 60px;
       height: 60px;
       border-radius: var(--border-radius-full);
-      background: rgba(18, 18, 18, 0.55);
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.095) !important;
+      backdrop-filter: blur(32px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
       color: var(--text-dark);
       cursor: pointer;
       z-index: 1001;
@@ -1494,19 +1531,17 @@
       align-items: center;
       justify-content: center;
       font-size: 24px;
-      transition: all var(--transition-speed) ease;
-      box-shadow:
-        0 18px 55px rgba(0,0,0,0.65),
-        0 1px 0 rgba(255,255,255,0.12) inset;
+      transition: var(--transition-liquid);
+      box-shadow: 0 18px 55px rgba(0,0,0,0.65), var(--glass-inner-glow) !important;
     }
 
     .lyrics-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.15) !important;
       transform: translateY(-2px);
       color: var(--primary-color);
     }
 
-    /* 菜单和主题按钮 */
+    /* ===== 菜单 / 主题 / 设置按钮 定位修复 ===== */
     .menu-toggle {
       position: fixed;
       top: 20px;
@@ -1514,32 +1549,16 @@
       width: 52px;
       height: 52px;
       border-radius: 50%;
-      background: var(--ios-glass-dark);
-      border: 1px solid var(--ios-border-dark);
+      background: rgba(255,255,255,0.095) !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 1001;
-      box-shadow:
-        0 16px 45px rgba(0, 0, 0, 0.55),
-        0 1px 0 rgba(255,255,255,0.10) inset;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-    }
-
-    .menu-toggle:hover {
-      transform: translateY(-2px) scale(1.04);
-      box-shadow:
-        0 20px 55px rgba(0, 0, 0, 0.65),
-        0 1px 0 rgba(255,255,255,0.12) inset;
-    }
-
-    .menu-toggle i {
-      font-size: 24px;
-      color: var(--primary-color);
+      box-shadow: 0 16px 45px rgba(0,0,0,0.55), var(--glass-inner-glow) !important;
+      transition: var(--transition-liquid);
+      backdrop-filter: blur(32px) saturate(190%) !important;
     }
 
     .theme-toggle {
@@ -1549,35 +1568,18 @@
       width: 52px;
       height: 52px;
       border-radius: 50%;
-      background: var(--ios-glass-dark);
-      border: 1px solid var(--ios-border-dark);
+      background: rgba(255,255,255,0.095) !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 1001;
-      box-shadow:
-        0 16px 45px rgba(0, 0, 0, 0.55),
-        0 1px 0 rgba(255,255,255,0.10) inset;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
+      box-shadow: 0 16px 45px rgba(0,0,0,0.55), var(--glass-inner-glow) !important;
+      transition: var(--transition-liquid);
+      backdrop-filter: blur(32px) saturate(190%) !important;
     }
 
-    .theme-toggle:hover {
-      transform: translateY(-2px) scale(1.04);
-      box-shadow:
-        0 20px 55px rgba(0, 0, 0, 0.65),
-        0 1px 0 rgba(255,255,255,0.12) inset;
-    }
-
-    .theme-toggle i {
-      font-size: 24px;
-      color: var(--primary-color);
-    }
-
-    /* 设置按钮 */
     .settings-toggle {
       position: fixed;
       top: 80px;
@@ -1585,29 +1587,27 @@
       width: 52px;
       height: 52px;
       border-radius: 50%;
-      background: var(--ios-glass-dark);
-      border: 1px solid var(--ios-border-dark);
+      background: rgba(255,255,255,0.095) !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 1001;
-      box-shadow:
-        0 16px 45px rgba(0, 0, 0, 0.55),
-        0 1px 0 rgba(255,255,255,0.10) inset;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
+      box-shadow: 0 16px 45px rgba(0,0,0,0.55), var(--glass-inner-glow) !important;
+      transition: var(--transition-liquid);
+      backdrop-filter: blur(32px) saturate(190%) !important;
     }
 
+    .menu-toggle:hover,
+    .theme-toggle:hover,
     .settings-toggle:hover {
       transform: translateY(-2px) scale(1.04);
-      box-shadow:
-        0 20px 55px rgba(0, 0, 0, 0.65),
-        0 1px 0 rgba(255,255,255,0.12) inset;
+      box-shadow: 0 20px 55px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.45) !important;
     }
 
+    .menu-toggle i,
+    .theme-toggle i,
     .settings-toggle i {
       font-size: 24px;
       color: var(--primary-color);
@@ -1638,7 +1638,10 @@
     }
 
     .settings-modal-content {
-      background: rgba(18, 18, 18, 0.62);
+      background: rgba(22, 22, 27, 0.68) !important;
+      backdrop-filter: blur(40px) saturate(210%) !important;
+      -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
+      border: var(--liquid-border-dark) !important;
       border-radius: 28px;
       padding: 28px;
       max-width: 500px;
@@ -1650,15 +1653,7 @@
       transform: translateY(20px);
       transition: transform 0.3s ease;
       position: relative;
-
-      border: 1px solid rgba(255,255,255,0.10);
-
-      backdrop-filter: blur(26px) saturate(180%);
-      -webkit-backdrop-filter: blur(26px) saturate(180%);
-
-      box-shadow:
-        0 40px 110px rgba(0,0,0,0.75),
-        0 1px 0 rgba(255,255,255,0.10) inset;
+      box-shadow: var(--glass-depth-shadow), var(--glass-inner-glow) !important;
     }
 
     .settings-modal-overlay.active .settings-modal-content {
@@ -1934,7 +1929,6 @@
       opacity: 0.8;
     }
 
-    /* 歌词全屏时隐藏控制元素 */
     body.mobile-lyrics-fullscreen .player-info,
     body.mobile-lyrics-fullscreen .controls,
     body.mobile-lyrics-fullscreen .time-display,
@@ -1942,7 +1936,6 @@
       display: none !important;
     }
 
-    /* 歌词切换按钮在移动端全屏歌词时的状态 */
     body.mobile-lyrics-fullscreen .lyrics-toggle-btn {
       background: rgba(255, 45, 85, 0.8);
       color: white;
@@ -1955,17 +1948,14 @@
       transition: transform 0.3s ease;
     }
 
-    /* 确保灵动岛在歌词全屏时不被隐藏 */
     body.mobile-lyrics-fullscreen .dynamic-island {
       z-index: 1001 !important;
     }
 
-    /* 逐字歌词在移动端全屏时的优化 */
     body.mobile-lyrics-fullscreen .word-lyric {
       font-size: 28px;
     }
 
-    /* 移除移动端全屏歌词的滚动条 */
     body.mobile-lyrics-fullscreen .lyrics::-webkit-scrollbar {
       display: none !important;
       width: 0 !important;
@@ -1981,14 +1971,12 @@
       -ms-overflow-style: none !important;
     }
 
-    /* 确保自定义排序模式下拖拽手柄可见 */
     .sidebar-sort-mode-custom .sidebar-item .drag-handle {
       display: flex !important;
       opacity: 1 !important;
       visibility: visible !important;
     }
 
-    /* 在自定义排序模式下，为侧边栏项目添加足够的左边距以容纳拖拽手柄 */
     .sidebar-sort-mode-custom .sidebar-item {
       padding-left: 50px !important;
       position: relative;
@@ -2002,20 +1990,17 @@
       z-index: 1;
     }
 
-    /* 确保侧边栏排序按钮在自定义排序模式下有视觉反馈 */
     #customOrderBtn.active {
       background: rgba(255, 45, 85, 0.2) !important;
       border-color: rgba(255, 45, 85, 0.3) !important;
       color: var(--primary-color) !important;
     }
 
-    /* 当拖拽项目时，确保拖拽手柄仍然可见 */
     .sidebar-item.dragging .drag-handle {
       color: var(--primary-color) !important;
       transform: translateY(-50%) scale(1.1);
     }
 
-    /* 拖拽悬停效果 */
     .sidebar-item.drag-over {
       border-left: 3px solid var(--primary-color) !important;
       background: var(--active-item-bg-dark) !important;
@@ -2058,7 +2043,6 @@
         overflow: hidden;
       }
 
-      /* ===== 逐字歌词：渐进填充（KTV/Apple Music 风）===== */
       .word-lyric {
         position: relative;
         display: inline-block;
@@ -2082,7 +2066,6 @@
     }
 
     @media (max-width: 768px) {
-      /* 移动端默认隐藏歌词 */
       .rightcontent {
         display: none !important;
       }
@@ -2091,7 +2074,6 @@
         display: flex;
       }
 
-      /* 歌词按钮在移动端的默认状态 */
       .lyrics-toggle-btn i {
         transition: transform 0.3s ease;
       }
@@ -2118,7 +2100,6 @@
         height: 200px;
       }
 
-      /* 控制按钮在移动端的调整 */
       .controls {
         gap: 10px;
         width: 100%;
@@ -2150,7 +2131,6 @@
         margin-top: 10px;
       }
 
-      /* 歌词容器在移动端显示时的样式 */
       .rightcontent:not(.hidden) {
         display: block !important;
         flex: none;
@@ -2160,7 +2140,6 @@
         margin-top: 20px;
       }
 
-      /* 移动端非全屏歌词也隐藏滚动条 */
       .rightcontent:not(.hidden) .lyrics {
         overflow-y: hidden !important;
         -webkit-overflow-scrolling: auto !important;
@@ -2170,7 +2149,6 @@
         overflow: hidden !important;
       }
       
-      /* 移除移动端歌词的滚动条 */
       .rightcontent:not(.hidden) .lyrics::-webkit-scrollbar {
         display: none !important;
       }
@@ -2180,13 +2158,11 @@
         -ms-overflow-style: none !important;
       }
       
-      /* 歌词项目在移动端也不能选择 */
       .lyrics > .item {
         user-select: none !important;
         -webkit-user-select: none !important;
       }
       
-      /* 确保移动端歌词容器不会响应滚动事件 */
       .lyricscontainer {
         -webkit-overflow-scrolling: auto !important;
       }
@@ -2212,7 +2188,6 @@
         font-size: 12px;
       }
 
-      /* 响应式设计 - 移动端侧边栏自定义排序 */
       .sidebar-sort-mode-custom .sidebar-item {
         padding-left: 45px !important;
       }
@@ -2224,7 +2199,6 @@
         font-size: 12px;
       }
       
-      /* 确保移动端侧边栏有足够空间显示拖拽手柄 */
       .sidebar-content {
         padding: 15px;
       }
@@ -2239,7 +2213,6 @@
         max-width: 90%;
       }
 
-      /* 歌词切换按钮在移动端的位置调整 */
       .lyrics-toggle-btn {
         bottom: 20px;
         right: 20px;
@@ -2248,7 +2221,6 @@
         font-size: 24px;
       }
 
-      /* 移动端歌词样式优化 */
       .lyrics > .item > p {
         font-size: 24px !important;
         line-height: 36px;
@@ -2267,7 +2239,6 @@
         transform: translateZ(0);
       }
 
-      /* 移动端全屏歌词的特殊样式 */
       body.mobile-lyrics-fullscreen .lyrics > .item > p {
         font-size: 32px !important;
         line-height: 48px;
@@ -2322,7 +2293,6 @@
         font-size: 12px;
       }
 
-      /* 更小的屏幕调整 */
       .lyrics-toggle-btn {
         width: 56px;
         height: 56px;
@@ -2342,7 +2312,6 @@
       }
     }
 
-    /* 极小的屏幕（如折叠屏） */
     @media (max-width: 360px) {
       .album-art-container {
         width: 180px;
@@ -2377,15 +2346,8 @@
 
     /* 浅色主题适配 */
     body.light-theme .dynamic-island {
-      background: rgba(255, 255, 255, 0.72);
-
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-
-      box-shadow:
-        0 18px 50px rgba(0, 0, 0, 0.12),
-        0 1px 0 rgba(255, 255, 255, 0.65) inset,
-        0 -1px 0 rgba(0, 0, 0, 0.08) inset;
+      background: rgba(255, 255, 255, 0.72) !important;
+      border: 1px solid rgba(0,0,0,0.12) !important;
     }
 
     body.light-theme .collapsed-text {
@@ -2401,9 +2363,9 @@
     }
 
     body.light-theme .sidebar {
-      background: rgba(255,255,255,0.65);
-      border-right: 1px solid rgba(0,0,0,0.08);
-      box-shadow: 0 30px 90px rgba(0,0,0,0.18);
+      background: rgba(255,255,255,0.65) !important;
+      border-right: 1px solid rgba(0,0,0,0.08) !important;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.18) !important;
     }
 
     body.light-theme .control-button,
@@ -2411,8 +2373,8 @@
     body.light-theme .volume-container,
     body.light-theme .sidebar-action-btn,
     body.light-theme .lyrics-toggle-btn {
-      background: rgba(255, 255, 255, 0.3);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.3) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
       color: var(--text-light);
     }
 
@@ -2421,15 +2383,15 @@
     }
 
     body.light-theme .sidebar-item {
-      background: var(--item-bg-light);
+      background: var(--item-bg-light) !important;
     }
 
     body.light-theme .sidebar-item:hover {
-      background: var(--item-hover-light);
+      background: var(--item-hover-light) !important;
     }
 
     body.light-theme .sidebar-item.active {
-      background: var(--active-item-bg-light);
+      background: var(--active-item-bg-light) !important;
     }
 
     body.light-theme .island-title,
@@ -2505,18 +2467,10 @@
     body.light-theme .theme-toggle,
     body.light-theme .settings-toggle,
     body.light-theme .lyrics-toggle-btn {
-      background: rgba(255,255,255,0.65);
-      border: 1px solid rgba(0,0,0,0.08);
-
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-
-      box-shadow:
-        0 18px 55px rgba(0,0,0,0.12),
-        0 1px 0 rgba(255,255,255,0.65) inset;
+      background: rgba(255,255,255,0.65) !important;
+      border: 1px solid rgba(0,0,0,0.08) !important;
     }
 
-    /* 确保在浅色主题下自定义排序功能正常 */
     body.light-theme .sidebar-sort-mode-custom .sidebar-item .drag-handle {
       color: var(--text-muted-light);
     }
@@ -2547,21 +2501,19 @@
     .player-controls {
         backdrop-filter: blur(25px) saturate(180%);
         -webkit-backdrop-filter: blur(25px) saturate(180%);
-        background: rgba(255, 255, 255, 0.15); /* 暗色模式下建议用 rgba(30, 30, 30, 0.7) */
+        background: rgba(255, 255, 255, 0.15);
         border-top: 0.5px solid rgba(255, 255, 255, 0.1);
         padding: 20px 25px;
-        border-radius: 24px 24px 0 0; /* 顶部大圆角 */
+        border-radius: 24px 24px 0 0;
     }
 
-    /* 按钮组 */
     .control-buttons {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 40px; /* 增加呼吸感 */
+        gap: 40px;
     }
 
-    /* 所有控制按钮基础样式 */
     .control-btn {
         background: none;
         border: none;
@@ -2571,13 +2523,11 @@
         font-size: 24px;
     }
 
-    /* 按钮点击时的“软缩放”效果，这是 Apple 的精髓 */
     .control-btn:active {
         transform: scale(0.8);
         opacity: 0.6;
     }
 
-    /* 播放/暂停按钮要更突出 */
     #playBtn {
         font-size: 48px;
         filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
@@ -2588,7 +2538,7 @@
         position: fixed;
         top: 0;
         left: 0;
-        padding-top: 35vh !important; /* 让第一行从中间偏上开始 */
+        padding-top: 35vh !important;
         padding-bottom: 40vh !important;
         mask-image: linear-gradient(to bottom, 
             transparent 0%, 
@@ -2606,33 +2556,32 @@
             transparent 100%) !important;
     }
 
-    /* 流体背景基础 */
     .fluid-bg {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        z-index: -2; /* 放在原本 bg-blur 的下面 */
+        z-index: -2;
         overflow: hidden;
         background: #000;
-        display: none; /* 默认隐藏，由 JS 开启 */
+        display: none;
     }
 
     .fluid-blob {
         position: absolute;
         width: 100vmax;
         height: 100vmax;
-        filter: blur(80px);
-        opacity: 0.5;
+        filter: blur(85px) !important;
+        opacity: 0.65 !important;
         mix-blend-mode: screen;
-        animation: fluid-move 30s linear infinite;
+        animation: fluid-move 45s linear infinite;
     }
 
     .blob-1 { top: -50%; left: -50%; background: var(--color-1, #444); }
-    .blob-2 { top: -50%; right: -50%; background: var(--color-2, #333); animation-duration: 25s; }
-    .blob-3 { bottom: -50%; left: -50%; background: var(--color-3, #222); animation-duration: 35s; }
-    .blob-4 { bottom: -50%; right: -50%; background: var(--color-4, #111); animation-duration: 20s; }
+    .blob-2 { top: -50%; right: -50%; background: var(--color-2, #333); animation-duration: 38s; }
+    .blob-3 { bottom: -50%; left: -50%; background: var(--color-3, #222); animation-duration: 52s; }
+    .blob-4 { bottom: -50%; right: -50%; background: var(--color-4, #111); animation-duration: 28s; }
 
     @keyframes fluid-move {
         0% { transform: translate(0, 0) rotate(0deg); }
@@ -2640,26 +2589,24 @@
         100% { transform: translate(0, 0) rotate(360deg); }
     }
 
-    /* 强制“背景显示模式”下拉框为黑底白字 */
     #bg-mode-select {
-      -webkit-appearance: none;          /* 移除默认样式，避免干扰 */
+      -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
-      background: #000000 !important;     /* 纯黑背景 */
-      color: #ffffff !important;          /* 白色文字 */
+      background: #000000 !important;
+      color: #ffffff !important;
       border: 1px solid #333333 !important;
-      color-scheme: dark;                 /* 强制下拉菜单使用深色系统配色（黑底白字） */
-      padding: 10px 30px 10px 15px;       /* 与输入框内边距一致，为箭头留空间 */
+      color-scheme: dark;
+      padding: 10px 30px 10px 15px;
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
       background-repeat: no-repeat;
       background-position: right 12px center;
       background-size: 16px;
     }
 
-    /* 可选：去除焦点外框，可根据需要保留或删除 */
     #bg-mode-select:focus {
       outline: none;
-      border-color: #ff2d55; /* 或保持原色 */
+      border-color: #ff2d55;
     }
   </style>
 </head>
@@ -3027,7 +2974,7 @@
 
     // Apple Music 歌词相关
     const LINE_HEIGHT = 20;
-    let LYRICS_OFFSET = window.innerHeight / 3;
+    let LYRICS_OFFSET = window.innerHeight / 3.5;
     let lastLyric = -1;
     let lyricsHeightsPrefix = [0];
 
@@ -5221,8 +5168,8 @@
         setTimeout(() => {
           const items = amLyrics.querySelectorAll('.item');
           const transitionStr = isMobile()
-            ? 'transform 0.28s cubic-bezier(.2,.7,0,1), color 0.18s linear'
-            : 'transform 0.7s cubic-bezier(.19,.11,0,1), color 0.5s ease-in-out, filter 0.5s ease-in-out';
+            ? 'all 0.3s cubic-bezier(.19,.11,0,1)'
+            : 'all 0.7s cubic-bezier(.19,.11,0,1)';
           items.forEach(item => {
             item.style.transition = transitionStr;
           });
@@ -5339,43 +5286,33 @@
       return res + LYRICS_OFFSET;
     }
 
+    // 第一个 index.html：JS（替换整个 UpdateLyricsLayout 函数）
     function UpdateLyricsLayout(mainIndex, highlightIndices, data, init = 1) {
-      const activeColor = "rgba(255, 255, 255, 1)";
-      const inactiveColor = "rgba(255, 255, 255, 0.2)";
-      const mobile = isMobile();
-      const useStagger = !!init && !mobile;
-      const highlightSet = new Set(Array.isArray(highlightIndices) ? highlightIndices : [mainIndex]);
-
       if (!Array.isArray(data) || data.length === 0) return;
       if (lyricsHeightsPrefix.length !== data.length + 1) {
         rebuildLyricsMetrics(data);
       }
 
+      const highlightSet = new Set(Array.isArray(highlightIndices) ? highlightIndices : [mainIndex]);
+
       for (let i = 0; i < data.length; i++) {
         if (!data[i] || !data[i].ele) continue;
 
         const isHighlight = highlightSet.has(i);
-        data[i].ele.style.color = isHighlight ? activeColor : inactiveColor;
-
-        if (mobile) {
-          data[i].ele.style.filter = 'none';
-        } else {
-          const blurAmount = isHighlight ? 0 : Math.abs(i - mainIndex);
-          data[i].ele.style.filter = `blur(${blurAmount}px)`;
-        }
+        data[i].ele.style.color = isHighlight ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.2)";
+        data[i].ele.style.filter = `blur(${Math.abs(i - mainIndex)}px)`;
 
         const position = GetLyricsLayout(mainIndex, i, data);
 
-        if (useStagger) {
-          const delay = Math.min(Math.abs(i - mainIndex) * 20, 300);
-          setTimeout(() => {
-            if (data[i] && data[i].ele) {
-              data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
-            }
-          }, delay);
-        } else {
-          data[i].ele.style.transform = `translateY(${position}px) translateZ(0)`;
-        }
+        let n = (i - mainIndex) + 1;
+        if (n > 10) n = 0;
+        const delay = (n * 70 - n * 10) * (init ? 1 : 0);
+
+        setTimeout(() => {
+          if (data[i] && data[i].ele) {
+            data[i].ele.style.transform = `translateY(${position}px)`;
+          }
+        }, Math.max(0, delay));
       }
     }
 
@@ -6122,7 +6059,7 @@
       }
 
       // 统一使用容器高度的 1/3，保持居中体验
-      return containerHeight / 3;
+      return containerHeight / 3.5;
     }
 
     // ===== 逐字歌词：平滑动画循环（rAF）=====
