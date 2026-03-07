@@ -2255,8 +2255,7 @@
 
       .lyrics > .item,
       body.mobile-lyrics-fullscreen .lyrics > .item {
-        filter: none !important;
-        transition: transform 0.28s cubic-bezier(.2,.7,0,1), color 0.18s linear !important;
+        transition: transform 0.7s cubic-bezier(.19,.11,0,1), color 0.5s ease-in-out, filter 0.5s ease-in-out !important;
       }
     }
 
@@ -4379,17 +4378,17 @@
         }, 50);
       });
 
-      if (isMobile()) {
-        setTimeout(() => {
-          rebuildLyricsMetrics(amLyricsData);
-          document.querySelectorAll('.lyrics .item').forEach(el => {
-            const height = el.offsetHeight;
-            if (height > 0) {
-              el.style.containIntrinsicSize = `0px ${height}px`; // 内联覆盖
-            }
-          });
-        }, 100);
-      }
+  //    if (isMobile()) {
+  //      setTimeout(() => {
+  //        rebuildLyricsMetrics(amLyricsData);
+  //        document.querySelectorAll('.lyrics .item').forEach(el => {
+  //          const height = el.offsetHeight;
+  //          if (height > 0) {
+  //            el.style.containIntrinsicSize = `0px ${height}px`; // 内联覆盖
+  //          }
+  //        });
+  //      }, 100);
+  //    }
     }
 
     function updateWordFillInActiveLine(currentTime) {
@@ -5070,7 +5069,8 @@
         if (!lyricText) return [];
         const lines = lyricText.split('\n');
         const res = [];
-        const re = /\[(\d{2}):(\d{2})[\.:](\d{2,3})\]/g;
+        // 修复正则：(?:[\.:](\d{1,3}))? 使毫秒部分变为可选，同时兼容 1-3 位毫秒
+        const re = /\[(\d{2}):(\d{2})(?:[\.:](\d{1,3}))?\]/g;
 
         for (const line of lines) {
             let match;
@@ -5078,17 +5078,20 @@
             let cleanLine = line;
 
             while ((match = re.exec(line)) !== null) {
-            const min = parseInt(match[1]);
-            const sec = parseInt(match[2]);
-            const ms = parseInt(match[3]);
-            const time = min * 60 + sec + ms / (match[3].length === 2 ? 100 : 1000);
-            lineTimestamps.push(time);
-            cleanLine = cleanLine.replace(match[0], '');
+                const min = parseInt(match[1], 10);
+                const sec = parseInt(match[2], 10);
+                
+                // 如果存在毫秒，直接将其拼成小数进行解析
+                const ms = match[3] ? parseFloat('0.' + match[3]) : 0;
+                const time = min * 60 + sec + ms;
+                
+                lineTimestamps.push(time);
+                cleanLine = cleanLine.replace(match[0], '');
             }
 
             cleanLine = cleanLine.trim();
             if (cleanLine && lineTimestamps.length > 0) {
-            res.push({ time: Math.min(...lineTimestamps), text: cleanLine, translation: '' });
+                res.push({ time: Math.min(...lineTimestamps), text: cleanLine, translation: '' });
             }
         }
         return res.filter(l => l.time !== -1).sort((a, b) => a.time - b.time);
@@ -5167,26 +5170,24 @@
         // 添加过渡效果
         setTimeout(() => {
           const items = amLyrics.querySelectorAll('.item');
-          const transitionStr = isMobile()
-            ? 'all 0.3s cubic-bezier(.19,.11,0,1)'
-            : 'all 0.7s cubic-bezier(.19,.11,0,1)';
+          const transitionStr = 'all 0.7s cubic-bezier(.19,.11,0,1)';
           items.forEach(item => {
             item.style.transition = transitionStr;
           });
         }, 50);
       });
 
-      if (isMobile()) {
-        setTimeout(() => {
-          rebuildLyricsMetrics(amLyricsData);
-          document.querySelectorAll('.lyrics .item').forEach(el => {
-            const height = el.offsetHeight;
-            if (height > 0) {
-              el.style.containIntrinsicSize = `0px ${height}px`; // 内联覆盖
-            }
-          });
-        }, 100);
-      }
+  //    if (isMobile()) {
+  //      setTimeout(() => {
+  //        rebuildLyricsMetrics(amLyricsData);
+  //        document.querySelectorAll('.lyrics .item').forEach(el => {
+  //          const height = el.offsetHeight;
+  //          if (height > 0) {
+  //            el.style.containIntrinsicSize = `0px ${height}px`; // 内联覆盖
+  //          }
+  //        });
+  //      }, 100);
+  //    }
     }
 
     function median(arr) {
@@ -5306,7 +5307,8 @@
 
         let n = (i - mainIndex) + 1;
         if (n > 10) n = 0;
-        const delay = (n * 70 - n * 10) * (init ? 1 : 0);
+        const baseDelay = isMobile() ? 20 : 60;  // 移动端每行 20ms，桌面端 60ms
+        const delay = (n * baseDelay) * (init ? 1 : 0);
 
         setTimeout(() => {
           if (data[i] && data[i].ele) {
@@ -5371,11 +5373,11 @@
         let scrollBaseIndex = maxIdx;
 
         // 判断是否需要立即更新（时间差小于0.3秒）
-        let useDelay = !isMobile(); // 移动端直接关闭级联延迟动画
-        if (useDelay && lastLyric >= 0 && lastLyric < amLyricsData.length && activeIndex < amLyricsData.length) {
+        let useDelay = true;  // 移动端也开启延迟
+        if (lastLyric >= 0 && lastLyric < amLyricsData.length && activeIndex < amLyricsData.length) {
           const timeDiff = Math.abs(amLyricsData[activeIndex].time - amLyricsData[lastLyric].time);
           if (timeDiff < 0.3) {
-            useDelay = false;
+            useDelay = false; // 时间差小于0.3秒时关闭延迟，保证流畅
           }
         }
 
@@ -5584,18 +5586,9 @@
     });
 
     let lastLyricUpdate = 0;
-    const LYRIC_UPDATE_THROTTLE = isMobile() ? 100 : 0; // 移动端100ms，桌面端无限制
 
     function throttledUpdateAMLyricsHighlight(currentTime) {
-      if (!isMobile()) {
-        updateAMLyricsHighlight(currentTime);
-        return;
-      }
-      const now = performance.now();
-      if (now - lastLyricUpdate >= LYRIC_UPDATE_THROTTLE) {
-        updateAMLyricsHighlight(currentTime);
-        lastLyricUpdate = now;
-      }
+      updateAMLyricsHighlight(currentTime);
     }
 
     // 音频事件
