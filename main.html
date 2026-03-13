@@ -4158,6 +4158,7 @@
       const result = [];
 
       for (const line of lines) {
+        // 匹配行时间 [start,duration]
         const lineMatch = line.match(/^\[(\d+),(\d+)\]/);
         if (!lineMatch) continue;
 
@@ -4165,7 +4166,7 @@
         const lineDurMs = parseInt(lineMatch[2], 10);
         const rest = line.replace(/^\[\d+,\d+\]/, '').trim();
 
-        // 找所有 (start,dur,0)word
+        // 匹配所有单词 (start,dur,0)word
         const wordRe = /\((\d+),(\d+),(\d+)\)([^()]+)/g;
         const words = [];
         let m;
@@ -4181,17 +4182,49 @@
           });
         }
 
-        // 若这一行没有拆出逐字（比如纯信息行），就当普通行展示
-        const fallbackText = rest
-          .replace(/\(\d+,\d+,\d+\)/g, '')
-          .replace(/\\n/g, '')
-          .trim();
+        // 若这一行没有拆出逐字，当作普通行处理
+        if (words.length === 0) {
+          const fallbackText = rest.replace(/\(\d+,\d+,\d+\)/g, '').replace(/\\n/g, '').trim();
+          if (fallbackText) {
+            result.push({
+              time: lineStartMs / 1000,
+              end: (lineStartMs + lineDurMs) / 1000,
+              words: [],
+              text: fallbackText,
+              translation: ''
+            });
+          }
+          continue;
+        }
+
+        // 智能拼接整行文本（用于标题等显示）
+        let lineText = '';
+        for (let i = 0; i < words.length; i++) {
+          const txt = words[i].text;
+          const isChinese = /^[\u4e00-\u9fff]+$/.test(txt);
+          lineText += txt;
+
+          // 判断是否需要加空格
+          let needSpace = false;
+          if (isChinese) {
+            // 中文词后面如果跟非中文词，则加空格
+            if (i < words.length - 1) {
+              const nextWord = words[i + 1].text;
+              const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
+              if (!isNextChinese) needSpace = true;
+            }
+          } else {
+            // 非中文词后面如果不是最后一个，则加空格
+            if (i !== words.length - 1) needSpace = true;
+          }
+          if (needSpace) lineText += ' ';
+        }
 
         result.push({
           time: lineStartMs / 1000,
           end: (lineStartMs + lineDurMs) / 1000,
           words,
-          text: words.length ? words.map(w => w.text).join(' ') : fallbackText,
+          text: lineText,      // 已智能处理空格的文本
           translation: ''
         });
       }
@@ -4327,19 +4360,38 @@
         const p = document.createElement('p');
 
         line.words.forEach((w, idx) => {
-          const span = document.createElement('span');
-
-          const txt = w.text + (idx === line.words.length - 1 ? '' : ' ');
-          span.className = 'word-lyric';
-          span.textContent = txt;   // 暗色底层
-          span.dataset.t = txt;     // 亮色叠层内容（::after 用）
-          span.dataset.wstart = w.start;
-          span.dataset.wend = w.end;
-
-          // 初始化填充进度
-          span.style.setProperty('--p', '0%');
-
-          p.appendChild(span);
+            const span = document.createElement('span');
+            let txt = w.text;
+            // 判断当前词是否纯中文
+            const isChinese = /^[\u4e00-\u9fff]+$/.test(txt);
+            // 判断是否需要加空格
+            let needSpace = false;
+            if (isChinese) {
+                // 如果是中文词，且不是最后一个词，看下一个词是否非中文
+                if (idx < line.words.length - 1) {
+                    const nextWord = line.words[idx + 1].text;
+                    const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
+                    if (!isNextChinese) {
+                        needSpace = true; // 中文后跟非中文，加空格
+                    }
+                }
+            } else {
+                // 非中文词，如果不是最后一个词，加空格
+                if (idx !== line.words.length - 1) {
+                    needSpace = true;
+                }
+            }
+            if (needSpace) {
+                txt += ' ';
+            }
+            span.className = 'word-lyric';
+            span.textContent = txt;   // 暗色底层
+            span.dataset.t = txt;     // 亮色叠层内容（::after 用）
+            span.dataset.wstart = w.start;
+            span.dataset.wend = w.end;
+            // 初始化填充进度
+            span.style.setProperty('--p', '0%');
+            p.appendChild(span);
         });
 
         div.appendChild(p);
@@ -4955,6 +5007,9 @@
           artist: Array.isArray(song.artist) ? song.artist.join('、') : (song.artist || '未知歌手'),
           album: song.album || ''
         };
+
+        // 立即更新标题，即使音频还未开始播放
+        updatePageTitle();
         
         // 更新当前播放歌曲ID
         currentPlayingId = song.id;
@@ -5385,12 +5440,12 @@
         UpdateLyricsLayout(scrollBaseIndex, highlightIndices, amLyricsData, useDelay ? 1 : 0);
         lastLyric = activeIndex;
 
-        // 更新页面标题为当前歌词（可选）
-        const lyricText = amLyricsData[activeIndex].text;
+        // 更新页面标题为当前歌词
+        const lyricText = amLyricsData[activeIndex] ? amLyricsData[activeIndex].text : '';
         if (lyricText && lyricText.trim() !== '') {
-          document.title = lyricText;
+          document.title = lyricText;          // 显示当前歌词
         } else {
-          updatePageTitle();
+          updatePageTitle();                   // 无歌词时回退到歌曲名
         }
       }
     }
