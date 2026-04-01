@@ -2921,93 +2921,87 @@
 
 <div class="modal-overlay settings-modal-overlay" id="settingsModalOverlay">
   <div class="modal-content settings-modal-content">
-    <h2 class="modal-title">设置</h2>
-    
+    <h2 class="modal-title">设置</h2> 
     <div class="settings-tabs">
-      <div class="settings-tab active" data-tab="lyrics">歌词</div>
-      <div class="settings-tab" data-tab="visual">视觉</div>
-    </div>
+  <div class="settings-tab active" data-tab="lyrics">歌词</div>
+  <div class="settings-tab" data-tab="visual">视觉</div>
+</div>
 
-    <div class="settings-content">
-      <div class="settings-tab-content active" data-tab="lyrics">
-        <div class="settings-section">
-          <h3 class="settings-section-title">歌曲翻译（点一下就可以应用了）</h3>
-          <div class="settings-option">
-            <label class="switch">
-              <input type="checkbox" id="enableTranslation">
-              <span class="slider"></span>
-            </label>
-            <span class="settings-option-label">启用歌曲翻译</span>
-          </div>
-          <div class="settings-option">
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" name="translationScope" value="no-translation" checked>
-                <span>仅翻译没有翻译的外语歌（推荐）</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="translationScope" value="all-foreign">
-                <span>翻译所有外语歌（图一乐而已，不建议）</span>
-              </label>
-            </div>
-          </div>
-          <div class="settings-option">
-            <label class="settings-option-label">GLM-4-Flashx API令牌</label>
-            <input type="password" class="api-token-input" id="apiTokenInput" placeholder="请输入您的API令牌">
-            <p class="settings-hint">请前往 Bigmodel 注册账号并创建API令牌</p>
-          </div>
-          <div class="settings-option">
-            <button class="test-api-btn" id="testApiBtn">测试API连接</button>
-            <button class="save-settings-btn" id="saveSettingsBtn">保存设置</button>
-          </div>
-        </div>
-        
-        <div class="settings-section">
-          <h3 class="settings-section-title">逐字歌词（仅部分歌曲）</h3>
-          <div class="settings-option">
-            <label class="switch">
-              <input type="checkbox" id="enableWordLyrics">
-              <span class="slider"></span>
-            </label>
-            <span class="settings-option-label">启用逐字歌词</span>
-          </div>
-          <p class="settings-hint">* 开启后将尝试从网易云接口获取 yv=1 逐字歌词</p>
-        </div>
-
-        <div class="settings-section">
-          <h3 class="settings-section-title">网易云歌词代理</h3>
-          <div class="settings-option" style="flex-direction:column;align-items:flex-start;">
-            <label class="settings-option-label" style="margin-bottom:6px;">代理地址（留空使用内置代理）</label>
-            <input type="text" id="neteaseProxyInput" class="api-token-input" placeholder="2333..." />
-            <p class="settings-hint">用于解决CORS问题</p>
-          </div>
+<div class="settings-content">
+  <!-- 歌词选项卡内容 -->
+  <div class="settings-tab-content active" data-tab="lyrics">
+    <div class="settings-section">
+      <h3 class="settings-section-title">歌曲翻译</h3>
+      <div class="settings-option">
+        <label class="switch">
+          <input type="checkbox" id="enableTranslation">
+          <span class="slider"></span>
+        </label>
+        <span class="settings-option-label">启用歌曲翻译</span>
+      </div>
+      <div class="settings-option">
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="translationScope" value="no-translation" checked>
+            <span>仅翻译没有翻译的外语歌</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="translationScope" value="all-foreign">
+            <span>翻译所有外语歌</span>
+          </label>
         </div>
       </div>
-
-      <div class="settings-tab-content" data-tab="visual">
-        <div class="settings-section">
-          <h3 class="settings-section-title">背景视觉效果</h3>
-          
-          <div class="settings-option" style="flex-direction:column; align-items:flex-start;">
-            <label class="settings-option-label" style="margin-bottom:8px;">背景显示模式</label>
-            <select id="bg-mode-select" class="api-token-input" style="width: 100%; height: 40px; cursor: pointer;">
-              <option value="static">静态模糊专辑图 (默认)</option>
-              <option value="fluid">动态流体渐变 (Apple Music 风格)</option>
-            </select>
-            <p class="settings-hint" style="margin-top: 10px;">
-              * 动态流体模式会实时提取封面颜色并生成动画，对 GPU 性能有一定要求。
-            </p>
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <h3 class="settings-section-title">性能优化</h3>
-          <div class="settings-option">
-             <p class="settings-hint">如果开启流体背景后设备发热或掉帧，请切换回静态模式。</p>
-          </div>
-        </div>
+      <div class="settings-option">
+        <label class="settings-option-label">GLM-4-Flashx API令牌</label>
+        <input type="password" class="api-token-input" id="apiTokenInput" placeholder="请输入您的API令牌">
+        <p class="settings-hint">请前往 Bigmodel 注册账号并创建API令牌</p>
+      </div>
+      <div class="settings-option">
+        <button class="test-api-btn" id="testApiBtn">测试API连接(develop)</button>
+        <button class="save-settings-btn" id="saveSettingsBtn">保存设置</button>
       </div>
     </div>
+
+    <div class="settings-section">
+      <h3 class="settings-section-title">逐字歌词</h3>
+      <div class="settings-option">
+        <label class="switch">
+          <input type="checkbox" id="enableWordLyrics">
+          <span class="slider"></span>
+        </label>
+        <span class="settings-option-label">启用逐字歌词</span>
+      </div>
+      <p class="settings-hint">* 开启后将尝试从网易云接口获取yv=1逐字歌词，但由于网易云的逐字歌词库并不全，因此可能会出现只有行级歌词的问题。</p>
+    </div>
+
+    <div class="settings-section">
+      <h3 class="settings-section-title">网易云歌词代理</h3>
+      <div class="settings-option" style="flex-direction:column;align-items:flex-start;">
+        <label class="settings-option-label" style="margin-bottom:6px;">代理地址（留空使用内置代理）</label>
+        <input type="text" id="neteaseProxyInput" class="api-token-input" placeholder="在此处输入代理地址。" />
+        <p class="settings-hint">用于解决请求网易云逐字歌词时的CORS问题。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 视觉选项卡内容 -->
+  <div class="settings-tab-content" data-tab="visual">
+    <div class="settings-section">
+      <h3 class="settings-section-title">专辑图</h3>
+      <div class="settings-option">
+        <label class="switch">
+          <input type="checkbox" id="albumEffectToggle">
+          <span class="slider"></span>
+        </label>
+        <span class="settings-option-label">启用专辑图3D效果</span>
+      </div>
+      <p class="settings-hint">
+        注意：若开启该功能，桌面端在频繁触发3D效果时可能会导致卡顿，建议根据电脑性能选择。<br>
+        移动端不支持此效果，开启无效。
+      </p>
+    </div>
+  </div>
+</div>
 
     <button class="modal-close" id="settingsModalClose">
       <i class="fas fa-times"></i>
@@ -3061,7 +3055,7 @@
         <i class="fas fa-share-alt"></i> 分享歌曲
       </button>
       <button class="sidebar-action-btn save-wallpaper-btn" id="saveWallpaperBtn">
-        <i class="fas fa-image"></i> 保存壁纸
+        <i class="fas fa-image"></i> 保存专辑图
       </button>
       <button class="sidebar-action-btn clear-playlist-btn" id="clearPlaylist">
         <i class="fas fa-trash"></i> 清空列表
@@ -3206,6 +3200,7 @@
     const BUILTIN_NETEASE_PROXIES = ['https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url='];
     const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const collapsedTextSpan = document.querySelector('.collapsed-text'); // 灵动岛折叠文字
+    const ALBUM_KEY = 'albumEffectEnabled';
 
     // ===== State =====
     let currentPage = 1;
@@ -3238,6 +3233,8 @@
     let hasAnyRequestFailed = false;        // 当前请求组中是否有失败
     let requestStatusTimeout = null;        // 用于3秒后恢复文字的定时器
     let hasShownFirstRequestFailure = false;// 首次请求失败提示是否已弹出
+    let albumMouseMoveHandler = null;
+    let albumMouseLeaveHandler = null;
 
     // Apple Music 歌词相关
     const LINE_HEIGHT = 20;
@@ -5025,104 +5022,12 @@
     const fluidBg = document.getElementById('fluid-bg-container');
     const staticBg = document.getElementById('bg-blur');
 
-    bgModeSelect.addEventListener('change', function() {
-        const mode = this.value;
-        localStorage.setItem('settings-bg-mode', mode);
-        updateBgVisual(mode);
-    });
-
-    function updateBgVisual(mode) {
-        if (mode === 'fluid') {
-            fluidBg.style.display = 'block';
-            staticBg.style.opacity = '0'; // 隐藏原本的静态模糊图
-            extractColorsFromCover(); // 提取颜色
-        } else {
-            fluidBg.style.display = 'none';
-            staticBg.style.opacity = '1';
-        }
-    }
-
-    // 提取封面颜色并应用到流体气泡
-    function extractColorsFromCover() {
-        const albumCover = document.getElementById('album-cover-img'); // 对应你代码里的封面 ID
-        if (!albumCover || !albumCover.src) return;
-
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.src = albumCover.src;
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, 10, 10);
-            const data = ctx.getImageData(0, 0, 10, 10).data;
-            
-            // 分别取样四个点的颜色
-            for(let i=0; i<4; i++) {
-                const r = data[i*10];
-                const g = data[i*10+1];
-                const b = data[i*10+2];
-                document.documentElement.style.setProperty(`--color-${i+1}`, `rgb(${r},${g},${b})`);
-            }
-        };
-    }
-
     // 页面加载时读取配置
     document.addEventListener('DOMContentLoaded', () => {
         const savedMode = localStorage.getItem('settings-bg-mode') || 'static';
         bgModeSelect.value = savedMode;
         updateBgVisual(savedMode);
     });
-
-    function extractColorsFromImage(img) {
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      
-      tempCanvas.width = 100;
-      tempCanvas.height = 100 * (img.height / img.width);
-      
-      tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-      
-      const colors = getDominantColors(imageData);
-      document.body.style.setProperty('--background', colors[0]);
-      document.body.style.setProperty('--color1', colors[0]);
-      document.body.style.setProperty('--color2', colors[1]);
-      document.body.style.setProperty('--color3', colors[2]);
-      document.body.style.setProperty('--color4', colors[3]);
-      document.body.style.setProperty('--color5', colors[4]);
-      document.body.style.setProperty('--color1-rgba', colors[0].replace("0.9", "0"));
-      document.body.style.setProperty('--color2-rgba', colors[1].replace("0.9", "0"));
-      document.body.style.setProperty('--color3-rgba', colors[2].replace("0.9", "0"));
-      document.body.style.setProperty('--color4-rgba', colors[3].replace("0.9", "0"));
-      document.body.style.setProperty('--color5-rgba', colors[4].replace("0.9", "0"));
-    }
-
-    function getDominantColors(imageData, colorCount = 5, minColorDistance = 100) {
-      const pixels = imageData.data;
-      const sampledColors = [];
-      const dominantColors = [];
-
-      for (let i = 0; i < pixels.length; i += 4 * 13) {
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-        sampledColors.push([r, g, b]);
-      }
-
-      sampledColors.forEach(([r, g, b]) => {
-        const isUnique = dominantColors.every(([er, eg, eb]) => {
-          const distance = Math.sqrt((r - er) ** 2 + (g - eg) ** 2 + (b - eb) ** 2);
-          return distance >= minColorDistance;
-        });
-
-        if (isUnique) {
-          dominantColors.push([r, g, b]);
-          if (dominantColors.length >= colorCount) return;
-        }
-      });
-
-      return dominantColors.map(([r, g, b]) => `rgba(${r},${g},${b},0.9)`);
-    }
 
     async function getAudioUrl(id, source = currentSettings.source) {
         try {
@@ -5935,47 +5840,39 @@
     });
 
     audioPlayer.addEventListener('ended', async () => {
-        // 先更新播放按钮状态
+        // 先更新播放按钮状态为暂停
         playButton.innerHTML = '<i class="fas fa-play"></i>';
         isPlaying = false;
         updatePageTitle();
-
-        // 如果没有歌曲在播放或播放列表为空，恢复折叠文字并返回
-        if (!currentPlayingId || playlist.length === 0) {
+        updateCollapsedTextByPlayingState(); // 更新灵动岛文字
+    
+        // 如果没有歌曲在播放，仅清理ID
+        if (!currentPlayingId) {
             currentPlayingId = null;
-            updateCollapsedTextByPlayingState();
             return;
         }
-
+    
+        // 检查播放模式：只有单曲循环时才自动重播，否则停止播放（并将进度归零）
         if (currentPlayMode === 'repeat') {
-            // 单曲循环：直接重新播放，不重新请求歌词和封面
+            // 单曲循环：从头开始重新播放同一首歌
             try {
                 audioPlayer.currentTime = 0;
                 await audioPlayer.play();
                 playButton.innerHTML = '<i class="fas fa-pause"></i>';
                 isPlaying = true;
                 updatePageTitle();
+                // 重播时保持 currentPlayingId 不变，无需更新折叠文字
             } catch (e) {
                 console.error('单曲循环自动播放失败:', e);
                 currentPlayingId = null;
-                updateCollapsedTextByPlayingState();
             }
         } else {
-            const nextSongId = getNextSongId(currentPlayingId);
-            if (nextSongId) {
-                const nextSong = getSongById(nextSongId);
-                if (nextSong) {
-                    setTimeout(() => {
-                        playSong(nextSong, true);
-                    }, 500);
-                } else {
-                    currentPlayingId = null;
-                    updateCollapsedTextByPlayingState();
-                }
-            } else {
-                currentPlayingId = null;
-                updateCollapsedTextByPlayingState();
-            }
+            // 其他模式（普通、随机等）：播放结束即暂停，并将进度重置到开头
+            // 这样下次点击播放时，歌曲会从头开始
+            audioPlayer.currentTime = 0;
+            // 不自动播放任何歌曲，不清空 currentPlayingId 以便下次手动播放
+            // 但为了让界面显示为暂停状态，已在上方设置 isPlaying = false 和按钮图标
+            // 注意：不要自动切换到下一首
         }
     });
 
@@ -6068,20 +5965,50 @@
       createShareModal();
     });
 
-    // 专辑封面3D效果
-    albumArtContainer.addEventListener('mousemove', e => {
-      const rect = albumArtContainer.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const cx = rect.width / 2, cy = rect.height / 2;
-      const ry = (x - cx) / 15;
-      const rx = (cy - y) / 15;
-      albumArtContainer.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-    });
+    function handleAlbumMouseMove(e) {
+        const rect = albumArtContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width / 2, cy = rect.height / 2;
+        const ry = (x - cx) / 15;
+        const rx = (cy - y) / 15;
+        albumArtContainer.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    }
 
-    albumArtContainer.addEventListener('mouseleave', () => {
-      albumArtContainer.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
-    });
+    function handleAlbumMouseLeave() {
+        albumArtContainer.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+    }
+
+    function applyEffectListener() {
+        if (isMobile()) {
+            if (albumMouseMoveHandler) {
+                albumArtContainer.removeEventListener('mousemove', albumMouseMoveHandler);
+                albumArtContainer.removeEventListener('mouseleave', albumMouseLeaveHandler);
+                albumMouseMoveHandler = null;
+                albumMouseLeaveHandler = null;
+            }
+            albumArtContainer.style.transform = '';
+            return;
+        }
+
+        const isEnabled = localStorage.getItem(ALBUM_KEY) === 'true';
+        if (isEnabled) {
+            if (!albumMouseMoveHandler) {
+                albumMouseMoveHandler = handleAlbumMouseMove;
+                albumMouseLeaveHandler = handleAlbumMouseLeave;
+                albumArtContainer.addEventListener('mousemove', albumMouseMoveHandler);
+                albumArtContainer.addEventListener('mouseleave', albumMouseLeaveHandler);
+            }
+        } else {
+            if (albumMouseMoveHandler) {
+                albumArtContainer.removeEventListener('mousemove', albumMouseMoveHandler);
+                albumArtContainer.removeEventListener('mouseleave', albumMouseLeaveHandler);
+                albumMouseMoveHandler = null;
+                albumMouseLeaveHandler = null;
+            }
+            albumArtContainer.style.transform = '';
+        }
+    }
 
     // ===== 分享模态框 =====
     let shareModalOverlay = null;
@@ -6141,6 +6068,50 @@
           line-height: 1.5;
         `;
 
+        // 全选控件区域
+        const selectAllWrapper = document.createElement('div');
+        selectAllWrapper.style.cssText = `
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 12px;
+          margin-bottom: 10px;
+          background: rgba(255,255,255,0.03);
+          border-radius: 12px;
+        `;
+        const selectAllLabel = document.createElement('label');
+        selectAllLabel.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          font-size: 14px;
+          color: var(--text-muted-dark);
+        `;
+        const selectAllCheckbox = document.createElement('input');
+        selectAllCheckbox.type = 'checkbox';
+        selectAllCheckbox.id = 'shareSelectAll';
+        selectAllCheckbox.style.cssText = `
+          width: 18px;
+          height: 18px;
+          accent-color: var(--primary-color);
+          cursor: pointer;
+        `;
+        const selectAllText = document.createElement('span');
+        selectAllText.textContent = '全选';
+        selectAllLabel.appendChild(selectAllCheckbox);
+        selectAllLabel.appendChild(selectAllText);
+        selectAllWrapper.appendChild(selectAllLabel);
+
+        const selectedCountSpan = document.createElement('span');
+        selectedCountSpan.style.cssText = `
+          font-size: 12px;
+          color: var(--primary-color);
+        `;
+        selectedCountSpan.textContent = '0 首已选';
+        selectAllWrapper.appendChild(selectedCountSpan);
+        
+        // 歌曲列表容器
         const list = document.createElement('div');
         list.className = 'modal-song-list';
         list.id = 'shareSongList';
@@ -6253,6 +6224,7 @@
 
         box.appendChild(title);
         box.appendChild(tip);
+        box.appendChild(selectAllWrapper);
         box.appendChild(list);
         box.appendChild(btnsContainer);
 
@@ -6265,10 +6237,19 @@
             hideShareModal();
           }
         });
+
+        // 将需要动态访问的元素存储到 shareModalOverlay 上
+        shareModalOverlay._selectAllCheckbox = selectAllCheckbox;
+        shareModalOverlay._selectedCountSpan = selectedCountSpan;
+        shareModalOverlay._list = list;
       }
 
-      const shareSongList = document.getElementById('shareSongList');
-      shareSongList.innerHTML = '';
+      // 每次打开时，动态填充歌曲列表并更新全选逻辑
+      const list = shareModalOverlay._list;
+      const selectAllCheckbox = shareModalOverlay._selectAllCheckbox;
+      const selectedCountSpan = shareModalOverlay._selectedCountSpan;
+      
+      list.innerHTML = '';
       const fragment = document.createDocumentFragment();
       playlist.forEach((song, idx) => {
         const row = document.createElement('div');
@@ -6321,11 +6302,43 @@
         
         row.addEventListener('click', e => {
           if (e.target !== cb) cb.checked = !cb.checked;
+          // 手动勾选后触发全选控件更新
+          cb.dispatchEvent(new Event('change'));
         });
         
         fragment.appendChild(row);
       });
-      shareSongList.appendChild(fragment);
+      list.appendChild(fragment);
+
+      const songCheckboxes = Array.from(list.querySelectorAll('input[type="checkbox"]'));
+
+      function updateSelectAllAndCount() {
+        const allChecked = songCheckboxes.length > 0 && songCheckboxes.every(cb => cb.checked);
+        selectAllCheckbox.checked = allChecked;
+        const checkedCount = songCheckboxes.filter(cb => cb.checked).length;
+        selectedCountSpan.textContent = `${checkedCount} 首已选`;
+      }
+
+      // 移除旧监听器，重新绑定
+      const oldHandler = selectAllCheckbox._handler;
+      if (oldHandler) selectAllCheckbox.removeEventListener('change', oldHandler);
+      const newHandler = () => {
+        const isChecked = selectAllCheckbox.checked;
+        songCheckboxes.forEach(cb => cb.checked = isChecked);
+        updateSelectAllAndCount();
+      };
+      selectAllCheckbox._handler = newHandler;
+      selectAllCheckbox.addEventListener('change', newHandler);
+
+      songCheckboxes.forEach(cb => {
+        const oldCbHandler = cb._handler;
+        if (oldCbHandler) cb.removeEventListener('change', oldCbHandler);
+        const cbHandler = updateSelectAllAndCount;
+        cb._handler = cbHandler;
+        cb.addEventListener('change', cbHandler);
+      });
+
+      updateSelectAllAndCount();
 
       shareModalOverlay.style.display = 'flex';
       setTimeout(() => {
@@ -6334,7 +6347,6 @@
         shareModalOverlay.querySelector('.modal-content').style.transform = 'translateY(0)';
       }, 10);
     }
-
     function hideShareModal() {
       if (shareModalOverlay) {
         shareModalOverlay.style.opacity = '0';
@@ -6465,6 +6477,22 @@
       return playlist.findIndex(item => item.id === id);
     }
 
+    function loadVisualSettings() {
+        const saved = localStorage.getItem(ALBUM_KEY);
+        const isEnabled = saved === 'true';
+        const toggle = document.getElementById('albumEffectToggle');
+        if (toggle) {
+            toggle.checked = isEnabled;
+        }
+    }
+
+    function saveVisualSettings() {
+        const toggle = document.getElementById('albumEffectToggle');
+        const isEnabled = toggle ? toggle.checked : false;
+        localStorage.setItem(ALBUM_KEY, isEnabled);
+        applyEffectListener();
+    }
+
     // ===== 初始化 =====
     function init() {
         initTheme();
@@ -6473,12 +6501,27 @@
         updateDynamicIslandWelcome();
         updatePlaylistOrder();
         currentPlayingId = null;
+        loadVisualSettings();
+        applyEffectListener();
+
+        const albumToggle = document.getElementById('albumEffectToggle');
+        if (albumToggle) {
+            albumToggle.addEventListener('change', function() {
+                localStorage.setItem(ALBUM_KEY, this.checked);
+                applyEffectListener();
+            });
+        }
 
         if (isMobile()) {
             desktopLyricsBtn.style.display = 'none';
             if (!lyricsVisible) {
                 rightcontent.classList.add('hidden');
                 lyricsToggleBtn.innerHTML = '<i class="fas fa-align-left"></i>';
+            }
+            const toggle = document.getElementById('albumEffectToggle');
+            if (toggle) {
+                toggle.disabled = true;
+                toggle.parentElement.parentElement.style.opacity = '0.6';
             }
         }
 
