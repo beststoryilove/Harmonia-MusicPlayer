@@ -5237,6 +5237,7 @@
         const audioUrl = await getAudioUrl(song.id, song.source);
         audioPlayer.src = audioUrl;
 
+        // 在请求歌曲资源期间，保持"正在请求中"状态，不提前更新灵动岛文本
         await audioPlayer.play()
           .then(() => {
             playButton.innerHTML = '<i class="fas fa-pause"></i>';
@@ -5253,7 +5254,7 @@
             if (currentTab === 'playlist') {
               renderPlaylist();
             }
-            updateCollapsedTextByPlayingState();
+            // 播放成功后才更新为"正在播放"（由 play 事件监听器处理）
           })
           .catch(e => {
             playButton.innerHTML = '<i class="fas fa-play"></i>';
@@ -5844,8 +5845,8 @@
         playButton.innerHTML = '<i class="fas fa-play"></i>';
         isPlaying = false;
         updatePageTitle();
-        updateCollapsedTextByPlayingState(); // 更新灵动岛文字
-    
+        // 歌曲结束时显示"Harmonia"，等待下一首开始播放时再更新（由 play 事件监听器处理）
+        updateCollapsedText('Harmonia');
         // 如果没有歌曲在播放，仅清理ID
         if (!currentPlayingId) {
             currentPlayingId = null;
@@ -5857,11 +5858,8 @@
             // 单曲循环：从头开始重新播放同一首歌
             try {
                 audioPlayer.currentTime = 0;
+                // 重播时保持 currentPlayingId 不变，play 事件会更新文本
                 await audioPlayer.play();
-                playButton.innerHTML = '<i class="fas fa-pause"></i>';
-                isPlaying = true;
-                updatePageTitle();
-                // 重播时保持 currentPlayingId 不变，无需更新折叠文字
             } catch (e) {
                 console.error('单曲循环自动播放失败:', e);
                 currentPlayingId = null;
@@ -5874,6 +5872,7 @@
                 if (nextSong) {
                     try {
                         await playSong(nextSong, true);
+                        // playSong 成功后，play 事件会更新文本为"正在播放"
                     } catch (e) {
                         console.error('自动播放下一首失败:', e);
                         currentPlayingId = null;
@@ -5896,11 +5895,13 @@
     audioPlayer.addEventListener('play', () => {
       isPlaying = true;
       updatePageTitle();
+      updateCollapsedText('正在播放');
     });
 
     audioPlayer.addEventListener('pause', () => {
       isPlaying = false;
       updatePageTitle();
+      updateCollapsedText('Harmonia');
     });
 
     volumeSlider.addEventListener('input', debounce((e) => {
