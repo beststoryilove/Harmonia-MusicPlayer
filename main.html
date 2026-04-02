@@ -5174,6 +5174,11 @@
       try {
         clearError();
 
+        // 如果当前有 MV 正在播放，先停止 MV
+        if (currentMvVideoUrl && mvVideoPlayer.src && !mvVideoPlayer.paused) {
+          stopCurrentMv();
+        }
+
         nowPlayingTitle.textContent = song.name || '未知歌曲';
         currentSongInfo = {
           name: song.name || '未知歌曲',

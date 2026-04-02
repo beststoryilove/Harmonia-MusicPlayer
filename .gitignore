@@ -1,5 +1,1 @@
-```
-# No build artifacts, dependencies, or temp files detected in changes
-# Only source/config files present
-```
-Nothing needs to be added to the .gitignore file since only a source file (main.html) was modified and there are no build artifacts, dependencies, or temporary files in the changes.
+Nothing needs to be added to .gitignore since only a source file (main.html) was modified and there are no build artifacts, dependencies, or temporary files in the changes.
