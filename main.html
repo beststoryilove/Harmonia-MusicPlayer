@@ -956,9 +956,6 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      contain: content;
-      content-visibility: auto;
-      contain-intrinsic-size: 0 500px;
     }
 
     .sidebar-item {
@@ -977,9 +974,6 @@
       transition: all 0.22s ease;
       animation: fadeIn 0.5s ease;
       box-shadow: var(--glass-depth-shadow), var(--glass-inner-glow) !important;
-      
-      will-change: transform, background-color;
-      transform: translateZ(0);
     }
 
     .sidebar-item:hover {
@@ -3840,10 +3834,8 @@
     }
 
     function renderPlaylist() {
-      // 使用 requestAnimationFrame 进行异步渲染，避免阻塞主线程
-      requestAnimationFrame(() => {
-        playlistItems.innerHTML = '';
-        let items = getActivePlaylistArray();
+      playlistItems.innerHTML = '';
+      let items = getActivePlaylistArray();
 
       // 应用搜索过滤
       if (sidebarSearchQuery) {
@@ -4002,7 +3994,8 @@
         
         fragment.appendChild(d);
       });
-      });
+      
+      playlistItems.appendChild(fragment);
     }
 
     // ===== 拖拽排序功能 =====
