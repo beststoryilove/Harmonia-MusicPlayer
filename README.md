@@ -3,7 +3,7 @@
 ![Harmonia Music Player](https://img.shields.io/badge/Harmonia-Music_Player-ff2d55)
 ![Platform](https://img.shields.io/badge/Platform-Web-34aadc)
 
-Harmonia 是一个美观、功能丰富的在线音乐播放器，灵感来源于 Apple Music 设计风格，支持歌词显示、播放列表管理、多主题切换等高级功能。
+Harmonia 是一个美观、功能丰富的在线音乐播放器，灵感来源于 Apple Music 设计风格，支持歌词显示、播放列表管理、多主题切换等高级功能。（vibeconding project)
 
 ## ✨ 功能特性
 
@@ -222,7 +222,7 @@ const BUILTIN_NETEASE_PROXIES = [
 
 - 我们将会保持1周左右的更新频率以保证用户的使用体验。
 - 当前正式版本：v3.0（260402）；
-- 当前开发版本：v3.1（延期，学业问题）；
+- 当前开发版本：v3.1（酷狗音乐逐字歌词）；
 
 - 您可以访问链接查看当前开发进度。
 - [Harmonia开发版本预览](https://809blog.dpdns.org/Harmonia_Pre)
