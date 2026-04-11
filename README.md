@@ -232,6 +232,16 @@ const BUILTIN_NETEASE_PROXIES = [
 - 我们提供桌面端的桌面歌词，您可以访问我们的仓库获得构建版本。
 - [点我直达桌面歌词仓库](https://github.com/beststoryilove/Harmonia-DesktopLyrics/)
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=bottom-right" />
+ </picture>
+</a>
+
 ---
 
 **Harmonia - 让音乐触手可及** 🎶
