@@ -1212,6 +1212,7 @@
       display: inline-block;
       white-space: pre;
       color: rgba(255, 255, 255, 0.35);
+      transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1); /* 新增平滑过渡 */
     }
 
     .word-lyric::after {
@@ -2222,6 +2223,165 @@
 
     .modal-close:hover {
       color: var(--text-dark);
+    }
+
+    /* ===== 音频均衡器 ===== */
+    .eq-settings-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .eq-inline-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .eq-preset-select {
+      flex: 1;
+      min-width: 180px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--input-bg-dark);
+      border: 1px solid var(--border-dark);
+      color: var(--text-dark);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .eq-reset-btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      color: var(--text-dark);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .eq-reset-btn:hover {
+      background: rgba(255,255,255,0.14);
+      transform: translateY(-1px);
+    }
+
+    .eq-sliders {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .eq-band {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 52px;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .eq-band-label {
+      color: var(--text-dark);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .eq-band-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .eq-band-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    }
+
+    .eq-band-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    }
+
+    .eq-band-value {
+      color: var(--text-muted-dark);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .eq-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-dark);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .eq-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted-dark);
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.04);
+      transition: all 0.2s ease;
+    }
+
+    .eq-status-chip.active .eq-status-dot {
+      background: var(--success-color);
+      box-shadow: 0 0 0 6px rgba(48, 209, 88, 0.12);
+    }
+
+    body.light-theme .eq-preset-select {
+      background: var(--input-bg-light);
+      border-color: var(--border-light);
+      color: var(--text-light);
+    }
+
+    body.light-theme .eq-band {
+      background: rgba(0,0,0,0.03);
+      border-color: rgba(0,0,0,0.08);
+    }
+
+    body.light-theme .eq-band-slider {
+      background: rgba(0,0,0,0.12);
+    }
+
+    body.light-theme .eq-reset-btn,
+    body.light-theme .eq-status-chip {
+      background: rgba(0,0,0,0.05);
+      border-color: rgba(0,0,0,0.08);
+      color: var(--text-light);
+    }
+
+    @media (max-width: 768px) {
+      .eq-band {
+        grid-template-columns: 60px minmax(0, 1fr) 46px;
+        gap: 10px;
+      }
     }
 
     /* 动画 */
@@ -3552,8 +3712,6 @@
         width: min(100%, 168px);
       }
     }
-
-    /* 为灵动岛折叠区域增加轻微溢出隐藏，防止动画过程中的滚动条 */
     .island-collapsed {
       overflow: hidden;
     }
@@ -3565,8 +3723,20 @@
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
+    .eq-preset-select option {
+    background-color: #1c1c1e;
+    color: #ffffff;
+    }
+    body.light-theme .eq-preset-select option {
+        background-color: #ffffff;
+        color: #000000;
+    }
+    .eq-preset-select option:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
   </style>
-<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
+<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
 <body>
   <div class="am-background"></div>
 
@@ -3651,6 +3821,7 @@
     <div class="settings-tabs">
       <div class="settings-tab active" data-tab="lyrics">歌词</div>
       <div class="settings-tab" data-tab="visual">视觉</div>
+      <div class="settings-tab" data-tab="audio">音频</div>
       <div class="settings-tab" data-tab="kugou">酷狗</div>
     </div>
 
@@ -3775,6 +3946,117 @@
             注意：若开启该功能，桌面端在频繁触发3D效果时可能会导致卡顿，建议根据电脑性能选择。<br>
             移动端不支持此效果，开启无效。
           </p>
+        </div>
+      </div>
+
+      <!-- 音频选项卡 -->
+      <div class="settings-tab-content" data-tab="audio">
+        <div class="settings-section">
+          <h3 class="settings-section-title">音频均衡器</h3>
+          <div class="settings-option">
+            <label class="switch">
+              <input type="checkbox" id="eqEnabledToggle">
+              <span class="slider"></span>
+            </label>
+            <span class="settings-option-label">启用 10 段均衡器</span>
+          </div>
+          <div class="eq-settings-group">
+            <div class="eq-inline-row">
+              <span class="eq-status-chip" id="eqStatusChip">
+                <span class="eq-status-dot"></span>
+                <span id="eqStatusText">当前未启用</span>
+              </span>
+            </div>
+
+            <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+              <label class="settings-option-label">预设</label>
+              <div class="eq-inline-row" style="width: 100%;">
+                <select id="eqPresetSelect" class="eq-preset-select">
+                  <option value="flat">平坦 / 默认</option>
+                  <option value="warm">温暖耐听</option>
+                  <option value="bass">低音增强</option>
+                  <option value="deepbass">深沉低频</option>
+                  <option value="vocal">人声增强</option>
+                  <option value="podcast">播客 / 语音</option>
+                  <option value="bright">明亮清晰</option>
+                  <option value="electronic">电子动感</option>
+                  <option value="rock">摇滚能量</option>
+                  <option value="classical">古典厅堂</option>
+                  <option value="jazz">爵士平衡</option>
+                  <option value="acoustic">原声细节</option>
+                  <option value="dance">舞曲氛围</option>
+                  <option value="custom">自定义</option>
+                </select>
+                <button type="button" class="eq-reset-btn" id="eqResetBtn">恢复平坦</button>
+              </div>
+            </div>
+
+            <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+              <label class="settings-option-label">前级增益</label>
+              <div class="eq-band" style="width: 100%; margin-bottom: 0;">
+                <span class="eq-band-label">Preamp</span>
+                <input type="range" class="eq-band-slider" id="eqPreampSlider" min="-12" max="12" step="0.5" value="0">
+                <span class="eq-band-value" id="eqPreampValue">0 dB</span>
+              </div>
+            </div>
+
+            <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 0;">
+              <label class="settings-option-label">频段调节</label>
+              <div class="eq-sliders" id="eqSliders">
+                <div class="eq-band">
+                  <span class="eq-band-label">31 Hz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="0" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="0">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">62 Hz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="1" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="1">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">125 Hz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="2" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="2">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">250 Hz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="3" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="3">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">500 Hz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="4" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="4">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">1 kHz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="5" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="5">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">2 kHz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="6" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="6">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">4 kHz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="7" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="7">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">8 kHz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="8" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="8">0 dB</span>
+                </div>
+                <div class="eq-band">
+                  <span class="eq-band-label">16 kHz</span>
+                  <input type="range" class="eq-band-slider" data-band-index="9" min="-12" max="12" step="0.5" value="0">
+                  <span class="eq-band-value" data-band-value="9">0 dB</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="settings-hint">均衡器基于 Web Audio API 实现，目前为 10 段图示均衡器。提供丰富预设，覆盖低频、人声、语音、摇滚、电子、古典等常见场景；手动微调会自动切换为“自定义”，所有参数均会自动保存。</p>
         </div>
       </div>
 
@@ -3962,7 +4244,7 @@
     </div>
 </div>
 
-  <audio id="audioPlayer"></audio>
+  <audio id="audioPlayer" crossorigin="anonymous"></audio>
 
   <script>
     // ===== DOM Cache =====
@@ -4002,6 +4284,15 @@
     const apiTokenInput = document.getElementById('apiTokenInput');
     const testApiBtn = document.getElementById('testApiBtn');
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const eqEnabledToggle = document.getElementById('eqEnabledToggle');
+    const eqPresetSelect = document.getElementById('eqPresetSelect');
+    const eqPreampSlider = document.getElementById('eqPreampSlider');
+    const eqPreampValue = document.getElementById('eqPreampValue');
+    const eqResetBtn = document.getElementById('eqResetBtn');
+    const eqStatusChip = document.getElementById('eqStatusChip');
+    const eqStatusText = document.getElementById('eqStatusText');
+    const eqBandSliders = document.querySelectorAll('.eq-band-slider[data-band-index]');
+    const eqBandValueEls = document.querySelectorAll('.eq-band-value[data-band-value]');
     const playModeBtn = document.getElementById('playModeBtn');
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
@@ -4137,6 +4428,286 @@
     audioPlayer.volume = parseFloat(localStorage.getItem('musicPlayerVolume') || '0.7');
     volumeSlider.value = audioPlayer.volume;
     updateLyricsRerequestDialog();
+
+    // ===== 音频均衡器 =====
+    const EQ_STORAGE_KEY = 'musicPlayerEqSettings';
+    const EQ_BANDS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+    const EQ_PRESETS = {
+      flat: { label: '平坦 / 默认', preamp: 0, bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+      warm: { label: '温暖耐听', preamp: -1, bands: [1.5, 1.2, 0.8, 0.3, -0.2, 0.4, 0.9, 1.2, 1.0, 0.5] },
+      bass: { label: '低音增强', preamp: -2, bands: [4.5, 4, 3, 1.5, 0, -1, -1, 0, 0.8, 1.2] },
+      deepbass: { label: '深沉低频', preamp: -3, bands: [6, 5, 3.5, 2, 0, -1.5, -2, -1, 0.5, 1] },
+      vocal: { label: '人声增强', preamp: -2, bands: [-2, -1.5, -0.5, 1, 2.5, 4, 3.5, 2, -0.5, -1] },
+      podcast: { label: '播客 / 语音', preamp: -3, bands: [-4, -3, -1, 1, 2.5, 3.5, 3.5, 2, -1, -2] },
+      bright: { label: '明亮清晰', preamp: -1, bands: [-1, -1, 0, 0.5, 1, 2, 3, 4, 4.5, 4] },
+      electronic: { label: '电子动感', preamp: -2, bands: [4, 3, 1, 0, -1, 0, 1.5, 3, 4, 3] },
+      rock: { label: '摇滚能量', preamp: -2, bands: [3, 2, 1, -0.5, -1, 1.5, 2.5, 3, 2, 1] },
+      classical: { label: '古典厅堂', preamp: -1, bands: [1.5, 1, 0.5, 0, -0.5, 0.5, 1.5, 2.5, 3, 2.5] },
+      jazz: { label: '爵士平衡', preamp: -1.5, bands: [2, 1.5, 1, 0.5, 0, 0.5, 1.5, 2, 1.5, 1] },
+      acoustic: { label: '原声细节', preamp: -1, bands: [1, 0.8, 0.5, 0, 0, 0.8, 1.8, 2.2, 1.8, 1.2] },
+      dance: { label: '舞曲氛围', preamp: -2.5, bands: [5, 4, 2, 0, -1, 0.5, 2, 3.5, 4, 3] },
+    };
+
+    let eqSettings = {
+      enabled: false,
+      preset: 'flat',
+      preamp: 0,
+      bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    };
+
+    let eqAudioContext = null;
+    let eqSourceNode = null;
+    let eqPreampNode = null;
+    let eqOutputNode = null;
+    let eqFilterNodes = [];
+    let eqGraphInitialized = false;
+    let eqSupportNoticeShown = false;
+    const eqCorsProbeCache = new Map();
+
+
+    function isCrossOriginUrl(url) {
+      try {
+        const parsed = new URL(url, window.location.href);
+        return parsed.origin !== window.location.origin;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    async function probeEqUrlSupport(url) {
+      if (!url) {
+        return { ok: false, reason: '当前还没有可检测的音频地址' };
+      }
+
+      if (!isCrossOriginUrl(url)) {
+        return { ok: true, reason: '' };
+      }
+
+      if (eqCorsProbeCache.has(url)) {
+        return eqCorsProbeCache.get(url);
+      }
+
+      let result;
+      try {
+        const response = await fetch(url, {
+          method: 'HEAD',
+          mode: 'cors',
+          cache: 'no-store',
+          credentials: 'omit'
+        });
+        result = { ok: true, reason: '', status: response.status };
+      } catch (headError) {
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-store',
+            credentials: 'omit',
+            headers: { Range: 'bytes=0-0' }
+          });
+          result = { ok: true, reason: '', status: response.status };
+        } catch (getError) {
+          result = {
+            ok: false,
+            reason: '当前音源未开放浏览器可用的跨域音频处理权限，启用均衡器后会被浏览器静音。'
+          };
+        }
+      }
+
+      eqCorsProbeCache.set(url, result);
+      return result;
+    }
+
+    async function canEnableEqForCurrentSource() {
+      const sourceUrl = audioPlayer.currentSrc || audioPlayer.src || '';
+      if (!sourceUrl) {
+        return { ok: true, pending: true, reason: '' };
+      }
+      return probeEqUrlSupport(sourceUrl);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function dbToGain(db) {
+      return Math.pow(10, db / 20);
+    }
+
+    function formatDbLabel(value) {
+      const numeric = Number(value) || 0;
+      const fixed = Math.abs(numeric % 1) < 1e-6 ? numeric.toFixed(0) : numeric.toFixed(1);
+      return `${numeric > 0 ? '+' : ''}${fixed} dB`;
+    }
+
+    function normalizeEqSettings(raw = {}) {
+      const preset = typeof raw.preset === 'string' ? raw.preset : 'flat';
+      const bands = Array.isArray(raw.bands) ? raw.bands.slice(0, EQ_BANDS.length) : [];
+      while (bands.length < EQ_BANDS.length) bands.push(0);
+      return {
+        enabled: !!raw.enabled,
+        preset,
+        preamp: clamp(Number.isFinite(Number(raw.preamp)) ? Number(raw.preamp) : 0, -12, 12),
+        bands: bands.map(v => clamp(Number.isFinite(Number(v)) ? Number(v) : 0, -12, 12))
+      };
+    }
+
+    async function ensureEqAudioGraph() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioPlayer.crossOrigin = 'anonymous';
+      if (!AudioContextClass) {
+        throw new Error('当前浏览器不支持 Web Audio API');
+      }
+
+      if (!eqAudioContext) {
+        eqAudioContext = new AudioContextClass();
+      }
+
+      if (!eqGraphInitialized) {
+        eqSourceNode = eqAudioContext.createMediaElementSource(audioPlayer);
+        eqPreampNode = eqAudioContext.createGain();
+        eqOutputNode = eqAudioContext.createGain();
+
+        eqFilterNodes = EQ_BANDS.map((frequency, index) => {
+          const filter = eqAudioContext.createBiquadFilter();
+          filter.frequency.value = frequency;
+          filter.gain.value = 0;
+          if (index === 0) {
+            filter.type = 'lowshelf';
+            filter.Q.value = 0.8;
+          } else if (index === EQ_BANDS.length - 1) {
+            filter.type = 'highshelf';
+            filter.Q.value = 0.8;
+          } else {
+            filter.type = 'peaking';
+            filter.Q.value = 1.0;
+          }
+          return filter;
+        });
+
+        let chain = eqSourceNode;
+        chain.connect(eqPreampNode);
+        chain = eqPreampNode;
+        eqFilterNodes.forEach(filter => {
+          chain.connect(filter);
+          chain = filter;
+        });
+        chain.connect(eqOutputNode);
+        eqOutputNode.connect(eqAudioContext.destination);
+        eqGraphInitialized = true;
+      }
+
+      if (eqAudioContext.state === 'suspended') {
+        await eqAudioContext.resume();
+      }
+    }
+
+    function saveEqSettings() {
+      localStorage.setItem(EQ_STORAGE_KEY, JSON.stringify(eqSettings));
+    }
+
+    function updateEqStatusUi() {
+      if (!eqStatusChip || !eqStatusText) return;
+      eqStatusChip.classList.toggle('active', !!eqSettings.enabled);
+      eqStatusText.textContent = eqSettings.enabled
+        ? `已启用：${(EQ_PRESETS[eqSettings.preset]?.label) || '自定义'}`
+        : '当前未启用';
+    }
+
+    function updateEqUi() {
+      if (eqEnabledToggle) eqEnabledToggle.checked = !!eqSettings.enabled;
+      if (eqPresetSelect) eqPresetSelect.value = eqSettings.preset;
+      if (eqPreampSlider) eqPreampSlider.value = String(eqSettings.preamp);
+      if (eqPreampValue) eqPreampValue.textContent = formatDbLabel(eqSettings.preamp);
+      eqBandSliders.forEach((slider, index) => {
+        slider.value = String(eqSettings.bands[index] ?? 0);
+      });
+      eqBandValueEls.forEach((el, index) => {
+        el.textContent = formatDbLabel(eqSettings.bands[index] ?? 0);
+      });
+      updateEqStatusUi();
+    }
+
+    function applyEqToGraph() {
+      if (!eqGraphInitialized || !eqPreampNode) return;
+      const currentTime = eqAudioContext?.currentTime || 0;
+      eqPreampNode.gain.setTargetAtTime(dbToGain(eqSettings.enabled ? eqSettings.preamp : 0), currentTime, 0.015);
+      eqFilterNodes.forEach((filter, index) => {
+        filter.gain.setTargetAtTime(eqSettings.enabled ? (eqSettings.bands[index] ?? 0) : 0, currentTime, 0.015);
+      });
+    }
+
+    function persistAndRefreshEqUi() {
+      eqSettings = normalizeEqSettings(eqSettings);
+      saveEqSettings();
+      updateEqUi();
+      applyEqToGraph();
+    }
+
+    async function setEqEnabled(enabled, announce = true) {
+      eqSettings.enabled = !!enabled;
+      if (eqSettings.enabled) {
+        const support = await canEnableEqForCurrentSource();
+        if (!support.ok) {
+          eqSettings.enabled = false;
+          persistAndRefreshEqUi();
+          showError(`当前音源不支持浏览器均衡器：${support.reason}`, 4200);
+          return;
+        }
+
+        if (!support.pending) {
+          try {
+            await ensureEqAudioGraph();
+          } catch (error) {
+            console.error('初始化均衡器失败:', error);
+            eqSettings.enabled = false;
+            updateEqUi();
+            showError(`均衡器不可用：${error.message}`, 3200);
+            return;
+          }
+        }
+      }
+      persistAndRefreshEqUi();
+      if (announce) {
+        showDynamicIslandToast(eqSettings.enabled ? '均衡器已启用' : '均衡器已关闭', 2000);
+      }
+    }
+
+    function applyEqPreset(presetKey, announce = true) {
+      if (presetKey === 'custom') {
+        eqSettings.preset = 'custom';
+        persistAndRefreshEqUi();
+        return;
+      }
+      const preset = EQ_PRESETS[presetKey] || EQ_PRESETS.flat;
+      eqSettings.preset = presetKey in EQ_PRESETS ? presetKey : 'flat';
+      eqSettings.preamp = preset.preamp;
+      eqSettings.bands = [...preset.bands];
+      persistAndRefreshEqUi();
+      if (announce) {
+        showDynamicIslandToast(`均衡器预设：${preset.label}`, 2200);
+      }
+    }
+
+    function markEqAsCustom() {
+      eqSettings.preset = 'custom';
+      persistAndRefreshEqUi();
+    }
+
+    function loadEqSettings() {
+      const saved = localStorage.getItem(EQ_STORAGE_KEY);
+      if (saved) {
+        try {
+          eqSettings = normalizeEqSettings(JSON.parse(saved));
+        } catch (error) {
+          console.warn('均衡器配置读取失败，已回退默认值', error);
+          eqSettings = normalizeEqSettings();
+        }
+      } else {
+        eqSettings = normalizeEqSettings();
+      }
+      updateEqUi();
+    }
 
     // ===== 实用函数 =====
     function clearError() {
@@ -5738,40 +6309,54 @@
         const p = document.createElement('p');
 
         line.words.forEach((w, idx) => {
-            const span = document.createElement('span');
-            let txt = w.text;
-            // 判断当前词是否纯中文
-            const isChinese = /^[\u4e00-\u9fff]+$/.test(txt);
-            // 判断是否需要加空格
-            let needSpace = false;
-            if (isChinese) {
-                // 如果是中文词，且不是最后一个词，看下一个词是否非中文
-                if (idx < line.words.length - 1) {
-                    const nextWord = line.words[idx + 1].text;
-                    const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
-                    if (!isNextChinese) {
-                        needSpace = true; // 中文后跟非中文，加空格
-                    }
-                }
-            } else {
-                // 非中文词，如果不是最后一个词，加空格
-                if (idx !== line.words.length - 1) {
-                    needSpace = true;
-                }
-            }
-            if (needSpace) {
-                txt += ' ';
-            }
-            span.className = 'word-lyric';
-            span.textContent = txt;   // 暗色底层
-            span.dataset.t = txt;     // 亮色叠层内容（::after 用）
-            span.dataset.wstart = w.start;
-            span.dataset.wend = w.end;
-            // 初始化填充进度
-            span.style.setProperty('--p', '0%');
-            p.appendChild(span);
-        });
+          const wordText = w.text;
+          const isChinese = /^[\u4e00-\u9fff]+$/.test(wordText);
+          const shouldSplit = !isChinese && wordText.length > 1 && /^[a-zA-Z]+$/.test(wordText);
 
+          if (shouldSplit) {
+              const letters = wordText.split('');
+              const wordDuration = w.end - w.start;
+              const letterDuration = wordDuration / letters.length;
+
+              letters.forEach((letter, letterIdx) => {
+                  const span = document.createElement('span');
+                  span.className = 'word-lyric';
+                  span.textContent = letter;
+                  span.dataset.t = letter;
+                  const letterStart = w.start + letterIdx * letterDuration;
+                  const letterEnd = letterStart + letterDuration;
+                  span.dataset.wstart = letterStart;
+                  span.dataset.wend = letterEnd;
+                  span.dataset.letter = 'true';
+                  span.style.setProperty('--p', '0%');
+                  p.appendChild(span);
+              });
+          } else {
+              const span = document.createElement('span');
+              span.className = 'word-lyric';
+              span.textContent = wordText;
+              span.dataset.t = wordText;
+              span.dataset.wstart = w.start;
+              span.dataset.wend = w.end;
+              span.style.setProperty('--p', '0%');
+              p.appendChild(span);
+          }
+
+          // 添加单词间空格（保留原有逻辑）
+          let needSpace = false;
+          if (isChinese) {
+              if (idx < line.words.length - 1) {
+                  const nextWord = line.words[idx + 1].text;
+                  const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
+                  if (!isNextChinese) needSpace = true;
+              }
+          } else {
+              if (idx !== line.words.length - 1) needSpace = true;
+          }
+          if (needSpace) {
+              p.appendChild(document.createTextNode(' '));
+          }
+      });
         div.appendChild(p);
 
         if (line.translation) {
@@ -5805,51 +6390,40 @@
           applyLyricsItemTransitions();
         }, 50);
       });
-
-  //    if (isMobile()) {
-  //      setTimeout(() => {
-  //        rebuildLyricsMetrics(amLyricsData);
-  //        document.querySelectorAll('.lyrics .item').forEach(el => {
-  //          const height = el.offsetHeight;
-  //          if (height > 0) {
-  //            el.style.containIntrinsicSize = `0px ${height}px`; // 内联覆盖
-  //          }
-  //        });
-  //      }, 100);
-  //    }
     }
 
     function updateWordFillInActiveLine(currentTime, force = false) {
-      if (!amLyricsData?.length || lastLyric < 0) return;
+        if (!amLyricsData?.length || lastLyric < 0) return;
 
-      const line = amLyricsData[lastLyric];
-      if (!line?.ele) return;
+        const line = amLyricsData[lastLyric];
+        if (!line?.ele) return;
 
-      const spans = line.wordSpans || (line.wordSpans = Array.from(line.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
-      if (!spans.length) return;
+        const spans = line.wordSpans || (line.wordSpans = Array.from(line.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
+        if (!spans.length) return;
 
-      spans.forEach(sp => {
-        const ws = parseFloat(sp.dataset.wstart);
-        const we = parseFloat(sp.dataset.wend);
+        spans.forEach(sp => {
+            const ws = parseFloat(sp.dataset.wstart);
+            const we = parseFloat(sp.dataset.wend);
 
-        let p = 0;
-        if (currentTime <= ws) {
-          p = 0;
-        } else if (currentTime >= we) {
-          p = 100;
-        } else {
-          const dur = Math.max(we - ws, 0.001);
-          p = ((currentTime - ws) / dur) * 100;
-          if (p < 0) p = 0;
-          if (p > 100) p = 100;
-        }
+            // 填充进度
+            let p = 0;
+            if (currentTime <= ws) {
+                p = 0;
+            } else if (currentTime >= we) {
+                p = 100;
+            } else {
+                const dur = Math.max(we - ws, 0.001);
+                p = ((currentTime - ws) / dur) * 100;
+                if (p < 0) p = 0;
+                if (p > 100) p = 100;
+            }
 
-        const rounded = Math.round(p * 2) / 2;
-        if (force || sp.__lastWordProgress !== rounded) {
-          sp.style.setProperty('--p', `${rounded}%`);
-          sp.__lastWordProgress = rounded;
-        }
-      });
+            const rounded = Math.round(p * 2) / 2;
+            if (force || sp.__lastWordProgress !== rounded) {
+                sp.style.setProperty('--p', `${rounded}%`);
+                sp.__lastWordProgress = rounded;
+            }
+        });
     }
 
     // 检测是否为外语歌词
@@ -6335,6 +6909,23 @@
 
         await requestLyricsOnlyForSong(song);
         const audioUrl = await getAudioUrl(song.id, song.source);
+        audioPlayer.crossOrigin = 'anonymous';
+
+        if (eqSettings.enabled && !eqGraphInitialized) {
+          const eqSupport = await probeEqUrlSupport(audioUrl);
+          if (!eqSupport.ok) {
+            eqSettings.enabled = false;
+            persistAndRefreshEqUi();
+            showError(`当前歌曲音源不支持浏览器均衡器，已自动关闭：${eqSupport.reason}`, 4800);
+          }
+        } else if (eqSettings.enabled && eqGraphInitialized) {
+          const eqSupport = await probeEqUrlSupport(audioUrl);
+          if (!eqSupport.ok && !eqSupportNoticeShown) {
+            eqSupportNoticeShown = true;
+            showError('这个音源不支持浏览器均衡器。为避免静音，请刷新页面后保持均衡器关闭，或切换到支持跨域音频处理的音源。', 6000);
+          }
+        }
+
         audioPlayer.src = audioUrl;
 
         // 在请求歌曲资源期间，保持"正在请求中"状态，不提前更新灵动岛文本
@@ -6794,16 +7385,22 @@
       if (activeIndex === -1 || lastLyric === activeIndex) return;
 
       if (lastLyric >= 0 && lastLyric < amLyricsData.length) {
-        const prevLine = amLyricsData[lastLyric];
-        if (prevLine?.ele) {
-          const prevSpans = prevLine.wordSpans || (prevLine.wordSpans = Array.from(prevLine.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
-          prevSpans.forEach(span => {
-            if (span.__lastWordProgress !== 0) {
-              span.style.setProperty('--p', '0%');
-              span.__lastWordProgress = 0;
-            }
-          });
-        }
+          const prevLine = amLyricsData[lastLyric];
+          if (prevLine?.ele) {
+              const prevSpans = prevLine.wordSpans || (prevLine.wordSpans = Array.from(prevLine.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
+              prevSpans.forEach(span => {
+                  // 重置填充进度
+                  if (span.__lastWordProgress !== 0) {
+                      span.style.setProperty('--p', '0%');
+                      span.__lastWordProgress = 0;
+                  }
+                  // 重置垂直偏移
+                  if (span.__lastLiftTransform !== 'translateY(0)') {
+                      span.style.transform = 'translateY(0)';
+                      span.__lastLiftTransform = 'translateY(0)';
+                  }
+              });
+          }
       }
 
       const THRESHOLD = 0.4;
@@ -6921,6 +7518,63 @@
     saveSettingsBtn.addEventListener('click', () => {
       saveTranslationSettings();
       saveVisualSettings();
+    });
+
+    // 均衡器设置
+    if (eqEnabledToggle) {
+      eqEnabledToggle.addEventListener('change', async (e) => {
+        await setEqEnabled(e.target.checked);
+      });
+    }
+
+    if (eqPresetSelect) {
+      eqPresetSelect.addEventListener('change', (e) => {
+        applyEqPreset(e.target.value);
+      });
+    }
+
+    if (eqPreampSlider) {
+      eqPreampSlider.addEventListener('input', (e) => {
+        eqSettings.preamp = clamp(parseFloat(e.target.value), -12, 12);
+        eqPreampValue.textContent = formatDbLabel(eqSettings.preamp);
+        eqSettings.preset = 'custom';
+        persistAndRefreshEqUi();
+      });
+    }
+
+    eqBandSliders.forEach(slider => {
+      slider.addEventListener('input', (e) => {
+        const index = Number(e.target.dataset.bandIndex);
+        if (!Number.isInteger(index)) return;
+        eqSettings.bands[index] = clamp(parseFloat(e.target.value), -12, 12);
+        const valueEl = document.querySelector(`.eq-band-value[data-band-value="${index}"]`);
+        if (valueEl) valueEl.textContent = formatDbLabel(eqSettings.bands[index]);
+        eqSettings.preset = 'custom';
+        persistAndRefreshEqUi();
+      });
+    });
+
+    if (eqResetBtn) {
+      eqResetBtn.addEventListener('click', () => {
+        applyEqPreset('flat');
+      });
+    }
+
+    audioPlayer.addEventListener('play', async () => {
+      if (!eqSettings.enabled) return;
+      try {
+        const support = await canEnableEqForCurrentSource();
+        if (!support.ok) {
+          eqSettings.enabled = false;
+          persistAndRefreshEqUi();
+          showError(`当前音源不支持浏览器均衡器，已自动关闭：${support.reason}`, 4800);
+          return;
+        }
+        await ensureEqAudioGraph();
+        applyEqToGraph();
+      } catch (error) {
+        console.warn('播放时恢复均衡器失败:', error);
+      }
     });
 
     // 测试API连接
@@ -7822,6 +8476,7 @@
           nowPlayingArtist.textContent = currentSongInfo.artist || '未知歌手';
         }
         loadVisualSettings();
+        loadEqSettings();
         applyEffectListener();
 
         const initCollapsedText = () => {
@@ -8405,29 +9060,57 @@
         div.style.transform = 'translateZ(0)';
         const p = document.createElement('p');
         if (line.words && line.words.length) {
-          line.words.forEach((w, idx) => {
-            const span = document.createElement('span');
-            span.className = 'word-lyric';
-            span.textContent = w.text;
-            span.dataset.t = w.text;
-            span.dataset.wstart = w.start;
-            span.dataset.wend = w.end;
-            span.style.setProperty('--p', '0%');
-            p.appendChild(span);
-            // 智能添加空格：只有当下一个单词存在，且当前单词与下一个单词不都是中文时才加空格
-            if (idx < line.words.length - 1) {
-              const currentText = w.text;
-              const nextText = line.words[idx + 1].text;
-              const isCurrentChinese = /^[\u4e00-\u9fff]+$/.test(currentText);
-              const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextText);
-              // 两个都是中文时不加空格，其他情况（中英、英中、英英）加空格
-              if (!(isCurrentChinese && isNextChinese)) {
-                p.appendChild(document.createTextNode(' '));
-              }
-            }
-          });
+            line.words.forEach((w, idx) => {
+                const wordText = w.text;
+                const isChinese = /^[\u4e00-\u9fff]+$/.test(wordText);
+                const shouldSplit = !isChinese && wordText.length > 1 && /^[a-zA-Z]+$/.test(wordText);
+
+                if (shouldSplit) {
+                    const letters = wordText.split('');
+                    const wordDuration = w.end - w.start;
+                    const letterDuration = wordDuration / letters.length;
+
+                    letters.forEach((letter, letterIdx) => {
+                        const span = document.createElement('span');
+                        span.className = 'word-lyric';
+                        span.textContent = letter;
+                        span.dataset.t = letter;
+                        const letterStart = w.start + letterIdx * letterDuration;
+                        const letterEnd = letterStart + letterDuration;
+                        span.dataset.wstart = letterStart;
+                        span.dataset.wend = letterEnd;
+                        span.dataset.letter = 'true';
+                        span.style.setProperty('--p', '0%');
+                        p.appendChild(span);
+                    });
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'word-lyric';
+                    span.textContent = wordText;
+                    span.dataset.t = wordText;
+                    span.dataset.wstart = w.start;
+                    span.dataset.wend = w.end;
+                    span.style.setProperty('--p', '0%');
+                    p.appendChild(span);
+                }
+
+                // 智能空格
+                let needSpace = false;
+                if (isChinese) {
+                    if (idx < line.words.length - 1) {
+                        const nextWord = line.words[idx + 1].text;
+                        const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
+                        if (!isNextChinese) needSpace = true;
+                    }
+                } else {
+                    if (idx !== line.words.length - 1) needSpace = true;
+                }
+                if (needSpace) {
+                    p.appendChild(document.createTextNode(' '));
+                }
+            });
         } else {
-          p.textContent = line.text;
+            p.textContent = line.text;
         }
         div.appendChild(p);
         if (line.translation && line.translation.trim()) {
@@ -8740,6 +9423,8 @@
     }
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script></body>
 </html>
