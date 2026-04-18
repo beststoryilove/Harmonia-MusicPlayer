@@ -221,8 +221,8 @@ const BUILTIN_NETEASE_PROXIES = [
 ### 开发进度
 
 - 我们将会保持1周左右的更新频率以保证用户的使用体验。
-- 当前正式版本：v3.0（260402）；
-- 当前开发版本：v3.1（酷狗音乐逐字歌词）；
+- 当前正式版本：v3.2（260418）；
+- 当前开发版本：v3.3（歌词动画优化，暂无预览）；
 
 - 您可以访问链接查看当前开发进度。
 - [Harmonia开发版本预览](https://809blog.dpdns.org/Harmonia_Pre)
@@ -231,6 +231,8 @@ const BUILTIN_NETEASE_PROXIES = [
 
 - 我们提供桌面端的桌面歌词，您可以访问我们的仓库获得构建版本。
 - [点我直达桌面歌词仓库](https://github.com/beststoryilove/Harmonia-DesktopLyrics/)
+- *（我操了更完酷狗源逐字歌词，桌面歌词又不能用了，等我修复）
+
 
 ## Star History
 
