@@ -172,13 +172,25 @@
       width: 100%;
       height: 100%;
       z-index: -1;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      filter: blur(30px) brightness(0.6);
-      transform: scale(1.2);
-      transition: background-image 0.5s ease;
+      background-color: var(--bg-dark);
+      transition: background-color var(--transition-speed) ease, filter 0.5s ease;
       will-change: background-image;
+    }
+
+    body.light-theme .am-background {
+      background-color: var(--bg-light);
+    }
+
+    .am-background.has-art {
+      background-size: cover !important;
+      background-position: center !important;
+      background-repeat: no-repeat !important;
+      filter: blur(30px) brightness(0.6) !important;
+      transform: scale(1.2) !important;
+    }
+
+    body.light-theme .am-background.has-art {
+      filter: blur(30px) brightness(1.1) !important;
     }
 
     .am-background::after {
@@ -190,6 +202,11 @@
       height: 100%;
       background-color: rgba(0, 0, 0, 0.3);
       pointer-events: none;
+      transition: background-color var(--transition-speed) ease;
+    }
+
+    body.light-theme .am-background::after {
+      background-color: rgba(255, 255, 255, 0.5);
     }
 
     @keyframes movement {
@@ -1212,7 +1229,7 @@
       display: inline-block;
       white-space: pre;
       color: rgba(255, 255, 255, 0.35);
-      transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1); /* 新增平滑过渡 */
+      transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
     }
 
     .word-lyric::after {
@@ -1227,22 +1244,6 @@
       pointer-events: none;
       transition: width 0.1s linear;
       will-change: width;
-    }
-
-    body.light-theme .word-lyric {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    body.light-theme .word-lyric::after {
-      color: rgba(255, 255, 255, 1);
-    }
-
-    body.light-theme .lyrics > .item {
-      color: rgba(255, 255, 255, 0.2);
-    }
-
-    body.light-theme .lyrics > .item.highlight {
-      color: rgba(255, 255, 255, 1);
     }
 
     /* 播放信息 */
@@ -1262,10 +1263,6 @@
       text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
       font-size: 14px;
       margin-bottom: 10px;
-    }
-
-    body.light-theme .time-display {
-      color: #000;
     }
 
     .player-meta {
@@ -1425,10 +1422,6 @@
         transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     }
 
-    body.light-theme .progress-bar {
-      background: rgba(0, 0, 0, 0.15);
-    }
-
     .progress {
       height: 100%;
       border-radius: 999px;
@@ -1437,10 +1430,6 @@
       position: relative;
       transition: width 0.1s linear;
       box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
-    }
-
-    body.light-theme .progress {
-      background: var(--primary-color);
     }
 
     /* 控制按钮 */
@@ -1605,17 +1594,6 @@
       color: var(--primary-color);
     }
 
-    /* 浅色主题适配 */
-    body.light-theme .mv-button {
-      background: rgba(255, 255, 255, 0.65) !important;
-      border: 1px solid rgba(0, 0, 0, 0.08) !important;
-      color: var(--text-light);
-    }
-
-    body.light-theme .mv-button:hover {
-      background: rgba(255, 255, 255, 0.8) !important;
-    }
-
     /* MV 模态框样式 */
     .mv-modal-overlay {
       position: fixed;
@@ -1736,24 +1714,6 @@
       opacity: 0.7;
     }
 
-    /* 浅色主题适配 */
-    body.light-theme .mv-modal-content {
-      background: var(--liquid-glass-bg-light) !important;
-      border: var(--liquid-border-light) !important;
-    }
-
-    body.light-theme .mv-modal-header {
-      border-bottom-color: var(--border-light);
-    }
-
-    body.light-theme .mv-modal-title {
-      color: var(--text-light);
-    }
-
-    body.light-theme .mv-placeholder {
-      color: rgba(0, 0, 0, 0.6);
-    }
-
     /* 歌词切换按钮 */
     .lyrics-toggle-btn {
       position: fixed;
@@ -1782,8 +1742,6 @@
       transform: translateY(-2px);
       color: var(--primary-color);
     }
-
-
 
     /* 重新请求歌词按钮 */
     .lyrics-rerequest-btn {
@@ -2355,26 +2313,163 @@
       box-shadow: 0 0 0 6px rgba(48, 209, 88, 0.12);
     }
 
+    /* 浅色主题下组件可见性优化 */
+    body.light-theme .settings-modal-content,
+    body.light-theme .share-modal-box {
+      background: rgba(255, 255, 255, 0.96) !important;
+      border: 1px solid rgba(0,0,0,0.1) !important;
+    }
+    body.light-theme .settings-section-title,
+    body.light-theme .settings-option-label,
+    body.light-theme .radio-label,
+    body.light-theme .settings-hint,
+    body.light-theme .modal-title,
+    body.light-theme .eq-band-label {
+      color: var(--text-light);
+    }
+    body.light-theme .settings-tab {
+      color: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.05);
+      border-color: rgba(0,0,0,0.1);
+    }
+    body.light-theme .settings-tab.active {
+      color: #000;
+      background: rgba(255, 45, 85, 0.1);
+    }
+    body.light-theme .api-token-input {
+      background: rgba(0,0,0,0.03);
+      color: var(--text-light);
+      border-color: rgba(0,0,0,0.1);
+    }
+    body.light-theme .modal-close {
+      color: rgba(0,0,0,0.5);
+    }
+    body.light-theme .modal-close:hover {
+      color: rgba(0,0,0,0.9);
+    }
+
+    body.light-theme .modal-song-row {
+      background: rgba(0,0,0,0.03) !important;
+    }
+    body.light-theme .share-tip {
+      color: var(--text-muted-light) !important;
+    }
+    body.light-theme .song-title {
+      color: var(--text-light) !important;
+    }
+    body.light-theme .song-artist {
+      color: var(--text-muted-light) !important;
+    }
+
+    body.light-theme .sidebar-title {
+      color: var(--text-light);
+    }
+    body.light-theme .sidebar-tab {
+      color: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.05);
+      border-color: rgba(0,0,0,0.1);
+    }
+    body.light-theme .sidebar-tab.active {
+      color: #000;
+      background: rgba(255, 45, 85, 0.1);
+    }
+    body.light-theme .sidebar-close {
+      color: rgba(0,0,0,0.5);
+    }
+    body.light-theme .sidebar-close:hover {
+      color: rgba(0,0,0,0.9);
+    }
+    body.light-theme .sidebar-item-title {
+      color: var(--text-light);
+    }
+    body.light-theme .sidebar-item-artist {
+      color: var(--text-muted-light);
+    }
+    body.light-theme .sidebar-action-btn {
+      color: var(--text-light) !important;
+      background: rgba(0,0,0,0.03) !important;
+      border-color: rgba(0,0,0,0.08) !important;
+    }
+    body.light-theme .sidebar-action-btn:hover {
+      background: rgba(0,0,0,0.06) !important;
+    }
+
+    body.light-theme .time-display {
+      color: #000;
+      text-shadow: none;
+    }
+    body.light-theme .now-playing-title {
+      color: #000;
+      text-shadow: none;
+    }
+    body.light-theme .now-playing-artist {
+      color: rgba(0,0,0,0.6);
+      text-shadow: none;
+    }
+    
+    body.light-theme .lyrics-rerequest-title {
+      color: var(--primary-color);
+    }
+    body.light-theme .lyrics-rerequest-copy {
+      color: var(--text-light);
+    }
+    body.light-theme .island-title,
+    body.light-theme .island-close {
+      color: rgba(0,0,0,0.7);
+    }
+    body.light-theme .island-close {
+      background: rgba(0,0,0,0.05);
+      border-color: rgba(0,0,0,0.1);
+    }
+    body.light-theme .island-welcome {
+      color: rgba(0, 0, 0, 0.7);
+    }
+    body.light-theme .mv-modal-title {
+      color: var(--text-light);
+    }
+    body.light-theme .mv-placeholder {
+      color: rgba(0, 0, 0, 0.6);
+    }
+    body.light-theme .mv-modal-close {
+      color: rgba(0,0,0,0.5);
+    }
+    body.light-theme .mv-modal-close:hover {
+      color: rgba(0,0,0,0.9);
+    }
+    
     body.light-theme .eq-preset-select {
       background: var(--input-bg-light);
       border-color: var(--border-light);
       color: var(--text-light);
     }
-
     body.light-theme .eq-band {
       background: rgba(0,0,0,0.03);
       border-color: rgba(0,0,0,0.08);
     }
-
     body.light-theme .eq-band-slider {
       background: rgba(0,0,0,0.12);
     }
-
     body.light-theme .eq-reset-btn,
     body.light-theme .eq-status-chip {
       background: rgba(0,0,0,0.05);
       border-color: rgba(0,0,0,0.08);
       color: var(--text-light);
+    }
+    body.light-theme .eq-band-value {
+      color: var(--text-muted-light);
+    }
+
+    body.light-theme .word-lyric {
+      color: rgba(0, 0, 0, 0.4);
+    }
+    body.light-theme .word-lyric::after {
+      color: rgba(0, 0, 0, 1);
+    }
+    body.light-theme .lyrics > .item {
+      color: rgba(0, 0, 0, 0.3);
+    }
+    body.light-theme .lyrics > .item.highlight {
+      color: rgba(0, 0, 0, 1) !important;
     }
 
     @media (max-width: 768px) {
@@ -2997,30 +3092,12 @@
       box-shadow: 0 30px 90px rgba(0,0,0,0.18) !important;
     }
 
-    body.light-theme .control-button,
-    body.light-theme .play-mode-btn,
     body.light-theme .volume-container,
     body.light-theme .sidebar-action-btn,
     body.light-theme .lyrics-toggle-btn {
       background: rgba(255, 255, 255, 0.3) !important;
       border: 1px solid rgba(0, 0, 0, 0.08) !important;
       color: var(--text-light);
-    }
-
-    body.light-theme .sidebar-action-btn {
-      color: var(--text-light) !important;
-    }
-
-    body.light-theme .sidebar-item {
-      background: var(--item-bg-light) !important;
-    }
-
-    body.light-theme .sidebar-item:hover {
-      background: var(--item-hover-light) !important;
-    }
-
-    body.light-theme .sidebar-item.active {
-      background: var(--active-item-bg-light) !important;
     }
 
     body.light-theme .island-title,
@@ -3549,6 +3626,10 @@
     body.light-theme .play-button,
     body.light-theme .play-mode-btn {
       color: rgba(0,0,0,0.9) !important;
+    }
+    
+    body.light-theme .volume-container i {
+      color: rgba(0,0,0,0.6) !important;
     }
 
     .controls {
@@ -4135,6 +4216,9 @@
         </button>
         <button class="sidebar-sort-btn" id="sortZABtn" title="Z-A排序">
           <i class="fas fa-sort-alpha-up"></i> Z-A
+        </button>
+        <button class="sidebar-sort-btn" id="customOrderBtn" title="自定义排序">
+          <i class="fas fa-sliders-h"></i> 自定义
         </button>
       </div>
     </div>
@@ -5739,6 +5823,9 @@
 
       function handleTouchStart(e) {
         if (sidebarSortMode !== 'custom') return;
+
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return; // 必须触碰拖拽手柄才能拖动，防止影响正常滑动列表
 
         const item = e.target.closest('.draggable-item');
         if (!item) return;
@@ -8533,6 +8620,7 @@
 
         LYRICS_OFFSET = calculateLyricsOffset();
         initSidebarControls();
+        initDragAndDrop();
 
         function initWordLyricsSource() {
             const savedSource = localStorage.getItem('wordLyricsSource') || 'netease';
@@ -8581,40 +8669,46 @@
     }
       
       // 初始化侧边栏搜索和排序控件
-      initSidebarControls();
       function initSidebarControls() {
         const sidebarSearchInput = document.getElementById('sidebarSearchInput');
         const sidebarSearchClear = document.getElementById('sidebarSearchClear');
         const sortAZBtn = document.getElementById('sortAZBtn');
         const sortZABtn = document.getElementById('sortZABtn');
+        const customOrderBtn = document.getElementById('customOrderBtn');
+        const sidebar = document.getElementById('sidebar');
         
         // 检查元素是否存在
-        if (!sortAZBtn || !sortZABtn) {
+        if (!sortAZBtn || !sortZABtn || !customOrderBtn) {
           console.warn('排序按钮元素未找到，跳过初始化');
           return;
         }
         
         // 搜索框事件
         if (sidebarSearchInput) {
-          sidebarSearchInput.addEventListener('input', debounce((e) => {
+          sidebarSearchInput.oninput = debounce((e) => {
             sidebarSearchQuery = e.target.value.trim().toLowerCase();
+            if (sidebarSearchQuery && sidebarSortMode === 'custom') {
+              // 搜索时自动退出自定义排序模式
+              sidebarSortMode = 'none';
+              updateSortButtons();
+            }
             renderPlaylist();
-          }, 300));
+          }, 300);
         }
         
         // 清除搜索
         if (sidebarSearchClear) {
-          sidebarSearchClear.addEventListener('click', () => {
+          sidebarSearchClear.onclick = () => {
             if (sidebarSearchInput) {
               sidebarSearchInput.value = '';
               sidebarSearchQuery = '';
               renderPlaylist();
             }
-          });
+          };
         }
         
         // 排序按钮事件
-        sortAZBtn.addEventListener('click', () => {
+        sortAZBtn.onclick = () => {
           sidebarSortMode = sidebarSortMode === 'az' ? 'none' : 'az';
           updateSortButtons();
           
@@ -8624,9 +8718,9 @@
           }
           
           renderPlaylist();
-        });
+        };
         
-        sortZABtn.addEventListener('click', () => {
+        sortZABtn.onclick = () => {
           sidebarSortMode = sidebarSortMode === 'za' ? 'none' : 'za';
           updateSortButtons();
           
@@ -8636,7 +8730,32 @@
           }
           
           renderPlaylist();
-        });
+        };
+
+        customOrderBtn.onclick = () => {
+          if (sidebarSearchQuery) {
+            showError('搜索过滤时无法进行自定义排序', 1500);
+            return;
+          }
+          if (sidebarSortMode === 'custom') {
+            // 退出自定义排序并保存
+            sidebarSortMode = 'none';
+            showError('自定义排序已保存', 1500);
+          } else {
+            // 进入自定义排序
+            sidebarSortMode = 'custom';
+            if (!customOrder[currentTab]) {
+              customOrder[currentTab] = getActivePlaylistArray().map(item => item.id);
+            }
+          }
+          updateSortButtons();
+          
+          if (currentTab === 'playlist') {
+            updatePlaylistOrderFromDisplay();
+          }
+          
+          renderPlaylist();
+        };
       }
 
     function updatePlaylistOrderFromDisplay() {
@@ -8694,9 +8813,11 @@
     function updateSortButtons() {
       const sortAZBtn = document.getElementById('sortAZBtn');
       const sortZABtn = document.getElementById('sortZABtn');
+      const customOrderBtn = document.getElementById('customOrderBtn');
+      const sidebar = document.getElementById('sidebar');
       
       // 安全检查
-      if (!sortAZBtn || !sortZABtn) {
+      if (!sortAZBtn || !sortZABtn || !customOrderBtn) {
         console.warn('排序按钮元素未找到，无法更新按钮状态');
         return;
       }
@@ -8704,12 +8825,19 @@
       // 移除所有活动状态
       sortAZBtn.classList.remove('active');
       sortZABtn.classList.remove('active');
+      customOrderBtn.classList.remove('active');
+      sidebar.classList.remove('sidebar-sort-mode-custom');
+      customOrderBtn.innerHTML = '<i class="fas fa-sliders-h"></i> 自定义';
       
       // 根据当前排序模式设置活动状态
       if (sidebarSortMode === 'az') {
         sortAZBtn.classList.add('active');
       } else if (sidebarSortMode === 'za') {
         sortZABtn.classList.add('active');
+      } else if (sidebarSortMode === 'custom') {
+        customOrderBtn.classList.add('active');
+        sidebar.classList.add('sidebar-sort-mode-custom');
+        customOrderBtn.innerHTML = '<i class="fas fa-check"></i> 完成';
       }
     }
     init();
