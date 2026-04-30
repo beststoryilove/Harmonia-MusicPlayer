@@ -3816,6 +3816,405 @@
         background-color: var(--primary-color);
         color: white;
     }
+
+    /* Radio Stack 样式 */
+    .radio-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+    .radio-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      color: var(--text-dark);
+      font-size: 14px;
+    }
+    .radio-label input[type="radio"] {
+      margin-right: 10px;
+      accent-color: var(--primary-color);
+      width: 16px;
+      height: 16px;
+    }
+    .eq-band-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.15);
+      outline: none;
+      cursor: pointer;
+    }
+    .eq-band-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .settings-container {
+      width: 90%;
+      max-width: 860px;
+      height: 600px;
+      display: flex;
+      overflow: hidden;
+      border-radius: 32px !important;
+      animation: modalScaleUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .settings-sidebar {
+      width: 220px;
+      background: rgba(0, 0, 0, 0.15);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 30px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 15px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    .settings-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-item {
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item.active {
+      background: rgba(255, 45, 85, 0.15);
+      color: #fff;
+    }
+
+    .settings-main {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .settings-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .settings-group {
+      margin-bottom: 35px;
+    }
+
+    .group-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-bottom: 15px;
+      padding-left: 5px;
+    }
+
+    .setting-item {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .setting-item.vertical {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .item-label {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .item-desc {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 2px;
+    }
+
+    /* UI 控件样式 */
+    .ios-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 15px;
+      color: #fff;
+      outline: none;
+    }
+
+    .ios-btn {
+      padding: 10px 24px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .ios-btn.primary { background: var(--primary-color); color: #fff; }
+    .ios-btn.secondary { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .ios-btn:active { transform: scale(0.96); }
+
+    /* 分段选择器 */
+    .segmented-control {
+      display: flex;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 4px;
+      border-radius: 14px;
+      width: 100%;
+    }
+    .segmented-control label {
+      flex: 1;
+      text-align: center;
+    }
+    .segmented-control input { display: none; }
+    .segmented-control span {
+      display: block;
+      padding: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .segmented-control input:checked + span {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    /* 二维码部分 */
+    .qr-login-section {
+      display: flex;
+      gap: 25px;
+      align-items: center;
+    }
+    .qr-container {
+      width: 140px;
+      height: 140px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .qr-container img { width: 100%; height: 100%; }
+    .qr-placeholder {
+      color: #333;
+      font-size: 12px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .qr-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .status-text { font-size: 14px; margin-bottom: 10px; font-weight: 600; }
+    .divider { text-align: center; color: rgba(255,255,255,0.2); font-size: 12px; margin: 20px 0; }
+
+    @keyframes modalScaleUp {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @media (max-width: 768px) {
+      .settings-container {
+        flex-direction: column; /* 改为上下排版 */
+        height: 85vh; /* 防止键盘弹出时过度拉伸或溢出屏幕 */
+        width: 92%;
+        border-radius: 24px !important;
+      }
+
+      .settings-sidebar {
+        width: 100%;
+        padding: 20px 15px 0;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      body.light-theme .settings-sidebar {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      .sidebar-header {
+        font-size: 18px;
+        margin-bottom: 15px;
+      }
+
+      /* 导航栏变为横向滚动 Tab */
+      .settings-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        gap: 8px;
+        /* 隐藏滚动条但保留滚动功能 */
+        scrollbar-width: none; 
+        -webkit-overflow-scrolling: touch;
+      }
+      .settings-nav::-webkit-scrollbar {
+        display: none; 
+      }
+
+      .nav-item {
+        padding: 8px 16px;
+        white-space: nowrap; /* 防止文字换行 */
+        font-size: 14px;
+      }
+
+      /* 主内容区域减小内边距 */
+      .settings-main {
+        padding: 20px 15px;
+      }
+
+      .settings-close-btn {
+        top: 15px;
+        right: 15px;
+        font-size: 22px;
+        z-index: 10;
+      }
+
+      /* 酷狗二维码模块从左右排列改为上下排列 */
+      .qr-login-section {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+
+      /* 调整按钮和输入框间距 */
+      .setting-item {
+        padding: 14px 15px;
+      }
+      
+      .setting-item.vertical {
+        gap: 10px;
+      }
+
+      /* 10段 EQ 滑块在小屏幕上的文字压缩适配 */
+      .eq-band-row span {
+        width: 35px !important;
+        font-size: 11px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .settings-container {
+        height: 90vh; /* 极小屏幕给更多高度 */
+        width: 95%;
+      }
+      .item-label {
+        font-size: 15px;
+      }
+      .item-desc {
+        font-size: 11px;
+      }
+      .ios-btn {
+        padding: 10px 18px;
+        font-size: 14px;
+      }
+    }
+    body.light-theme .settings-container {
+      background: rgba(255, 255, 255, 0.85) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    body.light-theme .settings-sidebar {
+      background: rgba(0, 0, 0, 0.03);
+      border-right: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    body.light-theme .sidebar-header span { color: var(--text-light); }
+    body.light-theme .settings-close-btn { color: rgba(0, 0, 0, 0.4); }
+    body.light-theme .settings-close-btn:hover { color: rgba(0, 0, 0, 0.8); }
+    body.light-theme .group-title { color: rgba(0, 0, 0, 0.5); }
+    body.light-theme .nav-item { color: rgba(0, 0, 0, 0.6); }
+    body.light-theme .nav-item.active {
+      background: rgba(255, 45, 85, 0.1);
+      color: var(--primary-color);
+    }
+    body.light-theme .setting-item {
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    body.light-theme .item-label,
+    body.light-theme .radio-label { color: var(--text-light); }
+    body.light-theme .item-desc { color: rgba(0, 0, 0, 0.5); }
+    body.light-theme .ios-input {
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      color: var(--text-light);
+    }
+    body.light-theme .ios-input::placeholder { color: rgba(0, 0, 0, 0.35); }
+    body.light-theme .ios-btn.secondary {
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--text-light);
+    }
+    body.light-theme .ios-btn.secondary:hover { background: rgba(0, 0, 0, 0.1); }
+    body.light-theme .segmented-control { background: rgba(0, 0, 0, 0.06); }
+    body.light-theme .segmented-control span { color: rgba(0, 0, 0, 0.6); }
+    body.light-theme .segmented-control input:checked + span {
+      background: #ffffff;
+      color: #000000;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    body.light-theme .slider {
+      background-color: rgba(0, 0, 0, 0.1);
+      border-color: rgba(0, 0, 0, 0.15);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    body.light-theme input:checked + .slider {
+      background-color: rgba(52, 199, 89, 0.9);
+      border-color: rgba(52, 199, 89, 0.5);
+    }
+    body.light-theme .qr-container { border: 1px solid rgba(0, 0, 0, 0.1); }
+    body.light-theme .divider { color: rgba(0, 0, 0, 0.3); }
+    body.light-theme #eqStatusText { color: var(--text-muted-light); }
+    body.light-theme .eq-band-row span { color: rgba(0, 0, 0, 0.6) !important; }
+    body.light-theme .eq-band-slider { background: rgba(0, 0, 0, 0.1); }
   </style>
 <link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
 <body>
@@ -3880,10 +4279,6 @@
     <i class="fas fa-align-left"></i>
   </div>
 
-  <button class="lyrics-rerequest-btn" id="lyricsRerequestBtn" title="该功能将会在不请求音频/专辑图等其他文件时重新请求当前歌曲的歌词（无论是否是逐字歌词）" aria-label="重新请求歌词">
-    <i class="fas fa-rotate-right"></i>
-  </button>
-
   <div class="mv-button" id="mvButton" title="该功能将会尝试解析当前歌曲的MV并播放，其可用性取决于网易云是否有该歌曲的MV。">
     <i class="fas fa-video"></i>
   </div>
@@ -3897,292 +4292,246 @@
 
 <!-- 设置模态框 -->
 <div class="modal-overlay settings-modal-overlay" id="settingsModalOverlay">
-  <div class="modal-content settings-modal-content">
-    <h2 class="modal-title">设置</h2> 
-    <div class="settings-tabs">
-      <div class="settings-tab active" data-tab="lyrics">歌词</div>
-      <div class="settings-tab" data-tab="visual">视觉</div>
-      <div class="settings-tab" data-tab="audio">音频</div>
-      <div class="settings-tab" data-tab="kugou">酷狗</div>
+  <div class="settings-container liquid-glass">
+    <div class="settings-sidebar">
+      <div class="sidebar-header">
+        <i class="fas fa-cog"></i>
+        <span>设置</span>
+      </div>
+      <div class="settings-nav">
+        <div class="nav-item active" data-tab="lyrics"><i class="fas fa-font"></i> 歌词</div>
+        <div class="nav-item" data-tab="visual"><i class="fas fa-eye"></i> 视觉</div>
+        <div class="nav-item" data-tab="audio"><i class="fas fa-sliders-h"></i> 音频</div>
+        <div class="nav-item" data-tab="account"><i class="fas fa-user-circle"></i> 账户</div>
+      </div>
     </div>
 
-    <div class="settings-content">
-      <!-- 歌词选项卡 -->
+    <div class="settings-main">
+      <button class="settings-close-btn" id="settingsModalClose"><i class="fas fa-times"></i></button>
+      
       <div class="settings-tab-content active" data-tab="lyrics">
-        <div class="settings-section">
-          <h3 class="settings-section-title">歌曲翻译</h3>
-          <div class="settings-option">
-            <label class="switch">
-              <input type="checkbox" id="enableTranslation">
-              <span class="slider"></span>
-            </label>
-            <span class="settings-option-label">启用歌曲翻译</span>
+        <div class="settings-group">
+          <div class="group-title">歌曲翻译</div>
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">启用歌曲翻译</div>
+              <div class="item-desc">使用 AI 自动翻译歌词</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="enableTranslation"><span class="slider"></span></label>
           </div>
-          <div class="settings-option">
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" name="translationScope" value="no-translation" checked>
-                <span>仅翻译没有翻译的外语歌</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="translationScope" value="all-foreign">
-                <span>翻译所有外语歌</span>
-              </label>
+          
+          <div class="setting-item vertical">
+            <div class="item-label">翻译范围</div>
+            <div class="radio-stack">
+              <label class="radio-label"><input type="radio" name="translationScope" value="no-translation" checked> <span>仅翻译没有翻译的外语歌</span></label>
+              <label class="radio-label"><input type="radio" name="translationScope" value="all-foreign"> <span>翻译所有外语歌</span></label>
             </div>
           </div>
-          <div class="settings-option">
-            <label class="settings-option-label">GLM-4-Flashx API令牌</label>
-            <input type="password" class="api-token-input" id="apiTokenInput" placeholder="请输入您的API令牌">
-            <p class="settings-hint">请前往 Bigmodel 注册账号并创建API令牌</p>
+
+          <div class="setting-item vertical">
+            <div class="item-label">API 令牌 (GLM-4-Flashx)</div>
+            <input type="password" class="ios-input" id="apiTokenInput" placeholder="请输入 Bigmodel API Key">
+            <div class="item-desc" style="margin-top: 4px;">请前往 Bigmodel 注册账号并创建API令牌</div>
           </div>
-          <div class="settings-option">
-            <button class="test-api-btn" id="testApiBtn">测试API连接(develop)</button>
-            <button class="save-settings-btn" id="saveSettingsBtn">保存设置</button>
+          <div class="setting-item" style="background: transparent; border: none; padding: 0;">
+            <button class="ios-btn secondary" id="testApiBtn">测试连接</button>
+            <button class="ios-btn primary" id="saveSettingsBtn">保存设置</button>
           </div>
         </div>
 
-        <div class="settings-section">
-          <h3 class="settings-section-title">逐字歌词</h3>
-          <div class="settings-option">
-            <label class="switch">
-              <input type="checkbox" id="enableWordLyrics">
-              <span class="slider"></span>
-            </label>
-            <span class="settings-option-label">启用逐字歌词</span>
+        <div class="settings-group">
+          <div class="group-title">逐字歌词</div>
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">启用逐字歌词</div>
+              <div class="item-desc">开启后尝试获取卡拉OK动态效果</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="enableWordLyrics"><span class="slider"></span></label>
           </div>
-          <p class="settings-hint">* 开启后将尝试从所选来源获取逐字歌词。</p>
-
-          <!-- 新增：逐字歌词获取方式 -->
-          <div class="settings-option" style="margin-top: 16px;">
-            <div style="margin-bottom: 8px; font-weight: 500;">逐字歌词获取方式</div>
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" name="wordLyricsSource" value="netease">
-                <span>网易云逐字歌词库 <span style="color: var(--text-muted-dark);">（简单，开箱即用，但不全）</span></span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="wordLyricsSource" value="kugou">
-                <span>酷狗音乐概念版逐字歌词库 <span style="color: var(--text-muted-dark);">（麻烦，但逐字歌词全）</span></span>
-              </label>
+          <div class="setting-item vertical">
+            <div class="item-label">获取方式</div>
+            <div class="radio-stack">
+              <label class="radio-label"><input type="radio" name="wordLyricsSource" value="netease"> <span>网易云库 (简单，开箱即用，但不全)</span></label>
+              <label class="radio-label"><input type="radio" name="wordLyricsSource" value="kugou"> <span>酷狗库 (麻烦，但逐字歌词全)</span></label>
             </div>
           </div>
-        </div>
-
-        <div class="settings-section">
-          <h3 class="settings-section-title">网易云歌词代理</h3>
-          <div class="settings-option" style="flex-direction:column;align-items:flex-start;">
-            <label class="settings-option-label" style="margin-bottom:6px;">代理地址（留空使用内置代理）</label>
-            <input type="text" id="neteaseProxyInput" class="api-token-input" placeholder="在此处输入代理地址。" />
-            <p class="settings-hint">用于解决请求网易云逐字歌词时的CORS问题。</p>
+          <div class="setting-item vertical">
+            <div class="item-label">网易云歌词代理</div>
+            <input type="text" class="ios-input" id="neteaseProxyInput" placeholder="留空则使用内置代理">
+            <div class="item-desc" style="margin-top: 4px;">用于解决请求网易云逐字歌词时的跨域(CORS)问题。</div>
           </div>
         </div>
       </div>
 
-      <!-- 视觉选项卡 -->
       <div class="settings-tab-content" data-tab="visual">
-        <div class="settings-section">
-          <h3 class="settings-section-title">歌词动画</h3>
-          <div class="radio-group" style="margin-left: 0;">
-            <label class="radio-label">
-              <input type="radio" name="lyricsAnimationMode" value="visual" checked>
-              <span>视觉优先 <span style="color: var(--text-muted-dark);">（保留默认桌面端 / 移动端歌词动画）</span></span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="lyricsAnimationMode" value="performance">
-              <span>性能优先 <span style="color: var(--text-muted-dark);">（桌面端和移动端共用简化动画方案）</span></span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="lyricsAnimationMode" value="preview">
-              <span>预览版本 <span style="color: var(--text-muted-dark);">（对AppleMusic歌词动画样式的拙劣模仿。该版本歌词动画为开发中版本，不代表最终品质。）</span></span>
-            </label>
+        <div class="settings-group">
+          <div class="group-title">播放器外观</div>
+          <div class="setting-item vertical">
+            <div class="item-label">控件布局</div>
+            <div class="segmented-control">
+              <label><input type="radio" name="playerControlsLayout" value="classic" checked><span>Harmonia 经典</span></label>
+              <label><input type="radio" name="playerControlsLayout" value="apple-music"><span>Apple Music</span></label>
+            </div>
           </div>
-          <p class="settings-hint">选择后立即生效，可随时改回。</p>
-        </div>
+          
+          <div class="setting-item vertical">
+            <div class="item-label">歌词动画模式</div>
+            <div class="segmented-control">
+              <label><input type="radio" name="lyricsAnimationMode" value="visual" checked><span>视觉优先</span></label>
+              <label><input type="radio" name="lyricsAnimationMode" value="performance"><span>性能优先</span></label>
+              <label><input type="radio" name="lyricsAnimationMode" value="preview"><span>预览模式</span></label>
+            </div>
+            <div class="item-desc" style="margin-top: 6px;">选择后立即生效，可随时改回。</div>
+          </div>
 
-        <div class="settings-section">
-          <h3 class="settings-section-title">播放控件布局</h3>
-          <div class="radio-group" style="margin-left: 0;">
-            <label class="radio-label">
-              <input type="radio" name="playerControlsLayout" value="classic" checked>
-              <span>Harmonia 经典控件 <span style="color: var(--text-muted-dark);">（当前默认布局）</span></span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="playerControlsLayout" value="apple-music">
-              <span>Apple Music 播放控件 <span style="color: var(--text-muted-dark);">（对AppleMusic播放控件的拙劣模仿）</span></span>
-            </label>
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">启用专辑图 3D 效果</div>
+              <div class="item-desc">鼠标悬停时卡片随动 (移动端无效)</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="albumEffectToggle"><span class="slider"></span></label>
           </div>
-          <p class="settings-hint">选择后立即生效。</p>
-        </div>
-
-        <div class="settings-section">
-          <h3 class="settings-section-title">专辑图</h3>
-          <div class="settings-option">
-            <label class="switch">
-              <input type="checkbox" id="albumEffectToggle">
-              <span class="slider"></span>
-            </label>
-            <span class="settings-option-label">启用专辑图3D效果</span>
-          </div>
-          <p class="settings-hint">
-            注意：若开启该功能，桌面端在频繁触发3D效果时可能会导致卡顿，建议根据电脑性能选择。<br>
-            移动端不支持此效果，开启无效。
-          </p>
         </div>
       </div>
 
-      <!-- 音频选项卡 -->
       <div class="settings-tab-content" data-tab="audio">
-        <div class="settings-section">
-          <h3 class="settings-section-title">音频均衡器</h3>
-          <div class="settings-option">
-            <label class="switch">
-              <input type="checkbox" id="eqEnabledToggle">
-              <span class="slider"></span>
-            </label>
-            <span class="settings-option-label">启用 10 段均衡器</span>
+        <div class="settings-group">
+          <div class="group-title">音频均衡器 (10 段 EQ)</div>
+          
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">启用均衡器</div>
+              <div class="item-desc" id="eqStatusText">当前未启用</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="eqEnabledToggle"><span class="slider"></span></label>
           </div>
-          <div class="eq-settings-group">
-            <div class="eq-inline-row">
-              <span class="eq-status-chip" id="eqStatusChip">
-                <span class="eq-status-dot"></span>
-                <span id="eqStatusText">当前未启用</span>
-              </span>
-            </div>
 
-            <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-              <label class="settings-option-label">预设</label>
-              <div class="eq-inline-row" style="width: 100%;">
-                <select id="eqPresetSelect" class="eq-preset-select">
-                  <option value="flat">平坦 / 默认</option>
-                  <option value="warm">温暖耐听</option>
-                  <option value="bass">低音增强</option>
-                  <option value="deepbass">深沉低频</option>
-                  <option value="vocal">人声增强</option>
-                  <option value="podcast">播客 / 语音</option>
-                  <option value="bright">明亮清晰</option>
-                  <option value="electronic">电子动感</option>
-                  <option value="rock">摇滚能量</option>
-                  <option value="classical">古典厅堂</option>
-                  <option value="jazz">爵士平衡</option>
-                  <option value="acoustic">原声细节</option>
-                  <option value="dance">舞曲氛围</option>
-                  <option value="custom">自定义</option>
-                </select>
-                <button type="button" class="eq-reset-btn" id="eqResetBtn">恢复平坦</button>
+          <div class="setting-item vertical">
+            <div class="item-label">均衡器预设</div>
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <select id="eqPresetSelect" class="ios-input" style="flex: 1;">
+                <option value="flat">平坦 / 默认</option>
+                <option value="warm">温暖耐听</option>
+                <option value="bass">低音增强</option>
+                <option value="deepbass">深沉低频</option>
+                <option value="vocal">人声增强</option>
+                <option value="podcast">播客 / 语音</option>
+                <option value="bright">明亮清晰</option>
+                <option value="electronic">电子动感</option>
+                <option value="rock">摇滚能量</option>
+                <option value="classical">古典厅堂</option>
+                <option value="jazz">爵士平衡</option>
+                <option value="acoustic">原声细节</option>
+                <option value="dance">舞曲氛围</option>
+                <option value="custom">自定义</option>
+              </select>
+              <button type="button" class="ios-btn secondary" id="eqResetBtn">恢复平坦</button>
+            </div>
+          </div>
+
+          <div class="setting-item vertical">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+              <span class="item-label" style="font-size: 14px;">前级增益 (Preamp)</span>
+              <span class="item-desc" id="eqPreampValue" style="color: var(--primary-color); font-weight: 600;">0 dB</span>
+            </div>
+            <input type="range" class="eq-band-slider" id="eqPreampSlider" min="-12" max="12" step="0.5" value="0" style="width: 100%;">
+          </div>
+
+          <div class="setting-item vertical" style="gap: 16px;">
+            <div class="item-label">频段微调</div>
+            <div class="eq-sliders" id="eqSliders" style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">31 Hz</span>
+                <input type="range" class="eq-band-slider" data-band-index="0" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="0" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
               </div>
-            </div>
-
-            <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-              <label class="settings-option-label">前级增益</label>
-              <div class="eq-band" style="width: 100%; margin-bottom: 0;">
-                <span class="eq-band-label">Preamp</span>
-                <input type="range" class="eq-band-slider" id="eqPreampSlider" min="-12" max="12" step="0.5" value="0">
-                <span class="eq-band-value" id="eqPreampValue">0 dB</span>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">62 Hz</span>
+                <input type="range" class="eq-band-slider" data-band-index="1" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="1" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
               </div>
-            </div>
-
-            <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 0;">
-              <label class="settings-option-label">频段调节</label>
-              <div class="eq-sliders" id="eqSliders">
-                <div class="eq-band">
-                  <span class="eq-band-label">31 Hz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="0" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="0">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">62 Hz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="1" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="1">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">125 Hz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="2" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="2">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">250 Hz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="3" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="3">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">500 Hz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="4" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="4">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">1 kHz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="5" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="5">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">2 kHz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="6" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="6">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">4 kHz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="7" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="7">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">8 kHz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="8" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="8">0 dB</span>
-                </div>
-                <div class="eq-band">
-                  <span class="eq-band-label">16 kHz</span>
-                  <input type="range" class="eq-band-slider" data-band-index="9" min="-12" max="12" step="0.5" value="0">
-                  <span class="eq-band-value" data-band-value="9">0 dB</span>
-                </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">125 Hz</span>
+                <input type="range" class="eq-band-slider" data-band-index="2" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="2" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
+              </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">250 Hz</span>
+                <input type="range" class="eq-band-slider" data-band-index="3" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="3" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
+              </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">500 Hz</span>
+                <input type="range" class="eq-band-slider" data-band-index="4" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="4" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
+              </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">1 kHz</span>
+                <input type="range" class="eq-band-slider" data-band-index="5" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="5" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
+              </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">2 kHz</span>
+                <input type="range" class="eq-band-slider" data-band-index="6" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="6" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
+              </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">4 kHz</span>
+                <input type="range" class="eq-band-slider" data-band-index="7" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="7" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
+              </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">8 kHz</span>
+                <input type="range" class="eq-band-slider" data-band-index="8" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="8" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
+              </div>
+              <div class="eq-band-row" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 45px; font-size: 12px; color: var(--text-muted-dark);">16 kHz</span>
+                <input type="range" class="eq-band-slider" data-band-index="9" min="-12" max="12" step="0.5" value="0" style="flex: 1;">
+                <span class="eq-band-value" data-band-value="9" style="width: 45px; text-align: right; font-size: 12px; color: var(--text-muted-dark);">0 dB</span>
               </div>
             </div>
           </div>
-          <p class="settings-hint">均衡器基于 Web Audio API 实现，目前为 10 段图示均衡器。提供丰富预设，覆盖低频、人声、语音、摇滚、电子、古典等常见场景；手动微调会自动切换为“自定义”，所有参数均会自动保存。</p>
         </div>
       </div>
 
-      <!-- 酷狗选项卡 -->
-      <div class="settings-tab-content" data-tab="kugou">
-        <div class="settings-section">
-          <h3 class="settings-section-title">酷狗音乐概念版 API 登录</h3>
-          <p class="settings-hint" style="margin-bottom: 16px;">用于获取更完整的逐字歌词库（需登录）</p>
-
-          <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <label class="settings-option-label">手机号</label>
-            <input type="tel" id="kugouMobile" class="api-token-input" placeholder="请输入手机号" autocomplete="off">
-          </div>
-
-          <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 16px;">
-            <label class="settings-option-label">验证码</label>
-            <div style="display: flex; gap: 12px; width: 100%;">
-              <input type="text" id="kugouCaptcha" class="api-token-input" placeholder="请输入验证码" style="flex: 1;">
-              <button id="kugouGetCaptchaBtn" class="test-api-btn" style="white-space: nowrap;">获取验证码</button>
+      <div class="settings-tab-content" data-tab="account">
+        <div class="settings-group">
+          <div class="group-title">酷狗账号验证 (用于获取完整歌词库)</div>
+          <div class="qr-login-section">
+            <div class="qr-container" id="kugouQrContainer">
+              <img id="kugouQrImg" src="" style="display:none;">
+              <div class="qr-placeholder" id="kugouQrPlaceholder">等待获取</div>
+              <div class="qr-overlay" id="kugouQrOverlay">
+                <i class="fas fa-redo"></i>
+                <span>点击重试</span>
+              </div>
+            </div>
+            <div class="qr-info">
+              <div id="kugouQrStatus" class="status-text">就绪</div>
+              <button class="ios-btn primary" id="kugouRefreshQrBtn">获取二维码</button>
             </div>
           </div>
-
-          <div class="settings-option" style="margin-top: 24px;">
-            <button id="kugouLoginBtn" class="save-settings-btn" style="width: 100%;">登录</button>
+          
+          <div class="divider">或使用手机号验证</div>
+          
+          <div class="setting-item vertical">
+            <input type="tel" id="kugouMobile" class="ios-input" placeholder="请输入手机号">
+            <div style="display: flex; gap: 12px; width: 100%;">
+              <input type="text" id="kugouCaptcha" class="ios-input" placeholder="验证码" style="flex: 1;">
+              <button id="kugouGetCaptchaBtn" class="ios-btn secondary" style="white-space: nowrap;">获取</button>
+            </div>
+            <button id="kugouLoginBtn" class="ios-btn secondary" style="width: 100%;">手机号登录</button>
           </div>
         </div>
       </div>
     </div>
-
-    <button class="modal-close" id="settingsModalClose">
-      <i class="fas fa-times"></i>
-    </button>
   </div>
 </div>
 
-
-
-  <div class="lyrics-rerequest-modal-overlay" id="lyricsRerequestModalOverlay">
-    <div class="lyrics-rerequest-modal">
-      <div class="lyrics-rerequest-title">重新请求歌词</div>
-      <div class="lyrics-rerequest-copy" id="lyricsRerequestCopy"></div>
-      <div class="lyrics-rerequest-actions">
-        <button class="lyrics-rerequest-action-btn secondary" id="lyricsRerequestCancelBtn">关闭</button>
-        <button class="lyrics-rerequest-action-btn primary" id="lyricsRerequestConfirmBtn">点我重新请求</button>
-      </div>
+    <button class="modal-close" id="settingsModalClose">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
   </div>
 
@@ -4387,11 +4736,6 @@
     const amLyrics = document.getElementById('amLyrics');
     const rightcontent = document.getElementById('rightcontent');
     const lyricsToggleBtn = document.getElementById('lyricsToggleBtn');
-    const lyricsRerequestBtn = document.getElementById('lyricsRerequestBtn');
-    const lyricsRerequestModalOverlay = document.getElementById('lyricsRerequestModalOverlay');
-    const lyricsRerequestCopy = document.getElementById('lyricsRerequestCopy');
-    const lyricsRerequestCancelBtn = document.getElementById('lyricsRerequestCancelBtn');
-    const lyricsRerequestConfirmBtn = document.getElementById('lyricsRerequestConfirmBtn');
     const originalTitle = "Harmonia - 音乐播放器";
     const enableWordLyrics = document.getElementById('enableWordLyrics');
     const neteaseProxyInput = document.getElementById('neteaseProxyInput');
@@ -4422,7 +4766,6 @@
     let lyricsVisible = true;
     let currentSongInfo = {name: '',artist: '',album: ''};
     let currentSongData = null;
-    let lyricsRerequestInProgress = false;
     let sidebarSearchQuery = '';
     let sidebarSortMode = 'none'; // 'none', 'az', 'za', 'custom'
     let isDragging = false;
@@ -4511,7 +4854,6 @@
     // 初始化音量
     audioPlayer.volume = parseFloat(localStorage.getItem('musicPlayerVolume') || '0.7');
     volumeSlider.value = audioPlayer.volume;
-    updateLyricsRerequestDialog();
 
     // ===== 音频均衡器 =====
     const EQ_STORAGE_KEY = 'musicPlayerEqSettings';
@@ -6044,7 +6386,6 @@
                 currentSongData = null;
                 currentPlaylistIdx = -1;
                 isPlaying = false;
-                updateLyricsRerequestDialog();
                 playButton.innerHTML = '<i class="fas fa-play"></i>';
                 updatePageTitle();
                 updateCollapsedTextByPlayingState();
@@ -6064,58 +6405,8 @@
         renderPlaylist();
     }
 
-
-
-    function isSongSwitchLocked() {
-      return lyricsRerequestInProgress;
-    }
-
-    function guardSongSwitch(targetSongId = null) {
-      if (!isSongSwitchLocked()) return false;
-      if (targetSongId && currentPlayingId && String(targetSongId) === String(currentPlayingId)) return false;
-      showError('正在重新请求歌词，请稍候', 2200);
-      return true;
-    }
-
     function getCurrentPlayingSongName() {
       return currentSongInfo?.name || nowPlayingTitle?.textContent || '未知歌曲';
-    }
-
-    function buildLyricsRerequestCopy() {
-      return [
-        '您好，您正在歌词重新请求界面。',
-        '请您先阅读以下提示：',
-        '1.该功能目前主要用于酷狗源逐字歌词；重新请求时会同时补请求网易云翻译。',
-        `2.您当前正在播放的歌曲：${getCurrentPlayingSongName()} ，接下来的重新请求将对该歌曲的歌词进行请求。`,
-        '3.请勿滥用此功能。'
-      ].join('\n');
-    }
-
-    function updateLyricsRerequestDialog() {
-      if (lyricsRerequestCopy) {
-        lyricsRerequestCopy.textContent = buildLyricsRerequestCopy();
-      }
-      const hasSong = !!currentSongData;
-      if (lyricsRerequestConfirmBtn) {
-        lyricsRerequestConfirmBtn.disabled = !hasSong || lyricsRerequestInProgress;
-        lyricsRerequestConfirmBtn.textContent = lyricsRerequestInProgress ? '正在重新请求...' : '点我重新请求';
-      }
-      if (lyricsRerequestCancelBtn) {
-        lyricsRerequestCancelBtn.disabled = lyricsRerequestInProgress;
-      }
-      if (lyricsRerequestBtn) {
-        lyricsRerequestBtn.disabled = lyricsRerequestInProgress;
-      }
-    }
-
-    function openLyricsRerequestDialog() {
-      updateLyricsRerequestDialog();
-      lyricsRerequestModalOverlay.classList.add('active');
-    }
-
-    function closeLyricsRerequestDialog() {
-      if (lyricsRerequestInProgress) return;
-      lyricsRerequestModalOverlay.classList.remove('active');
     }
 
     async function requestLyricsOnlyForSong(song) {
@@ -6959,7 +7250,6 @@
 
     async function playSong(song, isFromPlaylist = false) {
       try {
-        if (guardSongSwitch(song?.id)) return;
         clearError();
 
         // 如果当前有 MV 正在播放，先停止 MV
@@ -6977,7 +7267,6 @@
           album: song.album || ''
         };
         currentSongData = song;
-        updateLyricsRerequestDialog();
 
         // 立即更新标题，即使音频还未开始播放
         updatePageTitle();
@@ -7050,29 +7339,6 @@
             isPlaying = false;
             updatePageTitle();
         }
-    }
-
-
-    async function handleLyricsRerequest() {
-      if (!currentSongData || !currentPlayingId) {
-        showError('当前没有正在播放的歌曲', 2200);
-        return;
-      }
-
-      lyricsRerequestInProgress = true;
-      updateLyricsRerequestDialog();
-
-      try {
-        await requestLyricsOnlyForSong(currentSongData);
-        closeLyricsRerequestDialog();
-        showDynamicIslandToast('歌词重新请求成功', 2500);
-      } catch (error) {
-        console.error('重新请求歌词失败:', error);
-        showError(`歌词重新请求失败: ${error?.message || '未知错误'}`, 3200);
-      } finally {
-        lyricsRerequestInProgress = false;
-        updateLyricsRerequestDialog();
-      }
     }
 
     async function playFromPlaylist(index) {
@@ -7714,14 +7980,6 @@
 
     // 歌词切换按钮
     lyricsToggleBtn.addEventListener('click', toggleLyrics);
-    lyricsRerequestBtn.addEventListener('click', openLyricsRerequestDialog);
-    lyricsRerequestCancelBtn.addEventListener('click', closeLyricsRerequestDialog);
-    lyricsRerequestModalOverlay.addEventListener('click', (e) => {
-      if (e.target === lyricsRerequestModalOverlay) closeLyricsRerequestDialog();
-    });
-    lyricsRerequestConfirmBtn.addEventListener('click', async () => {
-      await handleLyricsRerequest();
-    });
 
     // 播放控制
     playButton.addEventListener('click', () => {
@@ -7743,7 +8001,6 @@
     });
 
     prevButton.addEventListener('click', async () => {
-      if (guardSongSwitch()) return;
       if (!currentPlayingId || playlist.length === 0) {
         showError('播放列表为空，无法切换歌曲');
         return;
@@ -7764,7 +8021,6 @@
     });
 
     nextButton.addEventListener('click', async () => {
-      if (guardSongSwitch()) return;
       if (!currentPlayingId || playlist.length === 0) {
         showError('播放列表为空，无法切换歌曲');
         return;
@@ -7850,11 +8106,6 @@
         if (!currentPlayingId) {
             currentPlayingId = null;
             currentSongData = null;
-            updateLyricsRerequestDialog();
-            return;
-        }
-    
-        if (isSongSwitchLocked()) {
             return;
         }
 
@@ -9003,8 +9254,6 @@
         }
         return;
       }
-
-      // 若当前已有 MV 在播放，询问是否替换（可选，这里直接替换）
       if (currentMvVideoUrl) {
         if (confirm('当前已有 MV 在播放，是否替换为新歌曲的 MV？')) {
           stopCurrentMv();
@@ -9295,34 +9544,28 @@
     async function fetchKugouWordLyricsWithNeteaseTranslation(songName, artist) {
       console.log(`[酷狗] 开始处理歌曲: ${songName} - ${artist}`);
 
-      const [wordLyricsResult, translationResult] = await Promise.allSettled([
-        fetchKugouLyricsOnly(songName, artist),
-        (async () => {
-          console.log(`[酷狗] 开始请求网易云翻译: ${songName} - ${artist}`);
-          const result = await fetchNeteaseTranslation(songName, artist);
-          console.log(`[酷狗] 网易云翻译获取成功，共 ${result.length} 行`);
-          return result;
-        })()
-      ]);
-
       let wordLines = [];
-      let translationLines = [];
-
-      if (wordLyricsResult.status === 'fulfilled') {
-        wordLines = Array.isArray(wordLyricsResult.value) ? wordLyricsResult.value : [];
+      try {
+        // 1. 先请求酷狗歌词
+        wordLines = await fetchKugouLyricsOnly(songName, artist);
         console.log(`[酷狗] 原文获取成功，共 ${wordLines.length} 行`);
-      } else {
-        console.error('[酷狗] 逐字歌词获取失败:', wordLyricsResult.reason);
-        showError(`酷狗歌词失败: ${wordLyricsResult.reason?.message || '未知错误'}`, 3000);
-      }
-
-      if (translationResult.status === 'fulfilled') {
-        translationLines = Array.isArray(translationResult.value) ? translationResult.value : [];
-      } else {
-        console.error('[酷狗] 网易云翻译获取失败:', translationResult.reason);
+      } catch (error) {
+        console.error('[酷狗] 逐字歌词获取失败:', error);
+        showError(`酷狗歌词失败: ${error?.message || '未知错误'}`, 3000);
+        return [];
       }
 
       if (!wordLines.length) return [];
+
+      let translationLines = [];
+      try {
+        // 2. 酷狗歌词请求成功后，再串行请求网易云翻译，避免并发导致 API 限流或拦截
+        console.log(`[酷狗] 开始请求网易云翻译: ${songName} - ${artist}`);
+        translationLines = await fetchNeteaseTranslation(songName, artist);
+        console.log(`[酷狗] 网易云翻译获取成功，共 ${translationLines.length} 行`);
+      } catch (error) {
+        console.error('[酷狗] 网易云翻译获取失败:', error);
+      }
 
       if (translationLines.length) {
         console.log('[酷狗] 已合并网易云翻译');
@@ -9548,6 +9791,249 @@
       });
       
       return collapsedTextAnimationQueue;
+    }
+    // ==================== 酷狗二维码登录 API ====================
+    let kugouQrCheckInterval = null;
+    const kugouQrImg = document.getElementById('kugouQrImg');
+    const kugouQrPlaceholder = document.getElementById('kugouQrPlaceholder');
+    const kugouQrStatus = document.getElementById('kugouQrStatus');
+    const kugouRefreshQrBtn = document.getElementById('kugouRefreshQrBtn');
+    const kugouQrOverlay = document.getElementById('kugouQrOverlay');
+
+    // 停止轮询
+    function stopKugouQrPolling() {
+        if (kugouQrCheckInterval) {
+            clearInterval(kugouQrCheckInterval);
+            kugouQrCheckInterval = null;
+        }
+    }
+
+    async function initKugouQrLogin() {
+        if (!kugouRefreshQrBtn) return;
+        
+        try {
+            // 界面重置初始化
+            kugouRefreshQrBtn.disabled = true;
+            kugouRefreshQrBtn.textContent = '加载中...';
+            kugouQrStatus.textContent = '正在获取二维码...';
+            kugouQrStatus.style.color = 'var(--text-dark)';
+            kugouQrImg.style.display = 'none';
+            kugouQrOverlay.style.display = 'none';
+            kugouQrPlaceholder.style.display = 'block';
+
+            stopKugouQrPolling();
+
+            const timestamp = Date.now();
+
+            // 1. 获取二维码 Key
+            const keyRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/key?timestamp=${timestamp}`);
+            const keyData = await keyRes.json();
+            if (keyData.status !== 1 || !keyData.data || !keyData.data.qrcode) {
+                throw new Error('获取二维码 Key 失败');
+            }
+            const qrKey = keyData.data.qrcode;
+
+            // 2. 生成二维码图片数据
+            const imgRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/create?key=${qrKey}&qrimg=true&timestamp=${timestamp}`);
+            const imgData = await imgRes.json();
+            if (imgData.code !== 200 || !imgData.data || !imgData.data.base64) {
+                throw new Error('生成二维码图片失败');
+            }
+
+            // 展示二维码
+            kugouQrImg.src = imgData.data.base64;
+            kugouQrImg.style.display = 'block';
+            kugouQrPlaceholder.style.display = 'none';
+            kugouQrStatus.textContent = '请使用酷狗音乐 APP 扫码';
+
+            // 3. 轮询检测扫码状态
+            kugouQrCheckInterval = setInterval(async () => {
+            try {
+                const checkRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/check?key=${qrKey}&timestamp=${Date.now()}`);
+                const checkData = await checkRes.json();
+                
+                const token = checkData.token || (checkData.data && checkData.data.token);
+                const userid = checkData.userid || (checkData.data && checkData.data.userid);
+
+                if (token) {
+                    stopKugouQrPolling();
+                    statusEl.textContent = '登录成功';
+                    statusEl.style.color = 'var(--success-color)';
+                    
+                    // 保存凭证
+                    localStorage.setItem('kugouToken', token);
+                    if (userid) localStorage.setItem('kugouUserId', userid);
+                    
+                    kugouToken = token;
+                    kugouUserId = userid;
+                    
+                    showDynamicIslandToast('酷狗二维码登录成功', 2000);
+                    overlay.style.display = 'none';
+                    return;
+                }
+                const qrStatus = (checkData.data && checkData.data.status !== undefined) 
+                    ? checkData.data.status 
+                    : checkData.status;
+                const status = Number(qrStatus);
+                
+                console.log("[Kugou QR] 轮询状态:", status);
+
+                if (status === 0) { // 过期
+                    stopKugouQrPolling();
+                    statusEl.textContent = '二维码已过期';
+                    overlay.style.display = 'flex';
+                } else if (status === 1) { // 等待扫码
+                    statusEl.textContent = '请使用酷狗音乐 APP 扫码';
+                } else if (status === 2) { // 待确认
+                    statusEl.textContent = '已扫码，请在手机上确认';
+                    statusEl.style.color = 'var(--primary-color)';
+                }
+            } catch (err) {
+                console.error("QR Check Error:", err);
+            }
+        }, 3000);
+
+        } catch (error) {
+            kugouQrStatus.textContent = error.message;
+            kugouQrStatus.style.color = 'var(--error-color)';
+        } finally {
+            kugouRefreshQrBtn.disabled = false;
+            kugouRefreshQrBtn.textContent = '获取 / 刷新二维码';
+        }
+    }
+    if (kugouRefreshQrBtn) {
+        kugouRefreshQrBtn.addEventListener('click', initKugouQrLogin);
+    }  
+    if (kugouQrOverlay) {
+        kugouQrOverlay.addEventListener('click', initKugouQrLogin);
+    }
+    settingsModalClose.addEventListener('click', stopKugouQrPolling);
+    settingsModalOverlay.addEventListener('click', (e) => {
+        if (e.target === settingsModalOverlay) stopKugouQrPolling();
+    });
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
+            
+            this.classList.add('active');
+            const tab = this.dataset.tab;
+            document.querySelector(`.settings-tab-content[data-tab="${tab}"]`).classList.add('active');
+        });
+    });
+ 
+    async function initKugouQrLogin() {
+        const statusEl = document.getElementById('kugouQrStatus');
+        const qrImg = document.getElementById('kugouQrImg');
+        const placeholder = document.getElementById('kugouQrPlaceholder');
+        const overlay = document.getElementById('kugouQrOverlay');
+        const refreshBtn = document.getElementById('kugouRefreshQrBtn');
+
+        try {
+            stopKugouQrPolling(); // 清除旧轮询
+            if(refreshBtn) refreshBtn.disabled = true;
+            if(statusEl) {
+                statusEl.textContent = '获取中...';
+                statusEl.style.color = 'var(--text-dark)';
+            }
+            if(overlay) overlay.style.display = 'none';
+
+            // 1. 获取 Key 和 二维码
+            const timestamp = Date.now();
+            const keyRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/key?timestamp=${timestamp}`);
+            const keyData = await keyRes.json();
+            
+            if (!keyData.data || !keyData.data.qrcode) throw new Error('获取二维码 Key 失败');
+            const qrKey = keyData.data.qrcode;
+
+            const imgRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/create?key=${qrKey}&qrimg=true&timestamp=${timestamp}`);
+            const imgData = await imgRes.json();
+
+            if (qrImg && placeholder) {
+                qrImg.src = imgData.data.base64;
+                qrImg.style.display = 'block';
+                placeholder.style.display = 'none';
+            }
+            if(statusEl) statusEl.textContent = '请使用酷狗音乐 APP 扫码';
+
+            // 2. 核心修复：状态检测轮询
+            kugouQrCheckInterval = setInterval(async () => {
+                try {
+                    const checkRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/check?key=${qrKey}&timestamp=${Date.now()}`);
+                    const checkData = await checkRes.json();
+                    
+                    // 【核心修复点】安全提取嵌套的 data 对象
+                    const dataObj = checkData.data || {};
+                    
+                    // 优先读取 data.status，如果没有才读外层的 checkData.status
+                    const actualStatus = dataObj.status !== undefined ? dataObj.status : checkData.status;
+                    const statusNum = Number(actualStatus);
+                    
+                    // 提取凭证，同样限定在 data 对象内
+                    const token = dataObj.token;
+                    const userid = dataObj.userid;
+
+                    console.log("[酷狗扫码调试] 当前解析状态码:", statusNum, "是否拿到Token:", !!token);
+
+                    if (statusNum === 0) { 
+                        // 状态 0: 过期
+                        stopKugouQrPolling();
+                        if(statusEl) {
+                            statusEl.textContent = '二维码已过期，请重新获取';
+                            statusEl.style.color = 'var(--error-color)';
+                        }
+                        if(overlay) overlay.style.display = 'flex';
+                        
+                    } else if (statusNum === 1) { 
+                        // 状态 1: 等待扫码 (不做额外处理，保持现状)
+                        if(statusEl) {
+                            statusEl.textContent = '请使用酷狗音乐 APP 扫码';
+                            statusEl.style.color = 'var(--text-dark)';
+                        }
+                        
+                    } else if (statusNum === 2) { 
+                        // 状态 2: 待确认
+                        if(statusEl) {
+                            statusEl.textContent = '已扫码，请在手机上确认';
+                            statusEl.style.color = 'var(--primary-color)';
+                        }
+                        
+                    } else if (statusNum === 4 || token) { 
+                        // 状态 4: 成功 (加上 token 兜底校验)
+                        stopKugouQrPolling();
+                        if(statusEl) {
+                            statusEl.textContent = '登录成功！';
+                            statusEl.style.color = 'var(--success-color)';
+                        }
+                        if(overlay) overlay.style.display = 'none';
+                        
+                        // 保存 Token 和 UserId
+                        if (token) {
+                            localStorage.setItem('kugouToken', token);
+                            kugouToken = token; // 同步给全局变量
+                            
+                            if (userid) {
+                                localStorage.setItem('kugouUserId', userid);
+                                kugouUserId = userid;
+                            }
+                            showDynamicIslandToast('酷狗二维码登录成功', 3000);
+                        }
+                    }
+                } catch (err) {
+                    console.error("二维码轮询报错:", err);
+                }
+            }, 2500);
+
+        } catch (e) {
+            console.error("初始化二维码失败:", e);
+            if(statusEl) {
+                statusEl.textContent = '获取二维码失败';
+                statusEl.style.color = 'var(--error-color)';
+            }
+            if(overlay) overlay.style.display = 'flex';
+        } finally {
+            if(refreshBtn) refreshBtn.disabled = false;
+        }
     }
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
