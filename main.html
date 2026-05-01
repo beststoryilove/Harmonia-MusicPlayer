@@ -1229,7 +1229,10 @@
       display: inline-block;
       white-space: pre;
       color: rgba(255, 255, 255, 0.35);
-      transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                  color 0.2s ease, 
+                  text-shadow 0.2s ease;
+      transform-origin: bottom center;
     }
 
     .word-lyric::after {
@@ -1242,7 +1245,7 @@
       white-space: pre;
       color: rgba(255, 255, 255, 1);
       pointer-events: none;
-      transition: width 0.1s linear;
+      transition: width 0.1s linear; 
       will-change: width;
     }
 
@@ -4215,6 +4218,28 @@
     body.light-theme #eqStatusText { color: var(--text-muted-light); }
     body.light-theme .eq-band-row span { color: rgba(0, 0, 0, 0.6) !important; }
     body.light-theme .eq-band-slider { background: rgba(0, 0, 0, 0.1); }
+    #kugouAccountInfo {
+      margin-left: 0 !important;
+      padding-left: 0 !important;
+      border-left: none !important;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(128,128,128,0.2);
+      width: 100%;
+      justify-content: center;
+    }
+    .word-lyric.active-word {
+      transform: translateY(-2px) scale(1.08);
+      color: rgba(255, 255, 255, 0.55);
+      text-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
+    }
+    .word-lyric.no-transition::after {
+      transition: none !important;
+    }
+    body.light-theme .word-lyric.active-word {
+      color: rgba(0, 0, 0, 0.65);
+      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
   </style>
 <link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
 <body>
@@ -4277,6 +4302,21 @@
   <!-- 歌词切换按钮 -->
   <div class="lyrics-toggle-btn" id="lyricsToggleBtn" title="切换歌词显示">
     <i class="fas fa-align-left"></i>
+  </div>
+
+  <button class="lyrics-rerequest-btn" id="lyricsRerequestBtn" title="该功能将会在不请求音频/专辑图等其他文件时重新请求当前歌曲的歌词（无论是否是逐字歌词）" aria-label="重新请求歌词">
+    <i class="fas fa-rotate-right"></i>
+  </button>
+
+  <div class="lyrics-rerequest-modal-overlay" id="lyricsRerequestModalOverlay">
+    <div class="lyrics-rerequest-modal">
+      <div class="lyrics-rerequest-title">重新请求歌词</div>
+      <div class="lyrics-rerequest-copy" id="lyricsRerequestCopy"></div>
+      <div class="lyrics-rerequest-actions">
+        <button class="lyrics-rerequest-action-btn secondary" id="lyricsRerequestCancelBtn">关闭</button>
+        <button class="lyrics-rerequest-action-btn primary" id="lyricsRerequestConfirmBtn">点我重新请求</button>
+      </div>
+    </div>
   </div>
 
   <div class="mv-button" id="mvButton" title="该功能将会尝试解析当前歌曲的MV并播放，其可用性取决于网易云是否有该歌曲的MV。">
@@ -4498,18 +4538,32 @@
       <div class="settings-tab-content" data-tab="account">
         <div class="settings-group">
           <div class="group-title">酷狗账号验证 (用于获取完整歌词库)</div>
-          <div class="qr-login-section">
-            <div class="qr-container" id="kugouQrContainer">
-              <img id="kugouQrImg" src="" style="display:none;">
-              <div class="qr-placeholder" id="kugouQrPlaceholder">等待获取</div>
-              <div class="qr-overlay" id="kugouQrOverlay">
-                <i class="fas fa-redo"></i>
-                <span>点击重试</span>
+          
+          <div class="qr-login-section" style="flex-wrap: wrap; align-items: stretch;">
+            <div style="display: flex; gap: 25px; align-items: center;">
+              <div class="qr-container" id="kugouQrContainer">
+                <img id="kugouQrImg" src="" style="display:none;">
+                <div class="qr-placeholder" id="kugouQrPlaceholder">等待获取</div>
+                <div class="qr-overlay" id="kugouQrOverlay">
+                  <i class="fas fa-redo"></i>
+                  <span>点击重试</span>
+                </div>
+              </div>
+              <div class="qr-info">
+                <div id="kugouQrStatus" class="status-text">就绪</div>
+                <button class="ios-btn primary" id="kugouRefreshQrBtn">获取二维码</button>
               </div>
             </div>
-            <div class="qr-info">
-              <div id="kugouQrStatus" class="status-text">就绪</div>
-              <button class="ios-btn primary" id="kugouRefreshQrBtn">获取二维码</button>
+
+            <div id="kugouAccountInfo" style="display: none; align-items: center; gap: 15px; margin-left: 10px; padding-left: 25px; border-left: 1px solid rgba(128,128,128,0.2);">
+              <img id="kugouAvatar" src="" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); background: rgba(255,255,255,0.1);">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="font-size: 15px; font-weight: 600;" class="item-label" id="kugouNicknameLabel">当前账号：未知</div>
+                <div style="display: flex; gap: 8px;">
+                  <button id="kugouTestTokenBtn" class="ios-btn secondary" style="padding: 6px 12px; font-size: 12px;">测试有效性</button>
+                  <button id="kugouLogoutBtn" class="ios-btn secondary" style="padding: 6px 12px; font-size: 12px; color: var(--error-color);">退出登录</button>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -4745,6 +4799,11 @@
     const ALBUM_KEY = 'albumEffectEnabled';
     const LYRICS_ANIMATION_MODE_KEY = 'lyricsAnimationMode';
     const PLAYER_CONTROLS_LAYOUT_KEY = 'playerControlsLayout';
+    const lyricsRerequestBtn = document.getElementById('lyricsRerequestBtn');
+    const lyricsRerequestModalOverlay = document.getElementById('lyricsRerequestModalOverlay');
+    const lyricsRerequestCopy = document.getElementById('lyricsRerequestCopy');
+    const lyricsRerequestCancelBtn = document.getElementById('lyricsRerequestCancelBtn');
+    const lyricsRerequestConfirmBtn = document.getElementById('lyricsRerequestConfirmBtn');
 
     // ===== State =====
     let currentPage = 1;
@@ -4798,6 +4857,7 @@
     let lastRenderedProgressPercent = -1;
     let lastRenderedCurrentSecond = -1;
     let lastRenderedDurationSecond = -1;
+    let lyricsRerequestInProgress = false;
 
     // Apple Music 歌词相关
     const LINE_HEIGHT = 20;
@@ -4854,6 +4914,7 @@
     // 初始化音量
     audioPlayer.volume = parseFloat(localStorage.getItem('musicPlayerVolume') || '0.7');
     volumeSlider.value = audioPlayer.volume;
+    updateLyricsRerequestDialog();
 
     // ===== 音频均衡器 =====
     const EQ_STORAGE_KEY = 'musicPlayerEqSettings';
@@ -6386,6 +6447,7 @@
                 currentSongData = null;
                 currentPlaylistIdx = -1;
                 isPlaying = false;
+                updateLyricsRerequestDialog();
                 playButton.innerHTML = '<i class="fas fa-play"></i>';
                 updatePageTitle();
                 updateCollapsedTextByPlayingState();
@@ -6770,36 +6832,150 @@
       });
     }
 
+    function rebuildCurrentLineWordSpans(currentLine) {
+        if (!currentLine || !currentLine.ele || !currentLine.words || currentLine.words.length === 0) return false;
+        
+        const p = currentLine.ele.querySelector('p');
+        if (!p) return false;
+        
+        // 销毁所有旧的 word-lyric span
+        const oldSpans = p.querySelectorAll('.word-lyric');
+        oldSpans.forEach(span => span.remove());
+        
+        // 根据 currentLine.words 重新构建
+        const newSpans = [];
+        currentLine.words.forEach((w, idx) => {
+            const wordText = w.text;
+            const isChinese = /^[\u4e00-\u9fff]+$/.test(wordText);
+            const shouldSplit = !isChinese && wordText.length > 1 && /^[a-zA-Z]+$/.test(wordText);
+            
+            if (shouldSplit) {
+                const letters = wordText.split('');
+                const wordDuration = w.end - w.start;
+                const letterDuration = wordDuration / letters.length;
+                letters.forEach((letter, letterIdx) => {
+                    const span = document.createElement('span');
+                    span.className = 'word-lyric';
+                    span.textContent = letter;
+                    span.dataset.t = letter;
+                    const letterStart = w.start + letterIdx * letterDuration;
+                    const letterEnd = letterStart + letterDuration;
+                    span.dataset.wstart = letterStart;
+                    span.dataset.wend = letterEnd;
+                    span.dataset.letter = 'true';
+                    span.style.setProperty('--p', '0%');
+                    p.appendChild(span);
+                    newSpans.push(span);
+                });
+            } else {
+                const span = document.createElement('span');
+                span.className = 'word-lyric';
+                span.textContent = wordText;
+                span.dataset.t = wordText;
+                span.dataset.wstart = w.start;
+                span.dataset.wend = w.end;
+                span.style.setProperty('--p', '0%');
+                p.appendChild(span);
+                newSpans.push(span);
+            }
+            
+            // 添加单词间空格（保留原有逻辑）
+            let needSpace = false;
+            if (isChinese) {
+                if (idx < currentLine.words.length - 1) {
+                    const nextWord = currentLine.words[idx + 1].text;
+                    const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
+                    if (!isNextChinese) needSpace = true;
+                }
+            } else {
+                if (idx !== currentLine.words.length - 1) needSpace = true;
+            }
+            if (needSpace) {
+                p.appendChild(document.createTextNode(' '));
+            }
+        });
+        
+        // 更新 line.wordSpans 为新创建的 span 数组
+        currentLine.wordSpans = newSpans;
+        newSpans.forEach(span => {
+            span.__lastWordProgress = 0;
+        });
+        
+        return true;
+    }
+
+    function resetAllWordsProgress() {
+        if (!amLyricsData.length) return;
+        
+        // 遍历所有歌词行，重置单词填充进度
+        for (const line of amLyricsData) {
+            if (!line.wordSpans || line.wordSpans.length === 0) continue;
+            line.wordSpans.forEach(span => {
+                span.style.transition = 'none';
+                span.style.setProperty('--p', '0%');
+                span.__lastWordProgress = 0;
+                span.classList.remove('active-word');
+            });
+        }
+        
+        // 强制浏览器重绘，确保 0% 被应用
+        void document.body.offsetHeight;
+        
+        // 延迟恢复过渡，避免后续填充时被禁用
+        setTimeout(() => {
+            for (const line of amLyricsData) {
+                if (line.wordSpans) {
+                    line.wordSpans.forEach(span => {
+                        span.style.transition = '';
+                    });
+                }
+            }
+        }, 50);
+    }
+
     function updateWordFillInActiveLine(currentTime, force = false) {
         if (!amLyricsData?.length || lastLyric < 0) return;
-
         const line = amLyricsData[lastLyric];
-        if (!line?.ele) return;
-
+        if (!line?.ele) return;    
         const spans = line.wordSpans || (line.wordSpans = Array.from(line.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
-        if (!spans.length) return;
-
+        if (!spans.length) return;       
         spans.forEach(sp => {
             const ws = parseFloat(sp.dataset.wstart);
             const we = parseFloat(sp.dataset.wend);
-
-            // 填充进度
+            const dur = Math.max(we - ws, 0.001); 
             let p = 0;
+            const isNowActive = currentTime > ws;                   
             if (currentTime <= ws) {
                 p = 0;
             } else if (currentTime >= we) {
                 p = 100;
             } else {
-                const dur = Math.max(we - ws, 0.001);
                 p = ((currentTime - ws) / dur) * 100;
                 if (p < 0) p = 0;
                 if (p > 100) p = 100;
+            }            
+            const currentPStr = p.toFixed(1);
+            const lastP = parseFloat(sp.__lastWordProgress || 0);
+            const isJump = Math.abs(p - lastP) > 30;                      
+            if (isJump) {
+                sp.classList.add('no-transition');
             }
-
-            const rounded = Math.round(p * 2) / 2;
-            if (force || sp.__lastWordProgress !== rounded) {
-                sp.style.setProperty('--p', `${rounded}%`);
-                sp.__lastWordProgress = rounded;
+            if (force || sp.__lastWordProgress !== currentPStr) {
+                sp.style.setProperty('--p', `${currentPStr}%`);
+                sp.__lastWordProgress = currentPStr;
+            }
+            if (isNowActive && !sp.classList.contains('active-word')) {
+                const jumpDur = Math.min(Math.max(dur * 0.75, 0.25), 1.5); 
+                sp.style.transition = `transform ${jumpDur}s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease, text-shadow 0.2s ease`;
+                
+                sp.classList.add('active-word');
+            } else if (!isNowActive && sp.classList.contains('active-word')) {
+                sp.style.transition = ''; 
+                sp.classList.remove('active-word');
+            }           
+            if (isJump) {
+                void sp.offsetWidth;
+                sp.classList.remove('no-transition');
             }
         });
     }
@@ -7250,6 +7426,7 @@
 
     async function playSong(song, isFromPlaylist = false) {
       try {
+        if (guardSongSwitch(song?.id)) return;
         clearError();
 
         // 如果当前有 MV 正在播放，先停止 MV
@@ -7267,6 +7444,7 @@
           album: song.album || ''
         };
         currentSongData = song;
+        updateLyricsRerequestDialog();
 
         // 立即更新标题，即使音频还未开始播放
         updatePageTitle();
@@ -7752,6 +7930,7 @@
                       span.style.transform = 'translateY(0)';
                       span.__lastLiftTransform = 'translateY(0)';
                   }
+                  span.style.transition = '';
               });
           }
       }
@@ -7785,10 +7964,22 @@
       const scrollBaseIndex = maxIdx;
       let useDelay = true;
       if (lastLyric >= 0 && lastLyric < amLyricsData.length) {
-        const timeDiff = Math.abs(amLyricsData[activeIndex].time - amLyricsData[lastLyric].time);
-        if (timeDiff < 0.3) {
-          useDelay = false;
-        }
+          const prevLine = amLyricsData[lastLyric];
+          if (prevLine?.ele) {
+              const prevSpans = prevLine.wordSpans || (prevLine.wordSpans = Array.from(prevLine.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
+              prevSpans.forEach(span => {
+                  if (span.__lastWordProgress !== 0) {
+                      span.style.setProperty('--p', '0%');
+                      span.__lastWordProgress = 0;
+                  }
+                  span.classList.remove('active-word');
+                  span.style.transition = '';
+                  if (span.__lastLiftTransform !== 'translateY(0)') {
+                      span.style.transform = '';
+                      span.__lastLiftTransform = 'translateY(0)';
+                  }
+              });
+          }
       }
 
       UpdateLyricsLayout(scrollBaseIndex, highlightIndices, amLyricsData, useDelay ? 1 : 0);
@@ -7980,6 +8171,14 @@
 
     // 歌词切换按钮
     lyricsToggleBtn.addEventListener('click', toggleLyrics);
+    lyricsRerequestBtn.addEventListener('click', openLyricsRerequestDialog);
+    lyricsRerequestCancelBtn.addEventListener('click', closeLyricsRerequestDialog);
+    lyricsRerequestModalOverlay.addEventListener('click', (e) => {
+      if (e.target === lyricsRerequestModalOverlay) closeLyricsRerequestDialog();
+    });
+    lyricsRerequestConfirmBtn.addEventListener('click', async () => {
+      await handleLyricsRerequest();
+    });
 
     // 播放控制
     playButton.addEventListener('click', () => {
@@ -8001,6 +8200,7 @@
     });
 
     prevButton.addEventListener('click', async () => {
+      if (guardSongSwitch()) return;
       if (!currentPlayingId || playlist.length === 0) {
         showError('播放列表为空，无法切换歌曲');
         return;
@@ -8021,6 +8221,7 @@
     });
 
     nextButton.addEventListener('click', async () => {
+      if (guardSongSwitch()) return;
       if (!currentPlayingId || playlist.length === 0) {
         showError('播放列表为空，无法切换歌曲');
         return;
@@ -8090,9 +8291,28 @@
     });
 
     audioPlayer.addEventListener('seeked', () => {
-      const currentTime = audioPlayer.currentTime || 0;
-      throttledUpdateAMLyricsHighlight(currentTime);
-      updateWordFillInActiveLine(currentTime, true);
+        const currentTime = audioPlayer.currentTime || 0;
+        resetAllWordsProgress();
+        if (amLyricsData.length) {
+            rebuildLyricsMetrics(amLyricsData);
+        }
+        let newActiveIndex = findActiveLyricIndex(currentTime);
+        if (newActiveIndex === -1 && amLyricsData.length > 0) {
+            newActiveIndex = 0;
+        }
+        if (newActiveIndex !== -1 && amLyricsData.length) {
+            UpdateLyricsLayout(newActiveIndex, [newActiveIndex], amLyricsData, 0);
+            lastLyric = newActiveIndex;
+        }
+        throttledUpdateAMLyricsHighlight(currentTime);
+        updateWordFillInActiveLine(currentTime, false);
+        const duration = audioPlayer.duration || 0;
+        if (duration && !isNaN(duration)) {
+            const percent = (currentTime / duration) * 100;
+            progress.style.width = `${percent}%`;
+            lastRenderedProgressPercent = percent;
+        }
+        currentTimeDisplay.textContent = formatTime(currentTime);
     });
 
     audioPlayer.addEventListener('ended', async () => {
@@ -9921,6 +10141,36 @@
             document.querySelector(`.settings-tab-content[data-tab="${tab}"]`).classList.add('active');
         });
     });
+
+    const kugouTestTokenBtn = document.getElementById('kugouTestTokenBtn');
+    if (kugouTestTokenBtn) {
+        kugouTestTokenBtn.addEventListener('click', async () => {
+            kugouTestTokenBtn.textContent = '测试中...';
+            kugouTestTokenBtn.disabled = true;
+            try {
+                const hash = await searchKugouSong('周杰伦 晴天');
+                await getKugouLyricInfo(hash);
+                showDynamicIslandToast('凭证有效！(Token 测试通过)', 2500);
+            } catch (err) {
+                console.error("Token test failed:", err);
+                showError('凭证已过期 (502) 或失效，请重新登录', 4000);
+                triggerKugouReLogin(); // 触发退出登录并清理凭证
+            } finally {
+                kugouTestTokenBtn.textContent = '测试有效性';
+                kugouTestTokenBtn.disabled = false;
+            }
+        });
+    }
+    const kugouLogoutBtn = document.getElementById('kugouLogoutBtn');
+    if (kugouLogoutBtn) {
+        kugouLogoutBtn.addEventListener('click', () => {
+            triggerKugouReLogin();
+            showDynamicIslandToast('已退出酷狗账号', 2000);
+        });
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        updateKugouAccountUI();
+    });
  
     async function initKugouQrLogin() {
         const statusEl = document.getElementById('kugouQrStatus');
@@ -10034,6 +10284,205 @@
         } finally {
             if(refreshBtn) refreshBtn.disabled = false;
         }
+    }
+    // 更新账号信息 UI
+    function updateKugouAccountUI() {
+        const accInfo = document.getElementById('kugouAccountInfo');
+        const avatar = document.getElementById('kugouAvatar');
+        const nickLabel = document.getElementById('kugouNicknameLabel');
+        
+        const savedToken = localStorage.getItem('kugouToken');
+        const savedNick = localStorage.getItem('kugouNickname');
+        const savedPic = localStorage.getItem('kugouPic');
+
+        if (savedToken) {
+            if(accInfo) accInfo.style.display = 'flex';
+            if(nickLabel) nickLabel.textContent = `当前账号：${savedNick || '已登录'}`;
+            if(avatar) avatar.src = savedPic || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        } else {
+            if(accInfo) accInfo.style.display = 'none';
+        }
+    }
+
+    // 统一的退出登录清理函数
+    function triggerKugouReLogin() {
+        localStorage.removeItem('kugouToken');
+        localStorage.removeItem('kugouUserId');
+        localStorage.removeItem('kugouNickname');
+        localStorage.removeItem('kugouPic');
+        kugouToken = '';
+        kugouUserId = '';
+        
+        showError('酷狗凭证已失效/退出，请重新登录', 4000);
+        settingsModalOverlay.classList.add('active');
+        
+        // 自动跳到账户标签页
+        const accountTab = document.querySelector('.settings-tab[data-tab="account"]') || document.querySelector('.nav-item[data-tab="account"]');
+        if (accountTab) accountTab.click();
+        
+        updateKugouAccountUI();
+        
+        // 重置二维码区域显示
+        const statusEl = document.getElementById('kugouQrStatus');
+        const qrImg = document.getElementById('kugouQrImg');
+        const placeholder = document.getElementById('kugouQrPlaceholder');
+        if(statusEl) statusEl.textContent = '请重新获取二维码';
+        if(qrImg) qrImg.style.display = 'none';
+        if(placeholder) placeholder.style.display = 'flex';
+    }
+
+    // ==================== 酷狗二维码登录 API ====================
+    async function initKugouQrLogin() {
+        const statusEl = document.getElementById('kugouQrStatus');
+        const qrImg = document.getElementById('kugouQrImg');
+        const placeholder = document.getElementById('kugouQrPlaceholder');
+        const overlay = document.getElementById('kugouQrOverlay');
+        const refreshBtn = document.getElementById('kugouRefreshQrBtn');
+
+        try {
+            stopKugouQrPolling();
+            if(refreshBtn) refreshBtn.disabled = true;
+            if(statusEl) {
+                statusEl.textContent = '获取中...';
+                statusEl.style.color = 'var(--text-dark)';
+            }
+            if(overlay) overlay.style.display = 'none';
+
+            const timestamp = Date.now();
+            const keyRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/key?timestamp=${timestamp}`);
+            const keyData = await keyRes.json();
+            if (!keyData.data || !keyData.data.qrcode) throw new Error('获取失败');
+            const qrKey = keyData.data.qrcode;
+
+            const imgRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/create?key=${qrKey}&qrimg=true&timestamp=${timestamp}`);
+            const imgData = await imgRes.json();
+
+            if (qrImg && placeholder) {
+                qrImg.src = imgData.data.base64;
+                qrImg.style.display = 'block';
+                placeholder.style.display = 'none';
+            }
+            if(statusEl) statusEl.textContent = '请使用酷狗音乐 APP 扫码';
+
+            kugouQrCheckInterval = setInterval(async () => {
+                try {
+                    const checkRes = await wrappedFetch(`${KUGOU_API_BASE}/login/qr/check?key=${qrKey}&timestamp=${Date.now()}`);
+                    const checkData = await checkRes.json();
+                    
+                    const dataObj = checkData.data || {};
+                    const actualStatus = dataObj.status !== undefined ? dataObj.status : checkData.status;
+                    const statusNum = Number(actualStatus);
+                    
+                    // 重点：在这里提取 nickname 和 pic
+                    const token = dataObj.token;
+                    const userid = dataObj.userid;
+                    const nickname = dataObj.nickname;
+                    const pic = dataObj.pic;
+
+                    if (statusNum === 0) { 
+                        stopKugouQrPolling();
+                        if(statusEl) { statusEl.textContent = '已过期'; statusEl.style.color = 'var(--error-color)'; }
+                        if(overlay) overlay.style.display = 'flex';
+                    } else if (statusNum === 2) { 
+                        if(statusEl) { statusEl.textContent = '请在手机确认'; statusEl.style.color = 'var(--primary-color)'; }
+                    } else if (statusNum === 4 || token) { 
+                        stopKugouQrPolling();
+                        if(statusEl) { statusEl.textContent = '登录成功！'; statusEl.style.color = 'var(--success-color)'; }
+                        if(overlay) overlay.style.display = 'none';
+                        
+                        if (token) {
+                            localStorage.setItem('kugouToken', token);
+                            kugouToken = token;
+                            if (userid) { localStorage.setItem('kugouUserId', userid); kugouUserId = userid; }
+                            
+                            // 保存头像和昵称并刷新 UI
+                            if (nickname) localStorage.setItem('kugouNickname', nickname);
+                            if (pic) localStorage.setItem('kugouPic', pic);
+                            
+                            updateKugouAccountUI();
+                            showDynamicIslandToast(`欢迎，${nickname || '用户'}`, 3000);
+                        }
+                    }
+                } catch (err) {
+                    console.error("二维码轮询报错:", err);
+                }
+            }, 2500);
+
+        } catch (e) {
+            if(statusEl) { statusEl.textContent = '获取失败'; statusEl.style.color = 'var(--error-color)'; }
+            if(overlay) overlay.style.display = 'flex';
+        } finally {
+            if(refreshBtn) refreshBtn.disabled = false;
+        }
+    }
+    function isSongSwitchLocked() {
+      return lyricsRerequestInProgress;
+    }
+
+    function guardSongSwitch(targetSongId = null) {
+      if (!isSongSwitchLocked()) return false;
+      if (targetSongId && currentPlayingId && String(targetSongId) === String(currentPlayingId)) return false;
+      showError('正在重新请求歌词，请稍候', 2200);
+      return true;
+    }
+
+    function buildLyricsRerequestCopy() {
+      return [
+        '您好，您正在歌词重新请求界面。',
+        '请您先阅读以下提示：',
+        '1.该功能目前主要用于酷狗源逐字歌词；重新请求时会同时补请求网易云翻译。',
+        `2.您当前正在播放的歌曲：${getCurrentPlayingSongName()} ，接下来的重新请求将对该歌曲的歌词进行请求。`,
+        '3.请勿滥用此功能。'
+      ].join('\n');
+    }
+
+    function updateLyricsRerequestDialog() {
+      if (lyricsRerequestCopy) {
+        lyricsRerequestCopy.textContent = buildLyricsRerequestCopy();
+      }
+      const hasSong = !!currentSongData;
+      if (lyricsRerequestConfirmBtn) {
+        lyricsRerequestConfirmBtn.disabled = !hasSong || lyricsRerequestInProgress;
+        lyricsRerequestConfirmBtn.textContent = lyricsRerequestInProgress ? '正在重新请求...' : '点我重新请求';
+      }
+      if (lyricsRerequestCancelBtn) {
+        lyricsRerequestCancelBtn.disabled = lyricsRerequestInProgress;
+      }
+      if (lyricsRerequestBtn) {
+        lyricsRerequestBtn.disabled = lyricsRerequestInProgress;
+      }
+    }
+
+    function openLyricsRerequestDialog() {
+      updateLyricsRerequestDialog();
+      lyricsRerequestModalOverlay.classList.add('active');
+    }
+
+    function closeLyricsRerequestDialog() {
+      if (lyricsRerequestInProgress) return;
+      lyricsRerequestModalOverlay.classList.remove('active');
+    }
+
+    async function handleLyricsRerequest() {
+      if (!currentSongData || !currentPlayingId) {
+        showError('当前没有正在播放的歌曲', 2200);
+        return;
+      }
+
+      lyricsRerequestInProgress = true;
+      updateLyricsRerequestDialog();
+
+      try {
+        await requestLyricsOnlyForSong(currentSongData);
+        closeLyricsRerequestDialog();
+        showDynamicIslandToast('歌词重新请求成功', 2500);
+      } catch (error) {
+        console.error('重新请求歌词失败:', error);
+        showError(`歌词重新请求失败: ${error?.message || '未知错误'}`, 3200);
+      } finally {
+        lyricsRerequestInProgress = false;
+        updateLyricsRerequestDialog();
+      }
     }
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
