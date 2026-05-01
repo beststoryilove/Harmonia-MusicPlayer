@@ -4228,10 +4228,25 @@
       width: 100%;
       justify-content: center;
     }
+    @keyframes wordLyricJump {
+      0% { transform: translateY(0) scale(1); }
+      55% { transform: translateY(-5px) scale(1.12); }
+      100% { transform: translateY(-5px) scale(1.12); }
+    }
     .word-lyric.active-word {
-      transform: translateY(-2px) scale(1.08);
+      transform: translateY(-5px) scale(1.12);
       color: rgba(255, 255, 255, 0.55);
       text-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
+    }
+    .word-lyric.word-jump {
+      animation: wordLyricJump var(--word-jump-duration, 0.42s) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    body.word-lyric-jump-disabled .word-lyric.word-jump {
+      animation: none !important;
+    }
+    body.word-lyric-jump-disabled .word-lyric.active-word {
+      transform: none !important;
+      text-shadow: none !important;
     }
     .word-lyric.no-transition::after {
       transition: none !important;
@@ -4241,7 +4256,7 @@
       text-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     }
   </style>
-<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
+<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
 <body>
   <div class="am-background"></div>
 
@@ -4387,6 +4402,13 @@
               <div class="item-desc">开启后尝试获取卡拉OK动态效果</div>
             </div>
             <label class="switch"><input type="checkbox" id="enableWordLyrics"><span class="slider"></span></label>
+          </div>
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">逐字歌词跳跃动画</div>
+              <div class="item-desc">开启后，当前唱到的字会跳起并保持；关闭后仅保留逐字填充</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="enableWordLyricJump"><span class="slider"></span></label>
           </div>
           <div class="setting-item vertical">
             <div class="item-label">获取方式</div>
@@ -4792,6 +4814,7 @@
     const lyricsToggleBtn = document.getElementById('lyricsToggleBtn');
     const originalTitle = "Harmonia - 音乐播放器";
     const enableWordLyrics = document.getElementById('enableWordLyrics');
+    const enableWordLyricJump = document.getElementById('enableWordLyricJump');
     const neteaseProxyInput = document.getElementById('neteaseProxyInput');
     const BUILTIN_NETEASE_PROXIES = ['https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url='];
     const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -4863,6 +4886,8 @@
     const LINE_HEIGHT = 20;
     let LYRICS_OFFSET = window.innerHeight / 3.5;
     let lastLyric = -1;
+    let lastWordLyricTime = -1;
+    let lastWordLyricLineIndex = -1;
     let lyricsHeightsPrefix = [0];
     let lyricsLayoutRAF = 0;
     let pendingLyricsLayout = null;
@@ -4908,6 +4933,7 @@
     // 歌词设置（逐字歌词开关）
     let lyricsSettings = {
       wordLyricsEnabled: false,
+      wordLyricsJumpEnabled: true,
       neteaseProxy: ''
     };
 
@@ -5674,8 +5700,11 @@
       const savedLyrics = localStorage.getItem('lyricsSettings');
       if (savedLyrics) {
         try {
-          lyricsSettings = JSON.parse(savedLyrics);
+          lyricsSettings = { ...lyricsSettings, ...JSON.parse(savedLyrics) };
         } catch {}
+      }
+      if (typeof lyricsSettings.wordLyricsJumpEnabled !== 'boolean') {
+        lyricsSettings.wordLyricsJumpEnabled = true;
       }
 
       if (isMobile()) {
@@ -5685,6 +5714,10 @@
       }
 
       enableWordLyrics.checked = !!lyricsSettings.wordLyricsEnabled;
+      if (enableWordLyricJump) {
+        enableWordLyricJump.checked = lyricsSettings.wordLyricsJumpEnabled !== false;
+      }
+      applyWordLyricJumpSetting(lyricsSettings.wordLyricsJumpEnabled !== false, { persist: false, toast: false });
       neteaseProxyInput.value = lyricsSettings.neteaseProxy || '';
       const savedSource = localStorage.getItem('wordLyricsSource') || 'netease';
       const radios = document.querySelectorAll('input[name="wordLyricsSource"]');
@@ -5708,6 +5741,7 @@
         JSON.stringify(translationSettings)
       );
       lyricsSettings.wordLyricsEnabled = !!enableWordLyrics.checked;
+      lyricsSettings.wordLyricsJumpEnabled = enableWordLyricJump ? !!enableWordLyricJump.checked : true;
       lyricsSettings.neteaseProxy = neteaseProxyInput.value.trim();
       localStorage.setItem('lyricsSettings', JSON.stringify(lyricsSettings));
       showDynamicIslandToast('设置已保存', 2500);
@@ -6668,6 +6702,8 @@
       rawLyricText = '';
       rawTlyricText = '';
       lastLyric = -1;
+      lastWordLyricTime = -1;
+      lastWordLyricLineIndex = -1;
       pendingLyricsLayout = null;
       if (lyricsLayoutRAF) {
         cancelAnimationFrame(lyricsLayoutRAF);
@@ -6816,6 +6852,7 @@
         line.wordSpans = Array.from(p.querySelectorAll('span.word-lyric[data-wstart][data-wend]'));
         line.wordSpans.forEach(span => {
           span.__lastWordProgress = 0;
+          span.__wordWasActive = false;
         });
         fragment.appendChild(div);
       });
@@ -6899,6 +6936,7 @@
         currentLine.wordSpans = newSpans;
         newSpans.forEach(span => {
             span.__lastWordProgress = 0;
+          span.__wordWasActive = false;
         });
         
         return true;
@@ -6914,7 +6952,8 @@
                 span.style.transition = 'none';
                 span.style.setProperty('--p', '0%');
                 span.__lastWordProgress = 0;
-                span.classList.remove('active-word');
+                span.__wordWasActive = false;
+                span.classList.remove('active-word', 'word-jump');
             });
         }
         
@@ -6933,18 +6972,98 @@
         }, 50);
     }
 
+    function resetLineWordReplayState(line) {
+        if (!line?.ele) return;
+        const spans = line.wordSpans || (line.wordSpans = Array.from(line.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
+        spans.forEach(span => {
+            span.classList.remove('active-word', 'word-jump');
+            span.style.transition = '';
+            span.style.transform = '';
+            span.style.setProperty('--p', '0%');
+            span.__lastWordProgress = 0;
+            span.__wordWasActive = false;
+            span.__lastLiftTransform = 'translateY(0)';
+        });
+    }
+
+    function isWordLyricJumpEnabled() {
+        return lyricsSettings.wordLyricsJumpEnabled !== false;
+    }
+
+    function clearWordLyricJumpState() {
+        document.querySelectorAll('.word-lyric').forEach(span => {
+            span.classList.remove('active-word', 'word-jump', 'no-transition');
+            span.style.transition = '';
+            span.style.transform = '';
+            span.style.removeProperty('--word-jump-duration');
+            span.__wordWasActive = false;
+        });
+        lastWordLyricTime = -1;
+        lastWordLyricLineIndex = -1;
+    }
+
+    function applyWordLyricJumpSetting(enabled, options = {}) {
+        const { persist = true, toast = true } = options;
+        lyricsSettings.wordLyricsJumpEnabled = !!enabled;
+        document.body.classList.toggle('word-lyric-jump-disabled', !lyricsSettings.wordLyricsJumpEnabled);
+
+        if (enableWordLyricJump) {
+            enableWordLyricJump.checked = lyricsSettings.wordLyricsJumpEnabled;
+        }
+
+        // 立即刷新当前行状态：关闭时清掉已抬起的字，开启时让当前字重新触发跳跃。
+        clearWordLyricJumpState();
+        if (lastLyric >= 0 && amLyricsData.length) {
+            updateWordFillInActiveLine(audioPlayer.currentTime || 0, true);
+        }
+
+        if (persist) {
+            localStorage.setItem('lyricsSettings', JSON.stringify(lyricsSettings));
+        }
+        if (toast) {
+            showDynamicIslandToast(
+                lyricsSettings.wordLyricsJumpEnabled ? '已开启逐字歌词跳跃动画' : '已关闭逐字歌词跳跃动画',
+                2200
+            );
+        }
+    }
+
+    function triggerWordJump(span, duration) {
+        if (!isWordLyricJumpEnabled()) return;
+        const jumpDuration = Math.min(Math.max(duration * 0.75, 0.25), 1.5);
+        span.style.setProperty('--word-jump-duration', `${jumpDuration}s`);
+        span.classList.remove('word-jump');
+        // 强制重排：即使这个词之前已经播放过，也能重新启动跳跃动画
+        void span.offsetWidth;
+        span.classList.add('word-jump');
+    }
+
     function updateWordFillInActiveLine(currentTime, force = false) {
         if (!amLyricsData?.length || lastLyric < 0) return;
         const line = amLyricsData[lastLyric];
-        if (!line?.ele) return;    
+        if (!line?.ele) return;
+
+        // 回放/拖动到更早时间时，同一句歌词的 word span 仍可能保留 active 状态。
+        // 先清掉状态，后面重新计算进度并重新触发跳跃动画。
+        const isSameLineReplay = lastWordLyricLineIndex === lastLyric &&
+            lastWordLyricTime >= 0 &&
+            currentTime < lastWordLyricTime - 0.05;
+        if (isSameLineReplay) {
+            resetLineWordReplayState(line);
+            force = true;
+        }
+
         const spans = line.wordSpans || (line.wordSpans = Array.from(line.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
-        if (!spans.length) return;       
+        if (!spans.length) return;
+
         spans.forEach(sp => {
             const ws = parseFloat(sp.dataset.wstart);
             const we = parseFloat(sp.dataset.wend);
-            const dur = Math.max(we - ws, 0.001); 
+            const dur = Math.max(we - ws, 0.001);
             let p = 0;
-            const isNowActive = currentTime > ws;                   
+            const isNowActive = currentTime > ws;
+            const wasActive = sp.__wordWasActive === true;
+
             if (currentTime <= ws) {
                 p = 0;
             } else if (currentTime >= we) {
@@ -6953,10 +7072,12 @@
                 p = ((currentTime - ws) / dur) * 100;
                 if (p < 0) p = 0;
                 if (p > 100) p = 100;
-            }            
+            }
+
             const currentPStr = p.toFixed(1);
             const lastP = parseFloat(sp.__lastWordProgress || 0);
-            const isJump = Math.abs(p - lastP) > 30;                      
+            const isJump = Math.abs(p - lastP) > 30;
+
             if (isJump) {
                 sp.classList.add('no-transition');
             }
@@ -6964,20 +7085,25 @@
                 sp.style.setProperty('--p', `${currentPStr}%`);
                 sp.__lastWordProgress = currentPStr;
             }
-            if (isNowActive && !sp.classList.contains('active-word')) {
-                const jumpDur = Math.min(Math.max(dur * 0.75, 0.25), 1.5); 
-                sp.style.transition = `transform ${jumpDur}s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease, text-shadow 0.2s ease`;
-                
+
+            if (isNowActive && !wasActive) {
+                sp.style.transition = `color 0.2s ease, text-shadow 0.2s ease`;
                 sp.classList.add('active-word');
-            } else if (!isNowActive && sp.classList.contains('active-word')) {
-                sp.style.transition = ''; 
-                sp.classList.remove('active-word');
-            }           
+                triggerWordJump(sp, dur);
+            } else if (!isNowActive && wasActive) {
+                sp.style.transition = '';
+                sp.classList.remove('active-word', 'word-jump');
+            }
+            sp.__wordWasActive = isNowActive;
+
             if (isJump) {
                 void sp.offsetWidth;
                 sp.classList.remove('no-transition');
             }
         });
+
+        lastWordLyricTime = currentTime;
+        lastWordLyricLineIndex = lastLyric;
     }
 
     // 检测是否为外语歌词
@@ -7576,6 +7702,8 @@
       rawLyricText = '';
       rawTlyricText = '';
       lastLyric = -1; // 重置歌词索引
+      lastWordLyricTime = -1;
+      lastWordLyricLineIndex = -1;
       pendingLyricsLayout = null;
       if (lyricsLayoutRAF) {
         cancelAnimationFrame(lyricsLayoutRAF);
@@ -7925,9 +8053,11 @@
                       span.style.setProperty('--p', '0%');
                       span.__lastWordProgress = 0;
                   }
-                  // 重置垂直偏移
+                  // 重置跳跃状态
+                  span.__wordWasActive = false;
+                  span.classList.remove('active-word', 'word-jump');
                   if (span.__lastLiftTransform !== 'translateY(0)') {
-                      span.style.transform = 'translateY(0)';
+                      span.style.transform = '';
                       span.__lastLiftTransform = 'translateY(0)';
                   }
                   span.style.transition = '';
@@ -7972,7 +8102,8 @@
                       span.style.setProperty('--p', '0%');
                       span.__lastWordProgress = 0;
                   }
-                  span.classList.remove('active-word');
+                  span.__wordWasActive = false;
+                  span.classList.remove('active-word', 'word-jump');
                   span.style.transition = '';
                   if (span.__lastLiftTransform !== 'translateY(0)') {
                       span.style.transform = '';
@@ -8292,6 +8423,8 @@
 
     audioPlayer.addEventListener('seeked', () => {
         const currentTime = audioPlayer.currentTime || 0;
+        lastWordLyricTime = -1;
+        lastWordLyricLineIndex = -1;
         resetAllWordsProgress();
         if (amLyricsData.length) {
             rebuildLyricsMetrics(amLyricsData);
@@ -9054,6 +9187,12 @@
             });
         }
 
+        if (enableWordLyricJump) {
+            enableWordLyricJump.addEventListener('change', function() {
+                applyWordLyricJumpSetting(this.checked, { persist: true, toast: true });
+            });
+        }
+
         document.querySelectorAll('input[name="lyricsAnimationMode"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 if (!e.target.checked) return;
@@ -9635,6 +9774,8 @@
       rawLyricText = '';
       rawTlyricText = '';
       lastLyric = -1;
+      lastWordLyricTime = -1;
+      lastWordLyricLineIndex = -1;
       pendingLyricsLayout = null;
       if (lyricsLayoutRAF) {
         cancelAnimationFrame(lyricsLayoutRAF);
@@ -10486,6 +10627,7 @@
     }
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
