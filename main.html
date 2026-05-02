@@ -6942,12 +6942,13 @@
         return true;
     }
 
-    function resetAllWordsProgress() {
+    function resetAllWordsProgress(targetLineIndex = -1) {
         if (!amLyricsData.length) return;
         
-        // 遍历所有歌词行，重置单词填充进度
-        for (const line of amLyricsData) {
-            if (!line.wordSpans || line.wordSpans.length === 0) continue;
+        const resetLine = (index) => {
+            if (index < 0 || index >= amLyricsData.length) return;
+            const line = amLyricsData[index];
+            if (!line || !line.wordSpans || line.wordSpans.length === 0) return;
             line.wordSpans.forEach(span => {
                 span.style.transition = 'none';
                 span.style.setProperty('--p', '0%');
@@ -6955,21 +6956,26 @@
                 span.__wordWasActive = false;
                 span.classList.remove('active-word', 'word-jump');
             });
-        }
+        };
         
-        // 强制浏览器重绘，确保 0% 被应用
-        void document.body.offsetHeight;
-        
-        // 延迟恢复过渡，避免后续填充时被禁用
-        setTimeout(() => {
+        // 只重置目标行及其相邻行（最多3行）
+        if (targetLineIndex >= 0) {
+            resetLine(targetLineIndex - 1);
+            resetLine(targetLineIndex);
+            resetLine(targetLineIndex + 1);
+        } else {
+            // 兜底：全部重置（保留旧逻辑，但仅在没有明确索引时使用）
             for (const line of amLyricsData) {
                 if (line.wordSpans) {
-                    line.wordSpans.forEach(span => {
-                        span.style.transition = '';
-                    });
+                    resetLine(amLyricsData.indexOf(line));
                 }
             }
-        }, 50);
+        }
+        
+        // 强制重绘：改用 requestAnimationFrame 合并，避免 layout thrashing
+        requestAnimationFrame(() => {
+            // 恢复过渡（由后续 updateWordFillInActiveLine 控制）
+        });
     }
 
     function resetLineWordReplayState(line) {
@@ -7983,9 +7989,17 @@
             targetFilter = `blur(${isHighlight ? 0 : Math.min(3.2, 1.2 + distance * 0.6)}px)`;
             targetScale = isHighlight ? 1.03 : Math.max(0.935, 0.985 - distance * 0.016);
           } else {
-            targetColor = isHighlight ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.2)';
-            targetOpacity = '1';
-            targetFilter = `blur(${distance}px)`;
+              const maxBlur = 6;
+              const hideBeyond = 12;
+              if (distance > hideBeyond) {
+                  targetOpacity = '0';
+                  targetFilter = 'none';
+              } else {
+                  targetOpacity = (1 - distance / (hideBeyond + 2)).toFixed(2);
+                  const blurPx = Math.min(distance * 0.8, maxBlur);
+                  targetFilter = `blur(${blurPx}px)`;
+              }
+              targetColor = isHighlight ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.2)';
           }
 
           const targetTransform = previewMode
@@ -8424,8 +8438,10 @@
     audioPlayer.addEventListener('seeked', () => {
         const currentTime = audioPlayer.currentTime || 0;
         lastWordLyricTime = -1;
-        lastWordLyricLineIndex = -1;
-        resetAllWordsProgress();
+        lastWordLyricLineIndex = -1; 
+        let targetIdx = findActiveLyricIndex(currentTime);
+        if (targetIdx === -1 && amLyricsData.length > 0) targetIdx = 0;
+        resetAllWordsProgress(targetIdx);
         if (amLyricsData.length) {
             rebuildLyricsMetrics(amLyricsData);
         }
@@ -9692,15 +9708,14 @@
         return { id: official.id, accesskey: official.accesskey };
     }
 
-    // 获取逐字歌词内容（带 token + credentials）
     async function fetchKugouLyricContent(id, accesskey) {
         if (!kugouToken) throw new Error('请先登录酷狗账号');
         const url = `${KUGOU_API_BASE}/lyric?id=${id}&accesskey=${accesskey}&decode=true&token=${kugouToken}`;
         const res = await wrappedFetch(url, { credentials: 'include' });
         if (!res.ok) throw new Error('获取歌词内容失败');
         const data = await res.json();
-        if (data.status !== 200) throw new Error(data.info || '获取失败');
-        return data.decodeContent;
+        if (data.status !== 200 || !data.decodeContent) throw new Error(data.info || '获取失败');
+        return data;
     }
 
     function parseKugouKrc(krcText) {
@@ -9903,38 +9918,16 @@
     }
 
     async function fetchKugouWordLyricsWithNeteaseTranslation(songName, artist) {
-      console.log(`[酷狗] 开始处理歌曲: ${songName} - ${artist}`);
-
-      let wordLines = [];
-      try {
-        // 1. 先请求酷狗歌词
-        wordLines = await fetchKugouLyricsOnly(songName, artist);
-        console.log(`[酷狗] 原文获取成功，共 ${wordLines.length} 行`);
-      } catch (error) {
-        console.error('[酷狗] 逐字歌词获取失败:', error);
-        showError(`酷狗歌词失败: ${error?.message || '未知错误'}`, 3000);
-        return [];
-      }
-
-      if (!wordLines.length) return [];
-
-      let translationLines = [];
-      try {
-        // 2. 酷狗歌词请求成功后，再串行请求网易云翻译，避免并发导致 API 限流或拦截
-        console.log(`[酷狗] 开始请求网易云翻译: ${songName} - ${artist}`);
-        translationLines = await fetchNeteaseTranslation(songName, artist);
-        console.log(`[酷狗] 网易云翻译获取成功，共 ${translationLines.length} 行`);
-      } catch (error) {
-        console.error('[酷狗] 网易云翻译获取失败:', error);
-      }
-
-      if (translationLines.length) {
-        console.log('[酷狗] 已合并网易云翻译');
-        return mergeTranslationToWordLines(wordLines, translationLines);
-      }
-
-      console.log('[酷狗] 已请求网易云翻译，但当前无可用翻译，继续仅显示原文');
-      return wordLines;
+        console.log(`[酷狗] 开始处理歌曲: ${songName} - ${artist}`);
+        try {
+            // 直接调用增强后的 fetchKugouLyricsOnly，它已经包含了酷狗内置翻译
+            const wordLines = await fetchKugouLyricsOnly(songName, artist);
+            return wordLines;
+        } catch (error) {
+            console.error('[酷狗] 逐字歌词获取失败:', error);
+            showError(`酷狗歌词失败: ${error?.message || '未知错误'}`, 3000);
+            return [];
+        }
     }
 
     function mergeTranslationToWordLines(wordLines, transLines) {
@@ -10068,12 +10061,32 @@
             triggerKugouReLogin();
             throw new Error('请先登录酷狗账号');
         }
+        
         const keyword = `${songName} ${artistName}`;
         const hash = await searchKugouSong(keyword);
         const { id, accesskey } = await getKugouLyricInfo(hash);
-        const krcContent = await fetchKugouLyricContent(id, accesskey);
-        const wordLines = parseKugouKrc(krcContent);  // 解析 KRC 格式
+        const fullData = await fetchKugouLyricContent(id, accesskey);  // 现在返回完整对象
+        const decodeContent = fullData.decodeContent;
+        
+        // 1. 解析逐字歌词（原文）
+        const wordLines = parseKugouKrc(decodeContent);
         if (!wordLines.length) throw new Error('未解析到逐字歌词');
+        
+        // 2. 解析酷狗自带的翻译
+        const kugouTranslations = parseKugouTranslationFromDecode(decodeContent);
+        if (kugouTranslations.length) {
+            // 按顺序将翻译赋给 wordLines（对齐索引，跳过开头可能的无翻译项）
+            const minLen = Math.min(wordLines.length, kugouTranslations.length);
+            for (let i = 0; i < minLen; i++) {
+                if (kugouTranslations[i] && kugouTranslations[i].trim()) {
+                    wordLines[i].translation = kugouTranslations[i].trim();
+                }
+            }
+            console.log(`[酷狗] 已合并 ${minLen} 行内置翻译`);
+        } else {
+            console.log('[酷狗] 未找到酷狗内置翻译，将仅显示原文');
+        }
+        
         return wordLines;
     }
     function setCollapsedTextAnimated(newText, skipAnimation = false) {
@@ -10571,9 +10584,8 @@
       return [
         '您好，您正在歌词重新请求界面。',
         '请您先阅读以下提示：',
-        '1.该功能目前主要用于酷狗源逐字歌词；重新请求时会同时补请求网易云翻译。',
-        `2.您当前正在播放的歌曲：${getCurrentPlayingSongName()} ，接下来的重新请求将对该歌曲的歌词进行请求。`,
-        '3.请勿滥用此功能。'
+        `1.您当前正在播放的歌曲：${getCurrentPlayingSongName()} ，接下来的重新请求将对该歌曲的歌词进行请求。`,
+        `2.重新请求的歌词将会覆盖当前歌词，当您切换逐字歌词库时可使用该功能。`,
       ].join('\n');
     }
 
@@ -10624,6 +10636,44 @@
         lyricsRerequestInProgress = false;
         updateLyricsRerequestDialog();
       }
+    }
+    function parseKugouTranslationFromDecode(decodeContent) {
+        if (!decodeContent || typeof decodeContent !== 'string') return [];
+        
+        // 提取 [language:base64] 标记
+        const langMatch = decodeContent.match(/\[language:([A-Za-z0-9+/=]+)\]/);
+        if (!langMatch) return [];
+        
+        try {
+            const base64Str = langMatch[1];
+            const decoded = atob(base64Str);
+            const langData = JSON.parse(decoded);
+            
+            // 提取 lyricContent 数组（酷狗翻译内容）
+            if (langData.content && Array.isArray(langData.content)) {
+                for (const item of langData.content) {
+                    // language=0 通常代表翻译，type=1 表示歌词相关
+                    if (item.language === 0 && item.type === 1 && Array.isArray(item.lyricContent)) {
+                        // 扁平化提取每行的翻译文本（每个元素可能是 ["翻译文本"] 或 ["", "翻译"] 等形式）
+                        const translations = [];
+                        for (const lyricPart of item.lyricContent) {
+                            let transText = '';
+                            if (Array.isArray(lyricPart) && lyricPart.length > 0) {
+                                // 取第一个非空字符串作为翻译
+                                transText = lyricPart.find(t => t && t.trim()) || '';
+                            } else if (typeof lyricPart === 'string') {
+                                transText = lyricPart;
+                            }
+                            translations.push(transText);
+                        }
+                        return translations;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('解析酷狗翻译失败:', e);
+        }
+        return [];
     }
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
