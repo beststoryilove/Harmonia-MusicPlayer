@@ -4228,29 +4228,6 @@
       width: 100%;
       justify-content: center;
     }
-    @keyframes wordLyricJump {
-      0% { transform: translateY(0) scale(1); }
-      55% { transform: translateY(-5px) scale(1.12); }
-      100% { transform: translateY(-5px) scale(1.12); }
-    }
-    .word-lyric.active-word {
-      transform: translateY(-5px) scale(1.12);
-      color: rgba(255, 255, 255, 0.55);
-      text-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
-    }
-    .word-lyric.word-jump {
-      animation: wordLyricJump var(--word-jump-duration, 0.42s) cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    }
-    body.word-lyric-jump-disabled .word-lyric.word-jump {
-      animation: none !important;
-    }
-    body.word-lyric-jump-disabled .word-lyric.active-word {
-      transform: none !important;
-      text-shadow: none !important;
-    }
-    .word-lyric.no-transition::after {
-      transition: none !important;
-    }
     body.light-theme .word-lyric.active-word {
       color: rgba(0, 0, 0, 0.65);
       text-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
@@ -4827,6 +4804,8 @@
     const lyricsRerequestCopy = document.getElementById('lyricsRerequestCopy');
     const lyricsRerequestCancelBtn = document.getElementById('lyricsRerequestCancelBtn');
     const lyricsRerequestConfirmBtn = document.getElementById('lyricsRerequestConfirmBtn');
+    const LIFT_AMOUNT_PX = 2; 
+    const LIFT_CURVE_POWER = 10; 
 
     // ===== State =====
     let currentPage = 1;
@@ -6944,7 +6923,6 @@
 
     function resetAllWordsProgress(targetLineIndex = -1) {
         if (!amLyricsData.length) return;
-        
         const resetLine = (index) => {
             if (index < 0 || index >= amLyricsData.length) return;
             const line = amLyricsData[index];
@@ -6957,38 +6935,31 @@
                 span.classList.remove('active-word', 'word-jump');
             });
         };
-        
-        // 只重置目标行及其相邻行（最多3行）
         if (targetLineIndex >= 0) {
             resetLine(targetLineIndex - 1);
             resetLine(targetLineIndex);
             resetLine(targetLineIndex + 1);
         } else {
-            // 兜底：全部重置（保留旧逻辑，但仅在没有明确索引时使用）
             for (const line of amLyricsData) {
                 if (line.wordSpans) {
                     resetLine(amLyricsData.indexOf(line));
                 }
             }
         }
-        
-        // 强制重绘：改用 requestAnimationFrame 合并，避免 layout thrashing
         requestAnimationFrame(() => {
-            // 恢复过渡（由后续 updateWordFillInActiveLine 控制）
         });
     }
 
     function resetLineWordReplayState(line) {
         if (!line?.ele) return;
         const spans = line.wordSpans || (line.wordSpans = Array.from(line.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
-        spans.forEach(span => {
-            span.classList.remove('active-word', 'word-jump');
-            span.style.transition = '';
-            span.style.transform = '';
-            span.style.setProperty('--p', '0%');
-            span.__lastWordProgress = 0;
-            span.__wordWasActive = false;
-            span.__lastLiftTransform = 'translateY(0)';
+        spans.forEach(sp => {
+            sp.classList.remove('active-word', 'word-jump');
+            sp.style.transform = 'translateY(0)';
+            sp.style.setProperty('--p', '0%');
+            sp.__lastProgress = 0;
+            sp.__wordWasActive = false;
+            sp.__lastLiftTransform = undefined;
         });
     }
 
@@ -6999,10 +6970,10 @@
     function clearWordLyricJumpState() {
         document.querySelectorAll('.word-lyric').forEach(span => {
             span.classList.remove('active-word', 'word-jump', 'no-transition');
-            span.style.transition = '';
-            span.style.transform = '';
-            span.style.removeProperty('--word-jump-duration');
+            span.style.transform = 'translateY(0)';
+            span.style.setProperty('--p', '0%');
             span.__wordWasActive = false;
+            span.__lastProgress = 0;
         });
         lastWordLyricTime = -1;
         lastWordLyricLineIndex = -1;
@@ -7017,10 +6988,19 @@
             enableWordLyricJump.checked = lyricsSettings.wordLyricsJumpEnabled;
         }
 
-        // 立即刷新当前行状态：关闭时清掉已抬起的字，开启时让当前字重新触发跳跃。
-        clearWordLyricJumpState();
-        if (lastLyric >= 0 && amLyricsData.length) {
-            updateWordFillInActiveLine(audioPlayer.currentTime || 0, true);
+        // 立即刷新当前状态：禁用时强制清空所有上升
+        if (!lyricsSettings.wordLyricsJumpEnabled) {
+            document.querySelectorAll('.word-lyric').forEach(span => {
+                span.style.transform = 'translateY(0)';
+                span.classList.remove('active-word', 'word-jump');
+                span.__wordWasActive = false;
+            });
+        } else {
+            // 重新启用时，用当前播放时间刷新一次
+            const t = audioPlayer.currentTime || 0;
+            if (lastLyric >= 0 && amLyricsData.length) {
+                updateWordFillInActiveLine(t, true);
+            }
         }
 
         if (persist) {
@@ -7028,36 +7008,16 @@
         }
         if (toast) {
             showDynamicIslandToast(
-                lyricsSettings.wordLyricsJumpEnabled ? '已开启逐字歌词跳跃动画' : '已关闭逐字歌词跳跃动画',
+                lyricsSettings.wordLyricsJumpEnabled ? '已开启逐字渐进上升' : '已关闭逐字上升',
                 2200
             );
         }
-    }
-
-    function triggerWordJump(span, duration) {
-        if (!isWordLyricJumpEnabled()) return;
-        const jumpDuration = Math.min(Math.max(duration * 0.75, 0.25), 1.5);
-        span.style.setProperty('--word-jump-duration', `${jumpDuration}s`);
-        span.classList.remove('word-jump');
-        // 强制重排：即使这个词之前已经播放过，也能重新启动跳跃动画
-        void span.offsetWidth;
-        span.classList.add('word-jump');
     }
 
     function updateWordFillInActiveLine(currentTime, force = false) {
         if (!amLyricsData?.length || lastLyric < 0) return;
         const line = amLyricsData[lastLyric];
         if (!line?.ele) return;
-
-        // 回放/拖动到更早时间时，同一句歌词的 word span 仍可能保留 active 状态。
-        // 先清掉状态，后面重新计算进度并重新触发跳跃动画。
-        const isSameLineReplay = lastWordLyricLineIndex === lastLyric &&
-            lastWordLyricTime >= 0 &&
-            currentTime < lastWordLyricTime - 0.05;
-        if (isSameLineReplay) {
-            resetLineWordReplayState(line);
-            force = true;
-        }
 
         const spans = line.wordSpans || (line.wordSpans = Array.from(line.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
         if (!spans.length) return;
@@ -7068,7 +7028,6 @@
             const dur = Math.max(we - ws, 0.001);
             let p = 0;
             const isNowActive = currentTime > ws;
-            const wasActive = sp.__wordWasActive === true;
 
             if (currentTime <= ws) {
                 p = 0;
@@ -7080,31 +7039,31 @@
                 if (p > 100) p = 100;
             }
 
+            // 更新填充宽度
             const currentPStr = p.toFixed(1);
-            const lastP = parseFloat(sp.__lastWordProgress || 0);
-            const isJump = Math.abs(p - lastP) > 30;
-
-            if (isJump) {
-                sp.classList.add('no-transition');
-            }
-            if (force || sp.__lastWordProgress !== currentPStr) {
+            if (sp.__lastProgress !== currentPStr) {
                 sp.style.setProperty('--p', `${currentPStr}%`);
-                sp.__lastWordProgress = currentPStr;
+                sp.__lastProgress = currentPStr;
             }
 
-            if (isNowActive && !wasActive) {
-                sp.style.transition = `color 0.2s ease, text-shadow 0.2s ease`;
+            // 计算渐进上升高度
+            let lift = 0;
+            if (isNowActive && p > 0) {
+                const t = p / 100;                     // 0 ~ 1
+                const curved = Math.pow(t, LIFT_CURVE_POWER);   // 幂次方曲线
+                lift = curved * LIFT_AMOUNT_PX;
+            }
+
+            // 应用上升（transition 已由 CSS 设置）
+            sp.style.transform = `translateY(-${lift.toFixed(2)}px)`;
+
+            // 管理 active-word 类（用于颜色和发光）
+            if (isNowActive && !sp.__wordWasActive) {
                 sp.classList.add('active-word');
-                triggerWordJump(sp, dur);
-            } else if (!isNowActive && wasActive) {
-                sp.style.transition = '';
-                sp.classList.remove('active-word', 'word-jump');
-            }
-            sp.__wordWasActive = isNowActive;
-
-            if (isJump) {
-                void sp.offsetWidth;
-                sp.classList.remove('no-transition');
+                sp.__wordWasActive = true;
+            } else if (!isNowActive && sp.__wordWasActive) {
+                sp.classList.remove('active-word');
+                sp.__wordWasActive = false;
             }
         });
 
@@ -8057,24 +8016,22 @@
       const activeIndex = findActiveLyricIndex(currentTime);
       if (activeIndex === -1 || lastLyric === activeIndex) return;
 
-      if (lastLyric >= 0 && lastLyric < amLyricsData.length) {
+      if (lastLyric >= 0 && lastLyric < amLyricsData.length && lastLyric !== activeIndex) {
           const prevLine = amLyricsData[lastLyric];
           if (prevLine?.ele) {
               const prevSpans = prevLine.wordSpans || (prevLine.wordSpans = Array.from(prevLine.ele.querySelectorAll('span.word-lyric[data-wstart][data-wend]')));
               prevSpans.forEach(span => {
-                  // 重置填充进度
-                  if (span.__lastWordProgress !== 0) {
-                      span.style.setProperty('--p', '0%');
-                      span.__lastWordProgress = 0;
-                  }
-                  // 重置跳跃状态
+                  // 移除高亮类
+                  span.classList.remove('active-word');
                   span.__wordWasActive = false;
-                  span.classList.remove('active-word', 'word-jump');
-                  if (span.__lastLiftTransform !== 'translateY(0)') {
-                      span.style.transform = '';
-                      span.__lastLiftTransform = 'translateY(0)';
-                  }
+                  // 重置填充进度
+                  span.style.setProperty('--p', '0%');
+                  span.__lastProgress = 0;
+                  // 重置上升高度（必须显式设置）
+                  span.style.transform = 'translateY(0)';
+                  // 清除可能的旧动画残留属性
                   span.style.transition = '';
+                  delete span.__currentLift;
               });
           }
       }
