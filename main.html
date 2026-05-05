@@ -552,10 +552,22 @@
       margin-right: 12px;
     }
 
+    .island-result-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      min-width: 0;
+    }
+
     .island-result-title {
+      flex: 1;
+      min-width: 0;
       font-weight: 600;
       font-size: 15px;
-      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       color: var(--text-dark);
     }
 
@@ -1022,12 +1034,49 @@
     }
 
     .sidebar-item-title {
+      flex: 1;
+      min-width: 0;
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       font-size: 15px;
+      margin-bottom: 0;
+    }
+
+    .sidebar-item-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
       margin-bottom: 3px;
+    }
+
+    .source-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      line-height: 1.6;
+      white-space: nowrap;
+      border: 1px solid transparent;
+      flex-shrink: 0;
+    }
+
+    .source-badge.netease {
+      color: #ff8fa4;
+      background: rgba(255, 59, 92, 0.16);
+      border-color: rgba(255, 108, 135, 0.35);
+    }
+
+    .source-badge.kugou {
+      color: #8ec7ff;
+      background: rgba(0, 122, 255, 0.16);
+      border-color: rgba(82, 169, 255, 0.35);
     }
 
     .sidebar-item-artist {
@@ -3089,6 +3138,18 @@
       color: var(--text-light);
     }
 
+    body.light-theme .source-badge.netease {
+      color: #cc2444;
+      background: rgba(255, 59, 92, 0.15);
+      border-color: rgba(255, 59, 92, 0.35);
+    }
+
+    body.light-theme .source-badge.kugou {
+      color: #0b5eb8;
+      background: rgba(0, 122, 255, 0.14);
+      border-color: rgba(0, 122, 255, 0.3);
+    }
+
     body.light-theme .sidebar {
       background: rgba(255,255,255,0.65) !important;
       border-right: 1px solid rgba(0,0,0,0.08) !important;
@@ -4372,6 +4433,18 @@
         </div>
 
         <div class="settings-group">
+          <div class="group-title">音乐音源</div>
+          <div class="setting-item vertical">
+            <div class="item-label">默认搜索与播放音源</div>
+            <div class="segmented-control">
+              <label><input type="radio" name="musicSource" value="netease" checked><span>网易云</span></label>
+              <label><input type="radio" name="musicSource" value="kugou"><span>酷狗</span></label>
+            </div>
+            <div class="item-desc" style="margin-top: 6px;">切换后会同时影响搜索、播放和列表来源标识。</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
           <div class="group-title">逐字歌词</div>
           <div class="setting-item">
             <div class="item-info">
@@ -4793,9 +4866,11 @@
     const enableWordLyrics = document.getElementById('enableWordLyrics');
     const enableWordLyricJump = document.getElementById('enableWordLyricJump');
     const neteaseProxyInput = document.getElementById('neteaseProxyInput');
+    const musicSourceRadios = document.querySelectorAll('input[name="musicSource"]');
     const BUILTIN_NETEASE_PROXIES = ['https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url='];
     const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const collapsedTextSpan = document.querySelector('.collapsed-text'); // 灵动岛折叠文字
+    const MUSIC_SOURCE_KEY = 'musicSource';
     const ALBUM_KEY = 'albumEffectEnabled';
     const LYRICS_ANIMATION_MODE_KEY = 'lyricsAnimationMode';
     const PLAYER_CONTROLS_LAYOUT_KEY = 'playerControlsLayout';
@@ -4807,13 +4882,99 @@
     const LIFT_AMOUNT_PX = 2; 
     const LIFT_CURVE_POWER = 10; 
 
+    function normalizeMusicSource(source) {
+      return source === 'kugou' ? 'kugou' : 'netease';
+    }
+
+    function getMusicSourceName(source) {
+      return normalizeMusicSource(source) === 'kugou' ? '酷狗' : '网易云';
+    }
+
+    function getSongSource(song) {
+      return normalizeMusicSource(song?.source || currentSettings?.source || 'netease');
+    }
+
+    function normalizeKugouImageUrl(url) {
+      if (typeof url !== 'string' || !url.trim()) return '';
+      return url.replace('{size}', '500');
+    }
+
+    function extractNameFromKugouFileName(fileName, fallbackArtist = '') {
+      if (typeof fileName !== 'string') return '';
+      const splitMark = ' - ';
+      const idx = fileName.indexOf(splitMark);
+      if (idx > 0) {
+        const artistPart = fileName.slice(0, idx).trim();
+        const titlePart = fileName.slice(idx + splitMark.length).trim();
+        if (titlePart) return titlePart;
+        if (!fallbackArtist && artistPart) return artistPart;
+      }
+      return fileName.trim();
+    }
+
+    function toArtistText(artist) {
+      return Array.isArray(artist) ? artist.join('、') : (artist || '未知歌手');
+    }
+
+    function normalizeTrack(track = {}, fallbackSource = 'netease') {
+      const source = normalizeMusicSource(track.source || fallbackSource);
+      return {
+        ...track,
+        source
+      };
+    }
+
+    function normalizeStoredTrackList(list) {
+      if (!Array.isArray(list)) return [];
+      return list
+        .filter(item => item && typeof item === 'object')
+        .map(item => normalizeTrack(item, 'netease'));
+    }
+
+    function normalizeKugouSearchResult(item = {}) {
+      const hash = (item.FileHash || item.Hash || item.SQ?.Hash || '').trim();
+      if (!hash) return null;
+      const artist = item.SingerName || (Array.isArray(item.Singers) ? item.Singers.map(x => x?.name).filter(Boolean).join('、') : '');
+      const name = item.OriSongName || extractNameFromKugouFileName(item.FileName || '', artist) || '未知歌曲';
+      return {
+        id: hash,
+        hash,
+        source: 'kugou',
+        name,
+        artist: artist || '未知歌手',
+        album: item.AlbumName || '',
+        pic_id: normalizeKugouImageUrl(item.Image || ''),
+        lyric_id: hash,
+        duration: Number(item.Duration) || 0
+      };
+    }
+
+    function getSourceBadgeHtml(song) {
+      const source = getSongSource(song);
+      return `<span class="source-badge ${source}">${getMusicSourceName(source)}</span>`;
+    }
+
+    function applyMusicSource(source, { persist = true, toast = false } = {}) {
+      const normalized = normalizeMusicSource(source);
+      currentSettings.source = normalized;
+      musicSourceRadios.forEach(radio => {
+        radio.checked = radio.value === normalized;
+      });
+      if (persist) {
+        localStorage.setItem(MUSIC_SOURCE_KEY, normalized);
+      }
+      if (toast) {
+        showDynamicIslandToast(`已切换音源：${getMusicSourceName(normalized)}`, 1800);
+      }
+    }
+
     // ===== State =====
     let currentPage = 1;
     let currentSearchResults = [];
     let currentTrackIndex = -1;
-    let playlist = JSON.parse(localStorage.getItem('musicPlaylist')) || [];
-    let favorites = JSON.parse(localStorage.getItem('musicFavorites')) || [];
-    let history = JSON.parse(localStorage.getItem('musicHistory')) || [];
+    let playlist = normalizeStoredTrackList(JSON.parse(localStorage.getItem('musicPlaylist')) || []);
+    let favorites = normalizeStoredTrackList(JSON.parse(localStorage.getItem('musicFavorites')) || []);
+    let history = normalizeStoredTrackList(JSON.parse(localStorage.getItem('musicHistory')) || []);
     let currentPlaylistIdx = -1;
     let currentActivePlaylist = playlist;
     let currentWallpaperUrl = '';
@@ -4847,6 +5008,7 @@
     let playerControlsLayout = 'classic';
     let kugouToken = localStorage.getItem('kugouToken') || '';
     let kugouUserId = localStorage.getItem('kugouUserId') || '';
+    let kugouDfid = localStorage.getItem('kugouDfid') || '';
     let collapsedTextAnimationQueue = Promise.resolve();
     let currentCollapsedTextAnimationTimer = null;
     let sidebarIndexCache = { playlist: new Map(), favorites: new Map(), history: new Map() };
@@ -5705,6 +5867,9 @@
               radio.checked = true;
           }
       });
+
+      const savedMusicSource = localStorage.getItem(MUSIC_SOURCE_KEY) || currentSettings.source || 'netease';
+      applyMusicSource(savedMusicSource, { persist: false, toast: false });
     }
 
     // 保存翻译设置
@@ -5723,6 +5888,8 @@
       lyricsSettings.wordLyricsJumpEnabled = enableWordLyricJump ? !!enableWordLyricJump.checked : true;
       lyricsSettings.neteaseProxy = neteaseProxyInput.value.trim();
       localStorage.setItem('lyricsSettings', JSON.stringify(lyricsSettings));
+      const selectedMusicSource = document.querySelector('input[name="musicSource"]:checked')?.value || currentSettings.source;
+      applyMusicSource(selectedMusicSource, { persist: true, toast: false });
       showDynamicIslandToast('设置已保存', 2500);
     }
 
@@ -5922,9 +6089,10 @@
     }
 
     function addToPlaylist(track) {
-      const exists = playlist.some(x => x.id === track.id);
+      const normalizedTrack = normalizeTrack(track, currentSettings.source);
+      const exists = playlist.some(x => x.id === normalizedTrack.id && getSongSource(x) === getSongSource(normalizedTrack));
       if (!exists) {
-        playlist.push(track);
+        playlist.push(normalizedTrack);
         savePlaylist();
         updatePlaylistOrder(); // 更新顺序
         if (currentTab === 'playlist') renderPlaylist();
@@ -6110,7 +6278,8 @@
           d.classList.add('active');
         }
 
-        const artists = Array.isArray(item.artist) ? item.artist.join('、') : (item.artist || '未知歌手');
+        const artists = toArtistText(item.artist);
+        const sourceBadge = getSourceBadgeHtml(item);
         const extra = currentTab === 'history'
           ? `<div class="sidebar-item-time" style="font-size:11px;color:var(--text-muted-dark);margin-top:3px;">${formatDate(item.timestamp)}</div>`
           : '';
@@ -6121,7 +6290,10 @@
         d.innerHTML = `
           ${dragHandle}
           <div class="sidebar-item-info">
-            <div class="sidebar-item-title">${item.name || '未知歌曲'}</div>
+            <div class="sidebar-item-title-row">
+              <div class="sidebar-item-title">${item.name || '未知歌曲'}</div>
+              ${sourceBadge}
+            </div>
             <div class="sidebar-item-artist">${artists}</div>
             ${extra}
           </div>
@@ -6384,9 +6556,10 @@
     }
 
     function addToPlaylist(track) {
-      const exists = playlist.some(x => x.id === track.id);
+      const normalizedTrack = normalizeTrack(track, currentSettings.source);
+      const exists = playlist.some(x => x.id === normalizedTrack.id && getSongSource(x) === getSongSource(normalizedTrack));
       if (!exists) {
-        playlist.push(track);
+        playlist.push(normalizedTrack);
         savePlaylist();
         if (currentTab === 'playlist') renderPlaylist();
         showError('已添加到播放列表', 1500);
@@ -6396,9 +6569,10 @@
     }
 
     function addToFavorites(track) {
-      const exists = favorites.some(x => x.id === track.id);
+      const normalizedTrack = normalizeTrack(track, currentSettings.source);
+      const exists = favorites.some(x => x.id === normalizedTrack.id && getSongSource(x) === getSongSource(normalizedTrack));
       if (!exists) {
-        favorites.push(track);
+        favorites.push(normalizedTrack);
         saveFavorites();
         if (currentTab === 'favorites') renderPlaylist();
         showError('已添加到收藏', 1500);
@@ -6410,12 +6584,15 @@
     }
 
     function addToHistory(track) {
-      const existingIdx = history.findIndex(x => x.id === track.id);
+      const normalizedTrack = normalizeTrack(track, currentSettings.source);
+      const existingIdx = history.findIndex(x => x.id === normalizedTrack.id && getSongSource(x) === getSongSource(normalizedTrack));
       if (existingIdx !== -1) {
         history.splice(existingIdx, 1);
       }
-      track.timestamp = Date.now();
-      history.push(track);
+      history.push({
+        ...normalizedTrack,
+        timestamp: Date.now()
+      });
       if (history.length > 50) history.shift();
       saveHistory();
       if (currentTab === 'history') renderPlaylist();
@@ -6491,7 +6668,7 @@
         const source = localStorage.getItem('wordLyricsSource') || 'netease';
 
         if (source === 'netease') {
-          const isNetease = (song.source === 'netease' || currentSettings.source === 'netease');
+          const isNetease = getSongSource(song) === 'netease';
           if (isNetease) {
             try {
               const neteaseLyricJson = await fetchNeteaseLyricAll(song.id);
@@ -6524,12 +6701,34 @@
       }
 
       if (!usedWordLyrics) {
-        const lyr = await fetchLyrics(song.lyric_id, song.source);
-        if (lyr) {
-          const processedLyr = await processLyricTranslation(lyr);
-          displayAMLyrics(processedLyr);
-        } else {
-          displayAMLyrics(null);
+        const songSource = getSongSource(song);
+        if (songSource === 'kugou') {
+          try {
+            const songName = song.name || '未知歌曲';
+            const artist = Array.isArray(song.artist) ? song.artist.filter(Boolean).join(' ') : (song.artist || '');
+            const finalLines = await fetchKugouWordLyricsWithNeteaseTranslation(songName, artist);
+            if (finalLines.length) {
+              displayKugouWordLyrics(finalLines);
+              usedWordLyrics = true;
+            }
+          } catch (e) {
+            console.warn('酷狗歌词兜底失败', e);
+          }
+        }
+
+        if (!usedWordLyrics) {
+          if (songSource === 'kugou') {
+            displayAMLyrics(null);
+          } else {
+            const lyricId = song.lyric_id || song.id;
+            const lyr = await fetchLyrics(lyricId, songSource);
+            if (lyr) {
+              const processedLyr = await processLyricTranslation(lyr);
+              displayAMLyrics(processedLyr);
+            } else {
+              displayAMLyrics(null);
+            }
+          }
         }
       }
 
@@ -7254,7 +7453,14 @@
 
     async function getAlbumArtUrl(picId, source = currentSettings.source) {
         try {
-            const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=${source}&id=${picId}&size=500`);
+            const normalizedSource = normalizeMusicSource(source);
+            if (normalizedSource === 'kugou') {
+                const directUrl = normalizeKugouImageUrl(picId);
+                if (/^https?:\/\//i.test(directUrl)) {
+                    return directUrl;
+                }
+            }
+            const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=${normalizedSource}&id=${encodeURIComponent(picId)}&size=500`);
             if (!r.ok) throw new Error('无法获取专辑图片');
             const data = await r.json();
             if (!data.url) throw new Error('无效的专辑图片URL');
@@ -7363,9 +7569,16 @@
         updateBgVisual(savedMode);
     });
 
-    async function getAudioUrl(id, source = currentSettings.source) {
+    async function getAudioUrl(id, source = currentSettings.source, song = null) {
         try {
-            const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${source}&id=${id}&br=${currentSettings.quality}`);
+            const normalizedSource = normalizeMusicSource(source);
+            if (normalizedSource === 'kugou') {
+                const hash = String(song?.hash || song?.id || id || '').trim();
+                if (!hash) throw new Error('缺少酷狗歌曲 hash');
+                return await getKugouAudioUrlByHash(hash);
+            }
+            const playableId = song?.songId || id;
+            const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${normalizedSource}&id=${encodeURIComponent(playableId)}&br=${currentSettings.quality}`);
             const data = await r.json();
             if (!data.url) throw new Error('无法获取音频链接');
             return data.url.replace(/\\/g, '');
@@ -7373,6 +7586,21 @@
             console.error('Error fetching audio URL:', e);
             throw e;
         }
+    }
+
+    async function searchKugouTracks(query, page = 1, pageSize = 20) {
+        if (!kugouToken) {
+            throw new Error('请先在设置-账户中登录酷狗账号');
+        }
+        const url = `${KUGOU_API_BASE}/search?keywords=${encodeURIComponent(query)}&page=${page}&pagesize=${pageSize}&token=${encodeURIComponent(kugouToken)}`;
+        const res = await wrappedFetch(url, { credentials: 'include' });
+        if (!res.ok) throw new Error('酷狗搜索失败');
+        const payload = await res.json();
+        const lists = payload?.data?.lists;
+        if (payload?.status !== 1 || !Array.isArray(lists)) {
+            throw new Error(payload?.error_msg || payload?.msg || '酷狗搜索结果异常');
+        }
+        return lists.map(normalizeKugouSearchResult).filter(Boolean);
     }
 
     // ===== 搜索与播放逻辑 =====
@@ -7386,10 +7614,20 @@
 
         try {
             clearError();
-            const r = await fetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=${currentSettings.source}&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
-            
-            if (!r.ok) throw new Error('搜索失败');
-            const data = await r.json();
+            const source = normalizeMusicSource(currentSettings.source);
+            let data = [];
+
+            if (source === 'kugou') {
+                data = await searchKugouTracks(query, page, 20);
+            } else {
+                const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=${source}&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
+                if (!r.ok) throw new Error('搜索失败');
+                const raw = await r.json();
+                data = Array.isArray(raw)
+                    ? raw.map(item => normalizeTrack({ ...item, source, songId: item?.songId || item?.id }, source))
+                    : [];
+            }
+
             if (!data || data.length === 0) throw new Error('未找到相关歌曲');
 
             currentSearchResults = data;
@@ -7486,10 +7724,14 @@
         const item = document.createElement('div');
         item.className = 'island-result-item';
         item.dataset.index = idx;
-        const artists = Array.isArray(song.artist) ? song.artist.join('、') : (song.artist || '未知歌手');
+        const artists = toArtistText(song.artist);
+        const sourceBadge = getSourceBadgeHtml(song);
         item.innerHTML = `
           <div class="island-result-info">
-            <div class="island-result-title">${song.name || '未知歌曲'}</div>
+            <div class="island-result-title-row">
+              <div class="island-result-title">${song.name || '未知歌曲'}</div>
+              ${sourceBadge}
+            </div>
             <div class="island-result-artist">${artists}</div>
           </div>
           <div class="island-result-actions">
@@ -7526,12 +7768,14 @@
         }
 
         nowPlayingTitle.textContent = song.name || '未知歌曲';
+        const songSourceName = getMusicSourceName(song?.source);
+        const artistText = toArtistText(song.artist);
         if (nowPlayingArtist) {
-          nowPlayingArtist.textContent = Array.isArray(song.artist) ? song.artist.join('、') : (song.artist || '未知歌手');
+          nowPlayingArtist.textContent = `${songSourceName} · ${artistText}`;
         }
         currentSongInfo = {
           name: song.name || '未知歌曲',
-          artist: Array.isArray(song.artist) ? song.artist.join('、') : (song.artist || '未知歌手'),
+          artist: `${songSourceName} · ${artistText}`,
           album: song.album || ''
         };
         currentSongData = song;
@@ -7553,7 +7797,7 @@
         await loadAlbumArt(song.pic_id, song.source);
 
         await requestLyricsOnlyForSong(song);
-        const audioUrl = await getAudioUrl(song.id, song.source);
+        const audioUrl = await getAudioUrl(song.id, song.source, song);
         audioPlayer.crossOrigin = 'anonymous';
 
         if (eqSettings.enabled && !eqGraphInitialized) {
@@ -9205,6 +9449,13 @@
         initSidebarControls();
         initDragAndDrop();
 
+        musicSourceRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (!e.target.checked) return;
+                applyMusicSource(e.target.value, { persist: true, toast: true });
+            });
+        });
+
         function initWordLyricsSource() {
             const savedSource = localStorage.getItem('wordLyricsSource') || 'netease';
             const radios = document.querySelectorAll('input[name="wordLyricsSource"]');
@@ -9639,6 +9890,60 @@
         kugouToken = token;
         kugouUserId = userid;
         return data;
+    }
+
+    async function ensureKugouDfid(forceRefresh = false) {
+        if (!forceRefresh && kugouDfid) {
+            return kugouDfid;
+        }
+        const res = await wrappedFetch(`${KUGOU_API_BASE}/register/dev`, { credentials: 'include' });
+        if (!res.ok) throw new Error('获取酷狗 dfid 失败');
+        const data = await res.json();
+        const dfid = data?.data?.dfid;
+        if (!dfid) throw new Error('未获取到有效的 dfid');
+        kugouDfid = String(dfid);
+        localStorage.setItem('kugouDfid', kugouDfid);
+        return kugouDfid;
+    }
+
+    function pickKugouPlayableUrl(payload) {
+        if (!payload || typeof payload !== 'object') return '';
+        if (typeof payload.url === 'string' && payload.url.trim()) return payload.url.trim();
+        if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return String(payload.url[0]).trim();
+        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
+        return '';
+    }
+
+    function isKugouNeedRefreshDfid(payload) {
+        const msg = `${payload?.error_msg || ''} ${payload?.msg || ''}`.toLowerCase();
+        return msg.includes('验证') || msg.includes('dfid') || msg.includes('verify');
+    }
+
+    async function fetchKugouSongUrlByHash(hash, dfid) {
+        const url = `${KUGOU_API_BASE}/song/url?hash=${encodeURIComponent(hash)}&dfid=${encodeURIComponent(dfid)}&token=${encodeURIComponent(kugouToken)}`;
+        const res = await wrappedFetch(url, { credentials: 'include' });
+        if (!res.ok) throw new Error('酷狗 URL 请求失败');
+        return await res.json();
+    }
+
+    async function getKugouAudioUrlByHash(hash) {
+        if (!kugouToken) throw new Error('请先在设置-账户中登录酷狗账号');
+        if (!hash) throw new Error('缺少酷狗歌曲 hash');
+
+        let dfid = await ensureKugouDfid(false);
+        let payload = await fetchKugouSongUrlByHash(hash, dfid);
+        let finalUrl = pickKugouPlayableUrl(payload);
+
+        if (!finalUrl && isKugouNeedRefreshDfid(payload)) {
+            dfid = await ensureKugouDfid(true);
+            payload = await fetchKugouSongUrlByHash(hash, dfid);
+            finalUrl = pickKugouPlayableUrl(payload);
+        }
+
+        if (!finalUrl) {
+            throw new Error(payload?.error_msg || payload?.msg || '酷狗未返回可播放链接');
+        }
+        return finalUrl;
     }
 
     // 搜索歌曲（带 token + credentials）
