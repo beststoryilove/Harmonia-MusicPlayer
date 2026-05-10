@@ -57,7 +57,7 @@ python -m http.server 8000   # Python 3
 | 通信 | WebSocket (桌面歌词) |
 | 拖拽 | Drag & Drop API |
 | 媒体控制 | Media Session API |
-| 歌词 | 自研 LRC 解析引擎，支持逐字 |
+| 歌词 | LRC 解析引擎，支持逐字 |
 | 翻译 | GLM-4-Flashx API (Bigmodel) |
 | 字体 | PingFang SC, SF Pro Display, Font Awesome 6 |
 
