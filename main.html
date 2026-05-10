@@ -4121,6 +4121,100 @@
     .status-text { font-size: 14px; margin-bottom: 10px; font-weight: 600; }
     .divider { text-align: center; color: rgba(255,255,255,0.2); font-size: 12px; margin: 20px 0; }
 
+    .vip-status-card {
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .vip-status-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 45, 85, 0.86), rgba(255, 159, 10, 0.78));
+      box-shadow: 0 12px 30px rgba(255, 45, 85, 0.18);
+      flex-shrink: 0;
+    }
+
+    .vip-status-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .vip-status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .vip-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.72);
+    }
+
+    .vip-pill.success {
+      color: #7dffb0;
+      background: rgba(48, 209, 88, 0.14);
+      border-color: rgba(48, 209, 88, 0.22);
+    }
+
+    .vip-pill.warning {
+      color: #ffd071;
+      background: rgba(255, 159, 10, 0.14);
+      border-color: rgba(255, 159, 10, 0.22);
+    }
+
+    .vip-pill.error {
+      color: #ff938b;
+      background: rgba(255, 69, 58, 0.14);
+      border-color: rgba(255, 69, 58, 0.22);
+    }
+
+    .vip-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .vip-actions .ios-btn {
+      flex: 1 1 180px;
+      min-height: 42px;
+    }
+
+    .vip-progress-text {
+      width: 100%;
+      min-height: 18px;
+      color: rgba(255,255,255,0.48);
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .quality-note {
+      color: rgba(255,255,255,0.42);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
     @keyframes modalScaleUp {
       from { transform: scale(0.95); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
@@ -4294,7 +4388,7 @@
       text-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     }
   </style>
-<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
+<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
 <body>
   <div class="am-background"></div>
 
@@ -4508,6 +4602,20 @@
 
       <div class="settings-tab-content" data-tab="audio">
         <div class="settings-group">
+          <div class="group-title">酷狗音质</div>
+          <div class="setting-item vertical">
+            <div class="item-label">酷狗源播放音质</div>
+            <div class="segmented-control" id="kugouQualityControl">
+              <label><input type="radio" name="kugouAudioQuality" value="128"><span>128 MP3</span></label>
+              <label><input type="radio" name="kugouAudioQuality" value="320" checked><span>320 MP3</span></label>
+              <label><input type="radio" name="kugouAudioQuality" value="flac"><span>FLAC</span></label>
+              <label><input type="radio" name="kugouAudioQuality" value="high"><span>无损</span></label>
+            </div>
+            <div class="quality-note" id="kugouQualityHint">仅对酷狗源生效；高音质请求失败时会自动回退到 320 MP3，避免播放中断。</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
           <div class="group-title">音频均衡器 (10 段 EQ)</div>
           
           <div class="setting-item">
@@ -4636,6 +4744,36 @@
                   <button id="kugouLogoutBtn" class="ios-btn secondary" style="padding: 6px 12px; font-size: 12px; color: var(--error-color);">退出登录</button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="settings-group" style="margin-top: 26px; margin-bottom: 0;">
+            <div class="group-title">概念版 VIP</div>
+            <div class="setting-item vertical">
+              <div class="vip-status-card">
+                <div class="vip-status-icon"><i class="fas fa-crown"></i></div>
+                <div class="vip-status-main">
+                  <div class="vip-status-line">
+                    <div class="item-label" id="kugouVipStatusText">VIP 身份：未识别</div>
+                    <span class="vip-pill" id="kugouVipStatusPill">待检测</span>
+                  </div>
+                  <div class="item-desc" id="kugouVipDetailText">登录酷狗后可检测概念版 VIP、普通 VIP / TVIP 与有效期。</div>
+                </div>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="item-info">
+                <div class="item-label">每日首次访问自动领取</div>
+                <div class="item-desc">开启后每天只自动尝试一次；失败后不会在当天反复请求，可手动重试。</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="kugouVipAutoToggle"><span class="slider"></span></label>
+            </div>
+            <div class="setting-item vertical">
+              <div class="vip-actions">
+                <button id="kugouVipRefreshBtn" class="ios-btn secondary" type="button"><i class="fas fa-sync-alt"></i> 识别 VIP 身份</button>
+                <button id="kugouVipAutoBtn" class="ios-btn primary" type="button"><i class="fas fa-bolt"></i> 自动领取、升级概念版VIP</button>
+              </div>
+              <div class="vip-progress-text" id="kugouVipProgressText">不会伪造会员状态，只根据接口返回结果识别；领取接口按当天剩余次数执行，并做了并发锁和每日限频。</div>
             </div>
           </div>
           
@@ -4867,6 +5005,18 @@
     const enableWordLyricJump = document.getElementById('enableWordLyricJump');
     const neteaseProxyInput = document.getElementById('neteaseProxyInput');
     const musicSourceRadios = document.querySelectorAll('input[name="musicSource"]');
+    const kugouQualityRadios = document.querySelectorAll('input[name="kugouAudioQuality"]');
+    const kugouVipStatusText = document.getElementById('kugouVipStatusText');
+    const kugouVipStatusPill = document.getElementById('kugouVipStatusPill');
+    const kugouVipDetailText = document.getElementById('kugouVipDetailText');
+    const kugouVipProgressText = document.getElementById('kugouVipProgressText');
+    const kugouVipAutoToggle = document.getElementById('kugouVipAutoToggle');
+    const kugouVipRefreshBtn = document.getElementById('kugouVipRefreshBtn');
+    const kugouVipAutoBtn = document.getElementById('kugouVipAutoBtn');
+    const KUGOU_QUALITY_KEY = 'kugouAudioQuality';
+    const KUGOU_VIP_AUTO_KEY = 'kugouVipAutoEnabled';
+    const KUGOU_VIP_LAST_AUTO_DATE_KEY = 'kugouVipLastAutoDate';
+    const KUGOU_VIP_LAST_STATUS_KEY = 'kugouVipLastStatus';
     const BUILTIN_NETEASE_PROXIES = ['https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url='];
     const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const collapsedTextSpan = document.querySelector('.collapsed-text'); // 灵动岛折叠文字
@@ -4968,6 +5118,350 @@
       }
     }
 
+    function normalizeKugouQuality(value) {
+      const allowed = ['128', '320', 'flac', 'high'];
+      return allowed.includes(String(value)) ? String(value) : '320';
+    }
+
+    function getKugouQualityName(value = getKugouAudioQuality()) {
+      const normalized = normalizeKugouQuality(value);
+      const names = {
+        '128': '128 MP3',
+        '320': '320 MP3',
+        flac: 'FLAC',
+        high: '无损'
+      };
+      return names[normalized] || '320 MP3';
+    }
+
+    function getKugouAudioQuality() {
+      return normalizeKugouQuality(localStorage.getItem(KUGOU_QUALITY_KEY) || currentSettings.kugouQuality || '320');
+    }
+
+    function applyKugouAudioQuality(value, { persist = true, toast = false } = {}) {
+      const normalized = normalizeKugouQuality(value);
+      currentSettings.kugouQuality = normalized;
+      kugouQualityRadios.forEach(radio => {
+        radio.checked = radio.value === normalized;
+      });
+      if (persist) {
+        localStorage.setItem(KUGOU_QUALITY_KEY, normalized);
+      }
+      if (toast) {
+        showDynamicIslandToast(`酷狗音质已切换：${getKugouQualityName(normalized)}`, 1800);
+      }
+      return normalized;
+    }
+
+    function getLocalDateKey(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function parseKugouDateTime(value) {
+      if (!value || typeof value !== 'string') return null;
+      const normalized = value.replace(/-/g, '/');
+      const date = new Date(normalized);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function formatKugouDateTime(value) {
+      const date = parseKugouDateTime(value);
+      if (!date) return value || '未知';
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      return `${y}-${m}-${d} ${hh}:${mm}`;
+    }
+
+    function isKugouVipEntryActive(entry) {
+      if (!entry || Number(entry.is_vip) !== 1) return false;
+      const end = parseKugouDateTime(entry.vip_end_time || entry.su_vip_end_time || entry.m_end_time);
+      if (!end) return true;
+      return end.getTime() > Date.now();
+    }
+
+    function getKugouConceptEntries(detail) {
+      const list = detail?.data?.busi_vip;
+      if (!Array.isArray(list)) return [];
+      return list.filter(item => item && item.busi_type === 'concept');
+    }
+
+    function analyzeKugouVipDetail(detail) {
+      const conceptEntries = getKugouConceptEntries(detail);
+      const activeEntries = conceptEntries.filter(isKugouVipEntryActive);
+      const activeSvip = activeEntries.find(item => item.product_type === 'svip');
+      const activeTvip = activeEntries.find(item => item.product_type === 'tvip');
+      const anyActive = activeSvip || activeTvip || activeEntries[0] || null;
+      const rootIsVip = Number(detail?.data?.is_vip) === 1;
+      let state = 'none';
+      let label = '未开通';
+      let pill = '未识别';
+      let pillType = 'error';
+      let detailText = '未识别到概念版 VIP；可点击下方按钮按流程领取并升级。';
+
+      if (activeSvip) {
+        state = 'svip';
+        label = '概念版 VIP 已生效';
+        pill = 'SVIP';
+        pillType = 'success';
+        detailText = `概念版 SVIP 有效期至：${formatKugouDateTime(activeSvip.vip_end_time)}。`;
+      } else if (activeTvip) {
+        state = 'tvip';
+        label = '已领取普通 VIP / TVIP';
+        pill = '待升级';
+        pillType = 'warning';
+        detailText = `检测到 TVIP 有效期至：${formatKugouDateTime(activeTvip.vip_end_time)}；不会把活动提前领取时长误判为概念版 SVIP，可继续执行升级。`;
+      } else if (activeEntries.length) {
+        state = 'other';
+        label = '存在其他概念版权益';
+        pill = '需确认';
+        pillType = 'warning';
+        detailText = `检测到 ${activeEntries[0].product_type || '未知'} 权益，有效期至：${formatKugouDateTime(activeEntries[0].vip_end_time)}。`;
+      } else if (rootIsVip) {
+        state = 'root_vip';
+        label = '账号已有普通 VIP';
+        pill = '非概念版';
+        pillType = 'warning';
+        detailText = '账号存在普通 VIP 标记，但未识别到 concept/SVIP 记录。';
+      }
+
+      return {
+        state,
+        label,
+        pill,
+        pillType,
+        detailText,
+        activeSvip,
+        activeTvip,
+        anyActive,
+        conceptEntries,
+        raw: detail
+      };
+    }
+
+    function setKugouVipStatusUI(analysis = null, progress = '') {
+      if (!kugouVipStatusText || !kugouVipStatusPill || !kugouVipDetailText) return;
+      if (!analysis) {
+        kugouVipStatusText.textContent = kugouToken ? 'VIP 身份：待检测' : 'VIP 身份：请先登录酷狗';
+        kugouVipStatusPill.textContent = kugouToken ? '待检测' : '未登录';
+        kugouVipStatusPill.className = `vip-pill ${kugouToken ? '' : 'error'}`;
+        kugouVipDetailText.textContent = kugouToken ? '点击“识别 VIP 身份”获取最新状态。' : '登录酷狗后才能调用 VIP 识别、领取和升级接口。';
+      } else {
+        kugouVipStatusText.textContent = `VIP 身份：${analysis.label}`;
+        kugouVipStatusPill.textContent = analysis.pill;
+        kugouVipStatusPill.className = `vip-pill ${analysis.pillType || ''}`;
+        kugouVipDetailText.textContent = analysis.detailText;
+      }
+      if (kugouVipProgressText && typeof progress === 'string') {
+        kugouVipProgressText.textContent = progress;
+      }
+    }
+
+    function setKugouVipControlsLoading(loading) {
+      [kugouVipRefreshBtn, kugouVipAutoBtn].forEach(btn => {
+        if (!btn) return;
+        btn.disabled = !!loading;
+      });
+      if (kugouVipRefreshBtn) kugouVipRefreshBtn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> 处理中...' : '<i class="fas fa-sync-alt"></i> 识别 VIP 身份';
+      if (kugouVipAutoBtn) kugouVipAutoBtn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> 正在领取/升级...' : '<i class="fas fa-bolt"></i> 自动领取、升级概念版VIP';
+    }
+
+    function buildKugouApiUrl(path, params = {}, includeToken = true) {
+      const url = new URL(`${KUGOU_API_BASE}${path}`);
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          url.searchParams.set(key, String(value));
+        }
+      });
+      if (includeToken && kugouToken && !url.searchParams.has('token')) {
+        url.searchParams.set('token', kugouToken);
+      }
+      return url.toString();
+    }
+
+    async function fetchKugouVipDetail() {
+      if (!kugouToken) throw new Error('请先登录酷狗账号');
+      const res = await wrappedFetch(buildKugouApiUrl('/user/vip/detail'), { credentials: 'include' });
+      if (!res.ok) throw new Error('VIP 身份识别请求失败');
+      const data = await res.json();
+      if (data.status !== 1) throw new Error(data.error_msg || data.msg || 'VIP 身份识别失败');
+      kugouVipLastDetail = data;
+      localStorage.setItem(KUGOU_VIP_LAST_STATUS_KEY, JSON.stringify(data));
+      return data;
+    }
+
+    async function refreshKugouVipStatus({ silent = false } = {}) {
+      if (!kugouToken) {
+        setKugouVipStatusUI(null, '请先登录酷狗账号。');
+        if (!silent) showError('请先登录酷狗账号', 2200);
+        return null;
+      }
+      if (!silent) setKugouVipControlsLoading(true);
+      try {
+        const detail = await fetchKugouVipDetail();
+        const analysis = analyzeKugouVipDetail(detail);
+        setKugouVipStatusUI(analysis, `上次识别：${new Date().toLocaleString()}。`);
+        return analysis;
+      } catch (error) {
+        setKugouVipStatusUI(null, `识别失败：${error.message}`);
+        if (!silent) showError(`识别失败：${error.message}`, 3000);
+        return null;
+      } finally {
+        if (!silent) setKugouVipControlsLoading(false);
+      }
+    }
+
+    async function claimKugouYouthVipUntilComplete({ onProgress } = {}) {
+      const maxCalls = 8;
+      let lastPayload = null;
+      for (let i = 0; i < maxCalls; i++) {
+        const res = await wrappedFetch(buildKugouApiUrl('/youth/vip'), { credentials: 'include' });
+        if (!res.ok) throw new Error('领取 VIP 请求失败');
+        const payload = await res.json();
+        if (payload.status !== 1) throw new Error(payload.error_msg || payload.msg || '领取 VIP 失败');
+        lastPayload = payload;
+        const data = payload.data || {};
+        const total = Number(data.total) || maxCalls;
+        const done = Number(data.done) || 0;
+        const remain = Number(data.remain);
+        const remainVipHour = Number(data.remain_vip_hour);
+        const award = Number(data.award_vip_hour) || 3;
+        onProgress?.(`领取进度：${Math.min(done, total)}/${total}，本次增加 ${award} 小时，剩余待领取 ${Number.isFinite(remainVipHour) ? remainVipHour : Math.max(total - done, 0) * award} 小时。`);
+        if (remainVipHour <= 0 || remain <= 0 || done >= total) break;
+        await delay(650);
+      }
+      return lastPayload;
+    }
+
+    async function upgradeKugouYouthVip({ onProgress } = {}) {
+      onProgress?.('正在升级为概念版 VIP...');
+      const res = await wrappedFetch(buildKugouApiUrl('/youth/day/vip/upgrade'), { credentials: 'include' });
+      if (!res.ok) throw new Error('升级概念版 VIP 请求失败');
+      const payload = await res.json();
+      if (payload.status !== 1) throw new Error(payload.error_msg || payload.msg || '升级概念版 VIP 失败');
+      const hours = payload?.data?.recharge_hours;
+      onProgress?.(`升级请求成功${hours ? `，已处理 ${hours} 小时权益` : ''}，正在复查身份...`);
+      return payload;
+    }
+
+    async function runKugouVipClaimAndUpgrade({ manual = false } = {}) {
+      if (kugouVipOperationInProgress) {
+        if (manual) showError('VIP 流程正在执行，请勿重复点击', 2200);
+        return null;
+      }
+      if (!kugouToken) {
+        setKugouVipStatusUI(null, '请先登录酷狗账号。');
+        if (manual) triggerKugouReLogin();
+        return null;
+      }
+
+      kugouVipOperationInProgress = true;
+      setKugouVipControlsLoading(true);
+      const progressLines = [];
+      const pushProgress = (line) => {
+        progressLines.push(line);
+        const latest = progressLines.slice(-4).join('\n');
+        if (kugouVipProgressText) kugouVipProgressText.textContent = latest;
+      };
+
+      try {
+        pushProgress('正在识别当前 VIP 身份...');
+        let detail = await fetchKugouVipDetail();
+        let analysis = analyzeKugouVipDetail(detail);
+        setKugouVipStatusUI(analysis, progressLines.join('\n'));
+
+        if (analysis.state === 'svip') {
+          pushProgress('已是概念版 SVIP，无需重复领取。');
+          localStorage.setItem(KUGOU_VIP_LAST_AUTO_DATE_KEY, getLocalDateKey());
+          return analysis;
+        }
+
+        if (analysis.state === 'tvip') {
+          pushProgress('检测到 TVIP，跳过重复领取，直接尝试升级。');
+          await upgradeKugouYouthVip({ onProgress: pushProgress });
+        } else {
+          pushProgress('未检测到可升级的概念版权益，开始按当天剩余次数领取。');
+          await claimKugouYouthVipUntilComplete({ onProgress: pushProgress });
+          await delay(450);
+          await upgradeKugouYouthVip({ onProgress: pushProgress });
+        }
+
+        await delay(700);
+        detail = await fetchKugouVipDetail();
+        analysis = analyzeKugouVipDetail(detail);
+        setKugouVipStatusUI(analysis, progressLines.concat(`复查结果：${analysis.label}`).slice(-5).join('\n'));
+        localStorage.setItem(KUGOU_VIP_LAST_AUTO_DATE_KEY, getLocalDateKey());
+
+        if (analysis.state === 'svip') {
+          showDynamicIslandToast('概念版 VIP 已生效', 2600);
+        } else if (manual) {
+          showError('流程已执行，但暂未识别到 SVIP，请稍后再点“识别 VIP 身份”复查', 3800);
+        }
+        return analysis;
+      } catch (error) {
+        localStorage.setItem(KUGOU_VIP_LAST_AUTO_DATE_KEY, getLocalDateKey());
+        pushProgress(`执行失败：${error.message}`);
+        if (manual) showError(`VIP 流程失败：${error.message}`, 4200);
+        return null;
+      } finally {
+        kugouVipOperationInProgress = false;
+        setKugouVipControlsLoading(false);
+      }
+    }
+
+    function initKugouQualityAndVipSettings() {
+      applyKugouAudioQuality(localStorage.getItem(KUGOU_QUALITY_KEY) || currentSettings.kugouQuality || '320', { persist: false, toast: false });
+      kugouQualityRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          if (!e.target.checked) return;
+          applyKugouAudioQuality(e.target.value, { persist: true, toast: true });
+        });
+      });
+
+      if (kugouVipAutoToggle) {
+        kugouVipAutoToggle.checked = localStorage.getItem(KUGOU_VIP_AUTO_KEY) === 'true';
+        kugouVipAutoToggle.addEventListener('change', (e) => {
+          localStorage.setItem(KUGOU_VIP_AUTO_KEY, e.target.checked ? 'true' : 'false');
+          showDynamicIslandToast(e.target.checked ? '已开启每日首次访问自动领取' : '已关闭 VIP 自动领取', 2200);
+          if (e.target.checked) scheduleKugouVipAutoRun(true);
+        });
+      }
+
+      if (kugouVipRefreshBtn) {
+        kugouVipRefreshBtn.addEventListener('click', () => refreshKugouVipStatus());
+      }
+      if (kugouVipAutoBtn) {
+        kugouVipAutoBtn.addEventListener('click', () => runKugouVipClaimAndUpgrade({ manual: true }));
+      }
+      setKugouVipStatusUI(null, kugouToken ? '登录状态已读取，可识别 VIP 身份。' : '请先登录酷狗账号。');
+      if (kugouToken) refreshKugouVipStatus({ silent: true });
+      scheduleKugouVipAutoRun(false);
+    }
+
+    function scheduleKugouVipAutoRun(force = false) {
+      if (localStorage.getItem(KUGOU_VIP_AUTO_KEY) !== 'true') return;
+      if (!kugouToken) return;
+      const today = getLocalDateKey();
+      const lastDate = localStorage.getItem(KUGOU_VIP_LAST_AUTO_DATE_KEY);
+      if (!force && lastDate === today) return;
+      window.setTimeout(() => {
+        if (localStorage.getItem(KUGOU_VIP_AUTO_KEY) !== 'true') return;
+        if (!kugouToken) return;
+        const latestDate = localStorage.getItem(KUGOU_VIP_LAST_AUTO_DATE_KEY);
+        if (!force && latestDate === today) return;
+        runKugouVipClaimAndUpgrade({ manual: false });
+      }, force ? 200 : 1200);
+    }
+
     // ===== State =====
     let currentPage = 1;
     let currentSearchResults = [];
@@ -5022,6 +5516,8 @@
     let lastRenderedCurrentSecond = -1;
     let lastRenderedDurationSecond = -1;
     let lyricsRerequestInProgress = false;
+    let kugouVipOperationInProgress = false;
+    let kugouVipLastDetail = null;
 
     // Apple Music 歌词相关
     const LINE_HEIGHT = 20;
@@ -5060,6 +5556,7 @@
     let currentSettings = {
       source: 'netease',
       quality: '999',
+      kugouQuality: '320',
       bgMode: 'default',
       blurRadius: 5,
     };
@@ -5870,6 +6367,7 @@
 
       const savedMusicSource = localStorage.getItem(MUSIC_SOURCE_KEY) || currentSettings.source || 'netease';
       applyMusicSource(savedMusicSource, { persist: false, toast: false });
+      applyKugouAudioQuality(localStorage.getItem(KUGOU_QUALITY_KEY) || currentSettings.kugouQuality || '320', { persist: false, toast: false });
     }
 
     // 保存翻译设置
@@ -9456,6 +9954,8 @@
             });
         });
 
+        initKugouQualityAndVipSettings();
+
         function initWordLyricsSource() {
             const savedSource = localStorage.getItem('wordLyricsSource') || 'netease';
             const radios = document.querySelectorAll('input[name="wordLyricsSource"]');
@@ -9919,8 +10419,9 @@
         return msg.includes('验证') || msg.includes('dfid') || msg.includes('verify');
     }
 
-    async function fetchKugouSongUrlByHash(hash, dfid) {
-        const url = `${KUGOU_API_BASE}/song/url?hash=${encodeURIComponent(hash)}&dfid=${encodeURIComponent(dfid)}&token=${encodeURIComponent(kugouToken)}`;
+    async function fetchKugouSongUrlByHash(hash, dfid, quality = getKugouAudioQuality()) {
+        const normalizedQuality = normalizeKugouQuality(quality);
+        const url = `${KUGOU_API_BASE}/song/url?hash=${encodeURIComponent(hash)}&dfid=${encodeURIComponent(dfid)}&token=${encodeURIComponent(kugouToken)}&quality=${encodeURIComponent(normalizedQuality)}`;
         const res = await wrappedFetch(url, { credentials: 'include' });
         if (!res.ok) throw new Error('酷狗 URL 请求失败');
         return await res.json();
@@ -9930,14 +10431,24 @@
         if (!kugouToken) throw new Error('请先在设置-账户中登录酷狗账号');
         if (!hash) throw new Error('缺少酷狗歌曲 hash');
 
+        const requestedQuality = getKugouAudioQuality();
         let dfid = await ensureKugouDfid(false);
-        let payload = await fetchKugouSongUrlByHash(hash, dfid);
+        let payload = await fetchKugouSongUrlByHash(hash, dfid, requestedQuality);
         let finalUrl = pickKugouPlayableUrl(payload);
 
         if (!finalUrl && isKugouNeedRefreshDfid(payload)) {
             dfid = await ensureKugouDfid(true);
-            payload = await fetchKugouSongUrlByHash(hash, dfid);
+            payload = await fetchKugouSongUrlByHash(hash, dfid, requestedQuality);
             finalUrl = pickKugouPlayableUrl(payload);
+        }
+
+        if (!finalUrl && ['flac', 'high'].includes(requestedQuality)) {
+            console.warn(`[酷狗] ${getKugouQualityName(requestedQuality)} 未返回可播放链接，回退到 320 MP3`);
+            payload = await fetchKugouSongUrlByHash(hash, dfid, '320');
+            finalUrl = pickKugouPlayableUrl(payload);
+            if (finalUrl) {
+              showDynamicIslandToast('当前歌曲高音质不可用，已回退 320 MP3', 2600);
+            }
         }
 
         if (!finalUrl) {
@@ -10309,6 +10820,9 @@
           loginBtn.disabled = true;
           loginBtn.textContent = '登录中...';
           await loginKugou(mobile, code);
+          updateKugouAccountUI?.();
+          refreshKugouVipStatus?.({ silent: true });
+          scheduleKugouVipAutoRun?.(true);
           showDynamicIslandToast('登陆成功，可开始使用酷狗音乐逐字歌词。', 3000);
         } catch (err) {
           showError(`登录失败: ${err.message}`, 3000);
@@ -10718,6 +11232,7 @@
         } else {
             if(accInfo) accInfo.style.display = 'none';
         }
+        setKugouVipStatusUI?.(null, savedToken ? '登录状态已读取，可识别 VIP 身份。' : '请先登录酷狗账号。');
     }
 
     // 统一的退出登录清理函数
@@ -10726,6 +11241,7 @@
         localStorage.removeItem('kugouUserId');
         localStorage.removeItem('kugouNickname');
         localStorage.removeItem('kugouPic');
+        localStorage.removeItem(KUGOU_VIP_LAST_STATUS_KEY);
         kugouToken = '';
         kugouUserId = '';
         
@@ -10816,6 +11332,8 @@
                             if (pic) localStorage.setItem('kugouPic', pic);
                             
                             updateKugouAccountUI();
+                            refreshKugouVipStatus?.({ silent: true });
+                            scheduleKugouVipAutoRun?.(true);
                             showDynamicIslandToast(`欢迎，${nickname || '用户'}`, 3000);
                         }
                     }
@@ -10939,6 +11457,7 @@
     }
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
