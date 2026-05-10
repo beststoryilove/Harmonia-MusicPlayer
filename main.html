@@ -5017,6 +5017,9 @@
     const KUGOU_VIP_AUTO_KEY = 'kugouVipAutoEnabled';
     const KUGOU_VIP_LAST_AUTO_DATE_KEY = 'kugouVipLastAutoDate';
     const KUGOU_VIP_LAST_STATUS_KEY = 'kugouVipLastStatus';
+    const KUGOU_VIP_STATUS_CACHE_VERSION = 2;
+    const KUGOU_API_NO_CACHE_PARAM = '_t';
+    let kugouApiNoCacheCounter = 0;
     const BUILTIN_NETEASE_PROXIES = ['https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url='];
     const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const collapsedTextSpan = document.querySelector('.collapsed-text'); // 灵动岛折叠文字
@@ -5153,6 +5156,77 @@
       return normalized;
     }
 
+    function safeJsonParse(value, fallback = null) {
+      try {
+        return value ? JSON.parse(value) : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function getKugouVipCacheRecord() {
+      const raw = safeJsonParse(localStorage.getItem(KUGOU_VIP_LAST_STATUS_KEY));
+      if (!raw) return null;
+
+      // v2 新结构：包含账号、检测时间和原始接口返回，刷新后可直接回显
+      if (raw.version === KUGOU_VIP_STATUS_CACHE_VERSION && raw.detail) {
+        return raw;
+      }
+
+      // 兼容上一版：localStorage 里直接存了 /user/vip/detail 原始返回
+      if (raw.status !== undefined && raw.data) {
+        return {
+          version: 1,
+          userId: String(raw?.data?.userid || localStorage.getItem('kugouUserId') || ''),
+          checkedAt: 0,
+          detail: raw
+        };
+      }
+
+      return null;
+    }
+
+    function isKugouVipCacheForCurrentAccount(record) {
+      if (!record || !record.detail) return false;
+      const savedUserId = String(localStorage.getItem('kugouUserId') || kugouUserId || '').trim();
+      const recordUserId = String(record.userId || record?.detail?.data?.userid || '').trim();
+      // 某些登录方式不一定拿得到 userid；没有 userid 时，只要 token 存在就允许回显缓存，避免刷新变“待检测”。
+      if (!savedUserId || !recordUserId) return !!kugouToken;
+      return savedUserId === recordUserId;
+    }
+
+    function saveKugouVipCache(detail) {
+      if (!detail || typeof detail !== 'object') return;
+      const record = {
+        version: KUGOU_VIP_STATUS_CACHE_VERSION,
+        userId: String(detail?.data?.userid || localStorage.getItem('kugouUserId') || kugouUserId || ''),
+        checkedAt: Date.now(),
+        checkedDate: getLocalDateKey(),
+        detail
+      };
+      localStorage.setItem(KUGOU_VIP_LAST_STATUS_KEY, JSON.stringify(record));
+    }
+
+    function getKugouVipCacheCheckedText(record) {
+      if (!record?.checkedAt) return '已显示上次识别结果。';
+      return `已显示上次识别结果：${new Date(record.checkedAt).toLocaleString()}。`;
+    }
+
+    function restoreKugouVipStatusFromCache(progress = '') {
+      if (!kugouToken) {
+        setKugouVipStatusUI(null, progress || '请先登录酷狗账号。');
+        return null;
+      }
+      const record = getKugouVipCacheRecord();
+      if (!isKugouVipCacheForCurrentAccount(record)) {
+        setKugouVipStatusUI(null, progress || '登录状态已读取，可识别 VIP 身份。');
+        return null;
+      }
+      const analysis = analyzeKugouVipDetail(record.detail);
+      setKugouVipStatusUI(analysis, progress || getKugouVipCacheCheckedText(record));
+      return analysis;
+    }
+
     function getLocalDateKey(date = new Date()) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -5285,6 +5359,12 @@
       if (includeToken && kugouToken && !url.searchParams.has('token')) {
         url.searchParams.set('token', kugouToken);
       }
+      // 给 VIP 查询、领取、升级接口统一加时间戳，避免浏览器/CDN/代理命中缓存。
+      // 同一毫秒内连续领取时追加递增序号，确保 8 次请求 URL 也完全不同。
+      if (!url.searchParams.has(KUGOU_API_NO_CACHE_PARAM)) {
+        kugouApiNoCacheCounter += 1;
+        url.searchParams.set(KUGOU_API_NO_CACHE_PARAM, `${Date.now()}_${kugouApiNoCacheCounter}`);
+      }
       return url.toString();
     }
 
@@ -5295,7 +5375,7 @@
       const data = await res.json();
       if (data.status !== 1) throw new Error(data.error_msg || data.msg || 'VIP 身份识别失败');
       kugouVipLastDetail = data;
-      localStorage.setItem(KUGOU_VIP_LAST_STATUS_KEY, JSON.stringify(data));
+      saveKugouVipCache(data);
       return data;
     }
 
@@ -5312,9 +5392,12 @@
         setKugouVipStatusUI(analysis, `上次识别：${new Date().toLocaleString()}。`);
         return analysis;
       } catch (error) {
-        setKugouVipStatusUI(null, `识别失败：${error.message}`);
+        const cached = restoreKugouVipStatusFromCache(`实时识别失败：${error.message}。已保留上次识别结果，稍后可再次刷新。`);
+        if (!cached) {
+          setKugouVipStatusUI(null, `识别失败：${error.message}`);
+        }
         if (!silent) showError(`识别失败：${error.message}`, 3000);
-        return null;
+        return cached;
       } finally {
         if (!silent) setKugouVipControlsLoading(false);
       }
@@ -5442,8 +5525,12 @@
       if (kugouVipAutoBtn) {
         kugouVipAutoBtn.addEventListener('click', () => runKugouVipClaimAndUpgrade({ manual: true }));
       }
-      setKugouVipStatusUI(null, kugouToken ? '登录状态已读取，可识别 VIP 身份。' : '请先登录酷狗账号。');
-      if (kugouToken) refreshKugouVipStatus({ silent: true });
+      if (kugouToken) {
+        restoreKugouVipStatusFromCache('已读取本地 VIP 识别结果，正在同步最新状态...');
+        refreshKugouVipStatus({ silent: true });
+      } else {
+        setKugouVipStatusUI(null, '请先登录酷狗账号。');
+      }
       scheduleKugouVipAutoRun(false);
     }
 
@@ -6218,6 +6305,7 @@
         if (typeof input === 'string' && input.includes('api-kugou')) {
             finalInit.credentials = 'include';
             finalInit.mode = 'cors';
+            finalInit.cache = 'no-store';
             // 确保 headers 存在
             finalInit.headers = {
                 ...(finalInit.headers || {}),
@@ -6251,6 +6339,7 @@
     function triggerKugouReLogin() {
         localStorage.removeItem('kugouToken');
         localStorage.removeItem('kugouUserId');
+        localStorage.removeItem(KUGOU_VIP_LAST_STATUS_KEY);
         kugouToken = '';
         kugouUserId = '';
         showError('酷狗登录已失效，请重新登录', 5000);
@@ -11196,6 +11285,9 @@
                                 localStorage.setItem('kugouUserId', userid);
                                 kugouUserId = userid;
                             }
+                            updateKugouAccountUI?.();
+                            refreshKugouVipStatus?.({ silent: true });
+                            scheduleKugouVipAutoRun?.(true);
                             showDynamicIslandToast('酷狗二维码登录成功', 3000);
                         }
                     }
@@ -11232,7 +11324,12 @@
         } else {
             if(accInfo) accInfo.style.display = 'none';
         }
-        setKugouVipStatusUI?.(null, savedToken ? '登录状态已读取，可识别 VIP 身份。' : '请先登录酷狗账号。');
+
+        if (savedToken) {
+            restoreKugouVipStatusFromCache?.('已读取本地 VIP 识别结果，可点击“识别 VIP 身份”同步最新状态。');
+        } else {
+            setKugouVipStatusUI?.(null, '请先登录酷狗账号。');
+        }
     }
 
     // 统一的退出登录清理函数
