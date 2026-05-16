@@ -119,6 +119,17 @@ Issues and pull requests are welcome!
 
 ---
 
+## 🤖 AI models used
+
+AI models used in this project so far (sorted A–Z):
+1. ChatGPT(including GPT-4.5, GPT-5, GPT-5.1–5.5)
+2. Deepseek(including R1, V3, V3.1, V3.2, V3.2 speciale, V4)
+3. Gemini(including 3.0 Pro, 3.1 Pro)
+4. Grok(including v4.1–4.3
+5. Qwen(including all v3.5–v3.6 series models)
+
+---
+
 ## 📊 Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
