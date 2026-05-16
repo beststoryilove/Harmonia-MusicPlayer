@@ -129,6 +129,8 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 4. Grok（包括v4.1-4.3）
 5. Qwen（包括v3.5-v3.6全系列模型）
 
+---
+
 ## 📊 Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
