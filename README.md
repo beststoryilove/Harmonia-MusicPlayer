@@ -120,6 +120,15 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 
 ---
 
+## 🤖 所使用的AI模型
+
+目前该项目所使用过的AI模型（以A-Z排序）：
+1. ChatGPT（包括GPT4.5，GPT5，GPT5.1-5.5）
+2. Deepseek（包括R1，V3，V3.1，V3.2，V3.2 speciale，V4）
+3. Gemini（包括3.0Pro，3.1Pro）
+4. Grok（包括v4.1-4.3）
+5. Qwen（包括v3.5-v3.6全系列模型）
+
 ## 📊 Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
