@@ -1143,6 +1143,7 @@ font-size:40px;
 margin:0;
 font-weight:700;
 word-wrap:break-word;
+white-space:pre-wrap;
 letter-spacing:0.6px;
 }
 .word-lyric{
@@ -4219,7 +4220,7 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
 }
 
 </style>
-<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
+<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/XYChatGPT.css"/></head>
 <body>
   <div class="am-background"></div>
 
@@ -7424,6 +7425,41 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
       };
     }
 
+    function getLyricWordText(word) {
+      return String(word?.word ?? word?.text ?? '');
+    }
+
+    function joinLyricWordsPreservingSpaces(words) {
+      return (Array.isArray(words) ? words : [])
+        .map(getLyricWordText)
+        .join('');
+    }
+
+    function wordsContainExplicitWhitespace(words) {
+      return (Array.isArray(words) ? words : [])
+        .some(word => /\s/.test(getLyricWordText(word)));
+    }
+
+    function shouldAddFallbackLatinSpaces(words) {
+      if (!Array.isArray(words) || words.length <= 1) return false;
+      if (wordsContainExplicitWhitespace(words)) return false;
+
+      const fullText = joinLyricWordsPreservingSpaces(words);
+      const hasLatin = /[a-zA-Z\u00C0-\u024F]/.test(fullText);
+      const hasCJK = /[\u4e00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF]/.test(fullText);
+
+      // 只有“纯拉丁词被拆成多个 token 且源文本没有任何空白”时才兜底补空格。
+      // KRC/YRC 里的真实空格（包括单独的空格 token、单词尾部空格）必须原样保留，不能再二次补空格。
+      return hasLatin && !hasCJK;
+    }
+
+    function addFallbackLatinSpaces(words) {
+      return words.map((word, index) => {
+        if (index === words.length - 1) return word;
+        return { ...word, word: getLyricWordText(word) + ' ' };
+      });
+    }
+
     function normalizeAMLLLine(line, index = 0, allLines = []) {
       const startTime = Number.isFinite(Number(line?.startTime))
         ? Math.round(Number(line.startTime))
@@ -7446,17 +7482,9 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
         words = [{ startTime, endTime, word: fallbackText }];
       }
       
-      // 只有非 TTML 行且为拉丁多单词时才加空格
-      if (!line._fromTtml) {
-        const fullText = words.map(w => w.word).join('');
-        const hasLatin = /[a-zA-Z\u00C0-\u00FF]/.test(fullText);
-        const hasCJK = /[\u4e00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF]/.test(fullText);
-        if (hasLatin && !hasCJK && words.length > 1) {
-          words = words.map((w, idx) => {
-            if (idx === words.length - 1) return w;
-            return { ...w, word: w.word + ' ' };
-          });
-        }
+      // 只有非 TTML 行且源歌词本身没有任何空白时，才为纯拉丁逐词歌词兜底补空格。
+      if (!line._fromTtml && shouldAddFallbackLatinSpaces(words)) {
+        words = addFallbackLatinSpaces(words);
       }
       
       return {
@@ -7534,14 +7562,8 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
               word: word.text || word.word || ''
             }))
           : [{ startTime, endTime, word: line.text || '' }];
-        const fullText = words.map(w => w.word).join('');
-        const hasLatin = /[a-zA-Z\u00C0-\u00FF]/.test(fullText);
-        const hasCJK = /[\u4e00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF]/.test(fullText);
-        if (hasLatin && !hasCJK && words.length > 1) {
-          words = words.map((w, idx) => {
-            if (idx === words.length - 1) return w;
-            return { ...w, word: w.word + ' ' };
-          });
+        if (shouldAddFallbackLatinSpaces(words)) {
+          words = addFallbackLatinSpaces(words);
         }
         
         return {
@@ -8274,7 +8296,7 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
     function parseWordLyrics(yrcText) {
       if (!yrcText || typeof yrcText !== 'string') return [];
 
-      const lines = yrcText.split('\n').map(x => x.trim()).filter(Boolean);
+      const lines = yrcText.split('\n').filter(x => x.trim());
       const result = [];
 
       for (const line of lines) {
@@ -8283,7 +8305,7 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
 
         const lineStartMs = parseInt(lineMatch[1], 10);
         const lineDurMs = parseInt(lineMatch[2], 10);
-        const rest = line.replace(/^\[\d+,\d+\]/, '').trim();
+        const rest = line.replace(/^\[\d+,\d+\]/, '');
 
         const wordRe = /\((\d+),(\d+),(\d+)\)([^()]+)/g;
         const words = [];
@@ -8291,8 +8313,9 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
         while ((m = wordRe.exec(rest)) !== null) {
           const wStartMs = parseInt(m[1], 10);
           const wDurMs = parseInt(m[2], 10);
-          const text = (m[4] || '').replace(/\\n/g, '').trim();
-          if (!text) continue;
+          // 不要 trim：YRC/KRC 里的空格是显示内容的一部分，例如 "happy "。
+          const text = (m[4] || '').replace(/\\n/g, '');
+          if (text.length === 0) continue;
           words.push({
             start: wStartMs / 1000,
             end: (wStartMs + wDurMs) / 1000,
@@ -8301,43 +8324,24 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
         }
 
         if (words.length === 0) {
-          const fallbackText = rest.replace(/\(\d+,\d+,\d+\)/g, '').replace(/\\n/g, '').trim();
-          if (fallbackText) {
+          const fallbackText = rest.replace(/\(\d+,\d+,\d+\)/g, '').replace(/\\n/g, '');
+          if (fallbackText.trim()) {
             result.push({
               time: lineStartMs / 1000,
               end: (lineStartMs + lineDurMs) / 1000,
               words: [],
-              text: fallbackText,
+              text: fallbackText.trim(),
               translation: ''
             });
           }
           continue;
         }
 
-        let lineText = '';
-        for (let i = 0; i < words.length; i++) {
-          const txt = words[i].text;
-          const isChinese = /^[\u4e00-\u9fff]+$/.test(txt);
-          lineText += txt;
-
-          let needSpace = false;
-          if (isChinese) {
-            if (i < words.length - 1) {
-              const nextWord = words[i + 1].text;
-              const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
-              if (!isNextChinese) needSpace = true;
-            }
-          } else {
-            if (i !== words.length - 1) needSpace = true;
-          }
-          if (needSpace) lineText += ' ';
-        }
-
         result.push({
           time: lineStartMs / 1000,
           end: (lineStartMs + lineDurMs) / 1000,
           words,
-          text: lineText,      // 已智能处理空格的文本
+          text: joinLyricWordsPreservingSpaces(words),
           translation: ''
         });
       }
@@ -11161,64 +11165,56 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
       if (!krcText || typeof krcText !== 'string') return [];
       const lines = krcText.split('\n').filter(l => l.trim());
       const result = [];
+
       for (const line of lines) {
         const lineMatch = line.match(/^\[(\d+),(\d+)\]/);
         if (!lineMatch) continue;
+
         const lineStartMs = parseInt(lineMatch[1], 10);
         const lineDurMs = parseInt(lineMatch[2], 10);
-        const rest = line.replace(/^\[\d+,\d+\]/, '').trim();
-        const wordRe = /<(\d+),(\d+),\d+>([^<]+)/g;
+        const rest = line.replace(/^\[\d+,\d+\]/, '');
+        const wordRe = /<(\d+),(\d+),\d+>([^<]*)/g;
         const words = [];
         let m;
+
         while ((m = wordRe.exec(rest)) !== null) {
           const wStartMs = parseInt(m[1], 10);
           const wDurMs = parseInt(m[2], 10);
-          let text = m[3].trim();
-          if (!text) continue;
+          // KRC 会把空格写进 token：可能是独立的 " "，也可能是 "Brain " / "Warning? "。
+          // 不能 trim，否则中日文 + 英文混排会变成 “合法dopingtime” 或被后续逻辑错误补空格。
+          const text = (m[3] || '').replace(/\\n/g, '');
+          if (text.length === 0) continue;
+
           words.push({
             start: (lineStartMs + wStartMs) / 1000,
             end: (lineStartMs + wStartMs + wDurMs) / 1000,
-            text: text
+            text
           });
         }
+
         if (words.length === 0) {
-          const plainText = rest.replace(/<[^>]+>/g, '').trim();
-          if (plainText) {
+          const plainText = rest.replace(/<[^>]+>/g, '').replace(/\\n/g, '');
+          if (plainText.trim()) {
             result.push({
               time: lineStartMs / 1000,
               end: (lineStartMs + lineDurMs) / 1000,
               words: [],
-              text: plainText,
+              text: plainText.trim(),
               translation: ''
             });
           }
           continue;
         }
-        let lineText = '';
-        for (let i = 0; i < words.length; i++) {
-          const txt = words[i].text;
-          const isChinese = /^[\u4e00-\u9fff]+$/.test(txt);
-          lineText += txt;
-          let needSpace = false;
-          if (isChinese) {
-            if (i < words.length - 1) {
-              const nextWord = words[i + 1].text;
-              const isNextChinese = /^[\u4e00-\u9fff]+$/.test(nextWord);
-              if (!isNextChinese) needSpace = true;
-            }
-          } else {
-            if (i !== words.length - 1) needSpace = true;
-          }
-          if (needSpace) lineText += ' ';
-        }
+
         result.push({
           time: lineStartMs / 1000,
           end: (lineStartMs + lineDurMs) / 1000,
-          words: words,
-          text: lineText,
+          words,
+          text: joinLyricWordsPreservingSpaces(words),
           translation: ''
         });
       }
+
       return result.sort((a, b) => a.time - b.time);
     }
 
@@ -11874,6 +11870,7 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
     }</script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/XYChatGPT.js"></script></body>
 </html>
