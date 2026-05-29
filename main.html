@@ -3678,6 +3678,153 @@ color:rgba(255,255,255,0.42);
 font-size:12px;
 line-height:1.7;
 }
+
+.about-hero-card{
+background:linear-gradient(135deg,rgba(255,45,85,0.14),rgba(88,86,214,0.10)) !important;
+border-color:rgba(255,255,255,0.10) !important;
+}
+.about-title-row{
+display:flex;
+align-items:center;
+gap:14px;
+width:100%;
+}
+.about-app-icon{
+width:52px;
+height:52px;
+border-radius:18px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:linear-gradient(135deg,rgba(255,45,85,0.92),rgba(88,86,214,0.82));
+color:#fff;
+font-size:24px;
+box-shadow:0 16px 35px rgba(255,45,85,0.18);
+flex-shrink:0;
+}
+.about-app-name{
+font-size:22px;
+font-weight:800;
+letter-spacing:0.2px;
+color:var(--text-dark);
+}
+.about-app-desc{
+width:100%;
+font-size:13px;
+line-height:1.8;
+color:rgba(255,255,255,0.58);
+}
+.about-link-grid{
+display:grid;
+grid-template-columns:repeat(3,minmax(0,1fr));
+gap:12px;
+width:100%;
+}
+.about-link-card{
+min-height:112px;
+padding:16px;
+border-radius:20px;
+background:rgba(255,255,255,0.045);
+border:1px solid rgba(255,255,255,0.07);
+color:var(--text-dark);
+text-decoration:none;
+display:flex;
+flex-direction:column;
+gap:10px;
+position:relative;
+overflow:hidden;
+transition:all 0.25s cubic-bezier(0.25,0.8,0.25,1);
+}
+.about-link-card::before{
+content:"";
+position:absolute;
+inset:0;
+background:linear-gradient(135deg,rgba(255,255,255,0.10),transparent 70%);
+opacity:0;
+transition:opacity 0.25s ease;
+pointer-events:none;
+}
+.about-link-card:hover{
+transform:translateY(-3px);
+border-color:rgba(255,45,85,0.24);
+background:rgba(255,255,255,0.075);
+box-shadow:0 16px 36px rgba(0,0,0,0.25);
+}
+.about-link-card:hover::before{opacity:1}
+.about-link-icon{
+width:40px;
+height:40px;
+border-radius:14px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:rgba(255,45,85,0.14);
+color:var(--primary-color);
+font-size:19px;
+flex-shrink:0;
+}
+.about-link-title{
+font-weight:750;
+font-size:15px;
+}
+.about-link-desc{
+font-size:12px;
+line-height:1.55;
+color:rgba(255,255,255,0.46);
+}
+.about-qq-card{
+grid-column:1 / -1;
+min-height:170px;
+flex-direction:row;
+align-items:center;
+gap:18px;
+}
+.about-qq-copy{
+flex:1;
+min-width:0;
+display:flex;
+flex-direction:column;
+gap:9px;
+}
+.about-qq-qr{
+width:126px;
+height:126px;
+border-radius:18px;
+padding:8px;
+background:#fff;
+object-fit:cover;
+box-shadow:0 14px 32px rgba(0,0,0,0.28);
+flex-shrink:0;
+}
+.about-open-hint{
+margin-top:auto;
+font-size:12px;
+font-weight:700;
+color:var(--primary-color);
+}
+body.light-theme .about-app-name,
+body.light-theme .about-link-card{
+color:var(--text-light);
+}
+body.light-theme .about-app-desc,
+body.light-theme .about-link-desc{
+color:rgba(0,0,0,0.52);
+}
+body.light-theme .about-link-card{
+background:rgba(255,255,255,0.58);
+border-color:rgba(0,0,0,0.07);
+}
+body.light-theme .about-link-card:hover{
+background:rgba(255,255,255,0.9);
+border-color:rgba(255,45,85,0.22);
+box-shadow:0 16px 32px rgba(0,0,0,0.08);
+}
+@media (max-width:768px){
+.about-link-grid{grid-template-columns:1fr}
+.about-qq-card{flex-direction:column;align-items:flex-start}
+.about-qq-qr{width:150px;height:150px;align-self:center}
+}
+
 @keyframes modalScaleUp{
 from{transform:scale(0.95);opacity:0}
 to{transform:scale(1);opacity:1}
@@ -4174,6 +4321,7 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
         <div class="nav-item" data-tab="visual"><i class="fas fa-eye"></i> 视觉</div>
         <div class="nav-item" data-tab="audio"><i class="fas fa-sliders-h"></i> 音频</div>
         <div class="nav-item" data-tab="account"><i class="fas fa-user-circle"></i> 账户</div>
+        <div class="nav-item" data-tab="about"><i class="fas fa-circle-info"></i> 关于</div>
       </div>
     </div>
 
@@ -4482,6 +4630,57 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
               <button id="kugouGetCaptchaBtn" class="ios-btn secondary" style="white-space: nowrap;">获取</button>
             </div>
             <button id="kugouLoginBtn" class="ios-btn secondary" style="width: 100%;">手机号登录</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-tab-content" data-tab="about">
+        <div class="settings-group">
+          <div class="group-title">关于 Harmonia</div>
+          <div class="setting-item vertical about-hero-card">
+            <div class="about-title-row">
+              <div class="about-app-icon"><i class="fas fa-music"></i></div>
+              <div>
+                <div class="about-app-name">Harmonia Music Player</div>
+                <div class="item-desc">在线音乐播放器 · AMLL 逐字歌词 · 多音源歌词增强</div>
+              </div>
+            </div>
+            <div class="about-app-desc">感谢使用 Harmonia。你可以通过以下入口查看项目源码、加入 QQ 群反馈问题，或访问作者博客获取更新说明。</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="group-title">项目入口</div>
+          <div class="about-link-grid">
+            <a class="about-link-card" href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" rel="noopener noreferrer">
+              <div class="about-link-icon"><i class="fab fa-github"></i></div>
+              <div class="about-link-title">GitHub 仓库</div>
+              <div class="about-link-desc">查看源码、提交 Issue、获取最新版本。</div>
+              <div class="about-open-hint">打开仓库 <i class="fas fa-arrow-up-right-from-square"></i></div>
+            </a>
+
+            <a class="about-link-card" href="https://azalkmin.midc.me/" target="_blank" rel="noopener noreferrer">
+              <div class="about-link-icon"><i class="fas fa-blog"></i></div>
+              <div class="about-link-title">作者博客</div>
+              <div class="about-link-desc">访问博客，查看说明、记录与后续更新。</div>
+              <div class="about-open-hint">打开博客 <i class="fas fa-arrow-up-right-from-square"></i></div>
+            </a>
+
+            <a class="about-link-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
+              <div class="about-link-icon"><i class="fab fa-qq"></i></div>
+              <div class="about-link-title">QQ 群入口</div>
+              <div class="about-link-desc">加入交流群，反馈歌词、音源与播放器问题。</div>
+              <div class="about-open-hint">打开 QQ 群 <i class="fas fa-arrow-up-right-from-square"></i></div>
+            </a>
+
+            <a class="about-link-card about-qq-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
+              <img class="about-qq-qr" src="https://raw.githubusercontent.com/beststoryilove/Harmonia-MusicPlayer/main/qrcode_1779913195527.jpg" alt="Harmonia QQ 群二维码">
+              <div class="about-qq-copy">
+                <div class="about-link-title">扫码加入 QQ 群</div>
+                <div class="about-link-desc">二维码来自项目仓库，点击卡片也可以直接打开 QQ 群邀请链接。</div>
+                <div class="about-open-hint">https://qm.qq.com/q/p4WYBXFGNO</div>
+              </div>
+            </a>
           </div>
         </div>
       </div>
@@ -5953,12 +6152,13 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
 
       if (collapsedTextSpan) {
         delete collapsedTextSpan.dataset.toastActive;
+        delete collapsedTextSpan.dataset.toastMessage;
       }
 
       if (currentPlayingId) {
-        setCollapsedTextAnimated('正在播放');
+        setCollapsedTextAnimated('正在播放', false, true);
       } else {
-        setCollapsedTextAnimated('Harmonia');
+        setCollapsedTextAnimated('Harmonia', false, true);
       }
 
       resetDynamicIslandCollapsedWidth();
@@ -5973,28 +6173,33 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
       }
 
       const originalText = collapsedTextSpan.textContent;
+      const safeDuration = Math.max(Number(duration) || 0, 7000);
 
       collapsedTextSpan.dataset.toastActive = 'true';
+      collapsedTextSpan.dataset.toastMessage = message;
 
-      setCollapsedTextAnimated(message).then(() => {
+      setCollapsedTextAnimated(message, false, true).then(() => {
         setDynamicIslandCollapsedWidth(measureDynamicIslandCollapsedWidth(message));
       });
 
       dynamicIslandToastTimer = setTimeout(() => {
         let restoreText = originalText;
-        if (currentPlayingId && restoreText === message) {
+        if (currentPlayingId && (!restoreText || restoreText === message)) {
           restoreText = '正在播放';
-        } else if (!currentPlayingId && restoreText === message) {
+        } else if (!currentPlayingId && (!restoreText || restoreText === message)) {
           restoreText = 'Harmonia';
         }
 
-        setCollapsedTextAnimated(restoreText).then(() => {
-          delete collapsedTextSpan.dataset.toastActive;
+        setCollapsedTextAnimated(restoreText, false, true).then(() => {
+          if (collapsedTextSpan.dataset.toastMessage === message) {
+            delete collapsedTextSpan.dataset.toastActive;
+            delete collapsedTextSpan.dataset.toastMessage;
+          }
           resetDynamicIslandCollapsedWidth();
           updateCollapsedTextByPlayingState();
         });
         dynamicIslandToastTimer = null;
-      }, duration);
+      }, safeDuration);
     }
 
     function updateCollapsedText(text, skipAnimation = false) {
@@ -6021,7 +6226,9 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
           dynamicIsland.classList.remove('expanded');
           isDynamicIslandExpanded = false;
         }
-        setCollapsedTextAnimated('正在请求中');
+        if (!collapsedTextSpan?.dataset.toastActive) {
+          setCollapsedTextAnimated('正在请求中');
+        }
       }
       activeRequests++;
     }
@@ -6036,12 +6243,14 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
       }
       if (activeRequests === 0) {
         const finalStatus = hasAnyRequestFailed ? '请求失败' : '请求成功';
-        setCollapsedTextAnimated(finalStatus);
-        if (requestStatusTimeout) clearTimeout(requestStatusTimeout);
-        requestStatusTimeout = setTimeout(() => {
-          updateCollapsedTextByPlayingState();
-          requestStatusTimeout = null;
-        }, 3000);
+        if (!collapsedTextSpan?.dataset.toastActive) {
+          setCollapsedTextAnimated(finalStatus);
+          if (requestStatusTimeout) clearTimeout(requestStatusTimeout);
+          requestStatusTimeout = setTimeout(() => {
+            updateCollapsedTextByPlayingState();
+            requestStatusTimeout = null;
+          }, 3000);
+        }
         hasAnyRequestFailed = false;
       }
     }
@@ -7500,6 +7709,16 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
         .join('')
         .replace(/\s+/g, ' ')
         .trim();
+      const directTimedTextOf = (el) => Array.from(el?.childNodes || [])
+        .filter(node => node.nodeType === 3)
+        .map(node => node.nodeValue || '')
+        .join('');
+      const normalizeTTMLTimedWordText = (text) => String(text || '')
+        // 定时歌词 span 自身可能携带真实尾随空格，例如 <span>Could </span><span>you </span>。
+        // 这里不能 trim()，否则会把英文单词之间的空格删掉；只去掉开头空白，避免缩进/换行污染。
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/ {2,}/g, ' ')
+        .replace(/^\s+/, '');
       const collectDirectTranslations = (container) => {
         const candidates = Array.from(container?.childNodes || [])
           .filter(node => isElementNamed(node, 'span') && isTranslationSpan(node))
@@ -7542,8 +7761,9 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
 
           const wStart = parseTTMLTimeToMs(getAttr(node, 'begin'));
           const wEnd = parseTTMLTimeToMs(getAttr(node, 'end'));
-          const wordText = directTextOf(node) || (node.textContent || '').replace(/\s+/g, ' ').trim();
-          if (!wordText) continue;
+          const rawTimedText = directTimedTextOf(node) || (node.textContent || '');
+          const wordText = normalizeTTMLTimedWordText(rawTimedText);
+          if (!wordText || !wordText.trim()) continue;
           const start = Number.isFinite(wStart) ? wStart : fallbackStart;
           const end = Number.isFinite(wEnd)
             ? wEnd
@@ -7989,7 +8209,10 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
           return;
         } catch (error) {
           console.warn('[AMLL] 社区 TTML 不可用，进入下一优先级:', error);
+          showDynamicIslandToast('ttml请求失败，可能是库无该曲的ttml或网络问题，可尝试刷新歌词。即将回退歌词。', 5600);
         }
+      } else {
+        showDynamicIslandToast('ttml请求失败，可能是库无该曲的ttml或网络问题，可尝试刷新歌词。即将回退歌词。', 5600);
       }
 
       // 第二优先级：酷狗源保留原 KRC 逐字歌词逻辑，转换为 AMLL LyricLine[] 渲染
@@ -11217,9 +11440,13 @@ font-family:"SFPro-Semibold","PingFangSC-Semibold","SFPro-Regular","PingFangSC-R
 
         return wordLines;
     }
-    function setCollapsedTextAnimated(newText, skipAnimation = false) {
+    function setCollapsedTextAnimated(newText, skipAnimation = false, force = false) {
       const collapsedSpan = document.querySelector('.collapsed-text');
       if (!collapsedSpan) return Promise.resolve();
+
+      if (!force && collapsedSpan.dataset.toastActive === 'true') {
+        return Promise.resolve();
+      }
 
       if (collapsedSpan.textContent === newText && !skipAnimation) {
         return Promise.resolve();
