@@ -125,8 +125,18 @@ AI models used in this project so far (sorted A–Z):
 1. ChatGPT(including GPT-4.5, GPT-5, GPT-5.1–5.5)
 2. Deepseek(including R1, V3, V3.1, V3.2, V3.2 speciale, V4)
 3. Gemini(including 3.0 Pro, 3.1 Pro)
-4. Grok(including v4.1–4.3
+4. Grok(including v4.1–4.3)
 5. Qwen(including all v3.5–v3.6 series models)
+
+---
+
+## 💬 Community & Contact
+
+- **Official Blog**: [azalkmin.midc.me](https://azalkmin.midc.me/)
+- **QQ Group**: Click to join [https://qm.qq.com/q/p4WYBXFGNO](https://qm.qq.com/q/p4WYBXFGNO)  
+  Or scan the QR code below:
+
+<img src="https://raw.githubusercontent.com/beststoryilove/Harmonia-MusicPlayer/main/qrcode_1779913195527.jpg" width="150" alt="QQ Group QR Code"/>
 
 ---
 
