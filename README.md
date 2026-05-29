@@ -131,6 +131,16 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 
 ---
 
+## 💬 社区与交流
+
+- **官方博客**：[azalkmin.midc.me](https://azalkmin.midc.me/)
+- **QQ群**：点击链接加入群聊 [https://qm.qq.com/q/p4WYBXFGNO](https://qm.qq.com/q/p4WYBXFGNO)  
+  或扫描下方二维码加入：
+
+<img src="https://raw.githubusercontent.com/beststoryilove/Harmonia-MusicPlayer/main/qrcode_1779913195527.jpg" width="150" alt="QQ群二维码"/>
+
+---
+
 ## 📊 Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
