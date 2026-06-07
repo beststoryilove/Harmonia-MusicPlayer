@@ -112,7 +112,7 @@ Issues and pull requests are welcome!
 
 ## 📌 Project Status
 
-- **Stable version**: v3.3.1 (260510)  
+- **Stable version**: v3.3.4 (260510)  
 - **Development version**: v3.4 (in testing) – [Preview](https://809blog.dpdns.org/Harmonia_Pre)  
 - **Update frequency**: ~weekly  
 - **Desktop lyrics**: [Separate repository](https://github.com/beststoryilove/Harmonia-DesktopLyrics/) (Kugou word-by-word lyrics under adaptation)
