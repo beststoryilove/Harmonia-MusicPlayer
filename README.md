@@ -113,7 +113,7 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 
 ## 📌 项目状态
 
-- **正式版**: v3.3.1 (260510)
+- **正式版**: v3.3.4 (260510)
 - **开发版**: v3.4（开发中） - [预览地址](https://809blog.dpdns.org/Harmonia_Pre)
 - **更新频率**: 约每周一次
 - **桌面歌词**: [独立仓库](https://github.com/beststoryilove/Harmonia-DesktopLyrics/) （酷狗源逐字歌词适配中）
