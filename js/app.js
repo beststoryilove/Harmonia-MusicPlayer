@@ -4590,7 +4590,6 @@
 
         await requestLyricsOnlyForSong(song);
         const audioUrl = await getAudioUrl(song.id, song.source, song);
-        audioPlayer.crossOrigin = 'anonymous';
 
         if (eqSettings.enabled && !eqGraphInitialized) {
           const eqSupport = await probeEqUrlSupport(audioUrl);
@@ -4605,6 +4604,13 @@
             eqSupportNoticeShown = true;
             showError('这个音源不支持浏览器均衡器。为避免静音，请刷新页面后保持均衡器关闭，或切换到支持跨域音频处理的音源。', 6000);
           }
+        }
+
+        // 只有均衡器确认可用时才开启 CORS；酷狗 CDN 不接受 CORS 请求
+        if (eqSettings.enabled) {
+          audioPlayer.crossOrigin = 'anonymous';
+        } else {
+          audioPlayer.removeAttribute('crossorigin');
         }
 
         audioPlayer.src = audioUrl;
@@ -7375,7 +7381,12 @@
         const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
         if (gaplessPreloadAbort.signal.aborted) return;
         gaplessPreloadUrl = audioUrl;
-        audioPlayerB.crossOrigin = 'anonymous';
+        // 只有均衡器开启时才用 CORS；酷狗 CDN 不接受 CORS 请求
+        if (eqSettings.enabled) {
+          audioPlayerB.crossOrigin = 'anonymous';
+        } else {
+          audioPlayerB.removeAttribute('crossorigin');
+        }
         audioPlayerB.src = audioUrl;
         audioPlayerB.preload = 'auto';
         audioPlayerB.volume = 0;
