@@ -4677,7 +4677,9 @@
         await loadAlbumArt(song.pic_id, song.source);
 
         await requestLyricsOnlyForSong(song);
-        const audioUrl = await getAudioUrl(song.id, song.source, song);
+        const rawUrl = await getAudioUrl(song.id, song.source, song);
+        // HTTPS 页面必须走代理把 HTTP 音源转成 HTTPS，否则浏览器直接拦截
+        const audioUrl = getEqSafeUrl(rawUrl);
         audioPlayer.crossOrigin = 'anonymous';
 
         if (eqSettings.enabled && !eqGraphInitialized) {
@@ -7460,8 +7462,9 @@
       try {
         if (gaplessPreloadAbort) { gaplessPreloadAbort.abort(); }
         gaplessPreloadAbort = new AbortController();
-        const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
+        const rawUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
         if (gaplessPreloadAbort.signal.aborted) return;
+        const audioUrl = getEqSafeUrl(rawUrl);
         gaplessPreloadUrl = audioUrl;
         audioPlayerB.crossOrigin = 'anonymous';
         audioPlayerB.src = audioUrl;
