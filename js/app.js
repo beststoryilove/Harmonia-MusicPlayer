@@ -1072,6 +1072,18 @@
     async function setEqEnabled(enabled, announce = true) {
       eqSettings.enabled = !!enabled;
       if (eqSettings.enabled) {
+        // 若当前正在播放 HTTP 音源且页面是 HTTPS，先通过代理重载音频
+        const currentUrl = audioPlayer.currentSrc || audioPlayer.src || '';
+        const safeUrl = getEqSafeUrl(currentUrl);
+        if (safeUrl !== currentUrl && currentUrl) {
+          const wasPlaying = !audioPlayer.paused;
+          const savedTime = audioPlayer.currentTime;
+          audioPlayer.crossOrigin = 'anonymous';
+          audioPlayer.src = safeUrl;
+          if (savedTime > 0) audioPlayer.currentTime = savedTime;
+          if (wasPlaying) audioPlayer.play().catch(() => {});
+        }
+
         const support = await canEnableEqForCurrentSource();
         if (!support.ok) {
           eqSettings.enabled = false;
@@ -1143,6 +1155,27 @@
         return upgraded;
       }
       return url;
+    }
+
+    // CORS 代理列表 — 用于将 HTTP 音频链接转为带 CORS 头的 HTTPS 链接
+    const CORS_PROXIES = [
+      'https://corsproxy.io/?url=',
+      'https://api.allorigins.win/raw?url=',
+    ];
+    let corsProxyIndex = 0;
+
+    function getEqSafeUrl(url) {
+      if (!url || typeof url !== 'string') return url;
+      // 页面是 HTTPS 且音频链接是 HTTP 时，走 CORS 代理
+      if (window.location.protocol !== 'https:' || !url.startsWith('http://')) {
+        return url;
+      }
+      // 轮询代理，避免单个代理挂掉导致全部不可用
+      const proxy = CORS_PROXIES[corsProxyIndex % CORS_PROXIES.length];
+      corsProxyIndex++;
+      const proxied = proxy + encodeURIComponent(url);
+      console.log('[EQ] CORS 代理:', url, '→', proxied);
+      return proxied;
     }
 
     function clearError() {
@@ -4615,8 +4648,13 @@
         await loadAlbumArt(song.pic_id, song.source);
 
         await requestLyricsOnlyForSong(song);
-        const audioUrl = await getAudioUrl(song.id, song.source, song);
+        let audioUrl = await getAudioUrl(song.id, song.source, song);
         audioPlayer.crossOrigin = 'anonymous';
+
+        // 若均衡器开启且页面 HTTPS 但音源 HTTP，走 CORS 代理确保 Web Audio API 可用
+        if (eqSettings.enabled) {
+          audioUrl = getEqSafeUrl(audioUrl);
+        }
 
         if (eqSettings.enabled && !eqGraphInitialized) {
           const eqSupport = await probeEqUrlSupport(audioUrl);
@@ -6641,7 +6679,7 @@
         if (!finalUrl) {
             throw new Error(payload?.error_msg || payload?.msg || '酷狗未返回可播放链接');
         }
-        return ensureHttpsUrl(finalUrl);
+        return finalUrl;
     }
 
     async function searchKugouSong(keyword) {
@@ -7400,9 +7438,11 @@
         gaplessPreloadAbort = new AbortController();
         const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
         if (gaplessPreloadAbort.signal.aborted) return;
-        gaplessPreloadUrl = audioUrl;
+        // 若均衡器开启且需要跨域代理，则走代理 URL
+        const safeUrl = eqSettings.enabled ? getEqSafeUrl(audioUrl) : audioUrl;
+        gaplessPreloadUrl = safeUrl;
         audioPlayerB.crossOrigin = 'anonymous';
-        audioPlayerB.src = audioUrl;
+        audioPlayerB.src = safeUrl;
         audioPlayerB.preload = 'auto';
         audioPlayerB.volume = 0;
         audioPlayerB.load();
