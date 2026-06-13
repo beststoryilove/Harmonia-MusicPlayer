@@ -132,7 +132,7 @@ AI models used in this project so far (sorted A–Z):
 
 ## 💬 Community & Contact
 
-- **Official Blog**: [azalkmin.midc.me](https://azalkmin.midc.me/)
+- **Official Blog**: [azalkmin.abrdns.com](https://azalkmin.abrdns.com/)
 - **QQ Group**: Click to join [https://qm.qq.com/q/p4WYBXFGNO](https://qm.qq.com/q/p4WYBXFGNO)  
   Or scan the QR code below:
 
