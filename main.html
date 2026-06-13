@@ -5764,8 +5764,6 @@ justify-content:center;
     let lyricsRendererMode = 'amll';
     let currentLyricRenderLines = [];
     let currentLyricRenderOptions = { emptyText: '暂无歌词', hasRendered: false };
-    const LRC = 'lrc', YRC = 'yrc', QRC = 'qrc', KRC = 'krc', TTML = 'ttml';
-    let currentLyricFormat = LRC;
     const neteaseIdResolveCache = new Map();
 
     const LINE_HEIGHT = 20;
@@ -6765,28 +6763,10 @@ justify-content:center;
             return;
           }
 
-          const sortedLines = (currentLyricRenderLines || []).slice().sort((a, b) => a.startTime - b.startTime);
-          const wordLines = sortedLines.map(line => ({
-            startTime: line.startTime,
-            endTime: line.endTime,
-            text: lineTextFromAMLL(line),
-            translatedLyric: line.translatedLyric || '',
-            romanLyric: line.romanLyric || '',
-            isBG: !!line.isBG,
-            isDuet: !!line.isDuet,
-            words: (line.words || []).map(w => ({
-              startTime: w.startTime,
-              endTime: w.endTime,
-              word: w.word || ''
-            }))
-          }));
-
           const lyricData = {
             type: 'full_lyric',
-            format: currentLyricFormat,
-            lyric: rawLyricText || '',      // 原文 LRC（向后兼容）
-            tlyric: rawTlyricText || '',     // 翻译 LRC（向后兼容）
-            lines: wordLines                 // 结构化词级数据
+            lyric: rawLyricText || '',      // 原文歌词
+            tlyric: rawTlyricText || ''     // 翻译歌词
           };
 
           try {
@@ -8321,13 +8301,6 @@ justify-content:center;
       rawLyricText = options.rawLyricText ?? serializeAMLLLinesToLrc(normalizedLines, 'main');
       rawTlyricText = options.rawTlyricText ?? serializeAMLLLinesToLrc(normalizedLines, 'translated');
 
-      const src = options.source || '';
-      if (/ttml/i.test(src))            currentLyricFormat = TTML;
-      else if (/yrc/i.test(src))        currentLyricFormat = YRC;
-      else if (/qrc/i.test(src))        currentLyricFormat = QRC;
-      else if (/krc/i.test(src))        currentLyricFormat = KRC;
-      else                              currentLyricFormat = LRC;
-
       if (!options.skipCache) {
         currentLyricRenderLines = normalizedLines;
         currentLyricRenderOptions = {
@@ -8599,13 +8572,10 @@ justify-content:center;
       try {
         const lyricJson = await fetchNeteaseLyricAll(neteaseId);
         const yrcText = lyricJson?.yrc?.lyric || '';
-        const qrcText = lyricJson?.qrc?.lyric || '';
         const lrcText = lyricJson?.lrc?.lyric || '';
         const tlyricText = lyricJson?.tlyric?.lyric || '';
-        const wordLyricText = yrcText || qrcText;
-        const wordSource = qrcText ? QRC : YRC;
-        if (wordLyricText && wordLyricText.trim()) {
-          const wordLines = parseWordLyrics(wordLyricText);
+        if (yrcText && yrcText.trim()) {
+          const wordLines = parseWordLyrics(yrcText);
           const lrcLines = parseLyrics(lrcText || '');
           const tLines = parseLyrics(tlyricText || '');
           const lrcToT = alignMonotonicByTime(lrcLines.map(x => x.time), tLines.map(x => x.time), 1.2);
@@ -8614,16 +8584,15 @@ justify-content:center;
             return ti !== -1 ? (tLines[ti]?.text || '') : '';
           });
           const offset = estimateOffset(wordLines.map(x => x.time), lrcLines.map(x => x.time));
-          const wrdToLrc = alignMonotonicByTime(wordLines.map(x => x.time + offset), lrcLines.map(x => x.time), 1.5);
+          const yrcToLrc = alignMonotonicByTime(wordLines.map(x => x.time + offset), lrcLines.map(x => x.time), 1.5);
           wordLines.forEach((line, i) => {
-            const li = wrdToLrc[i];
+            const li = yrcToLrc[i];
             if (li !== -1 && lrcTranslations[li]) line.translation = lrcTranslations[li];
           });
           return {
             lines: legacyWordLinesToAMLLLines(wordLines),
-            rawLyricText: lrcText || yrcText || qrcText,
-            rawTlyricText: tlyricText,
-            source: `netease-${wordSource}`
+            rawLyricText: lrcText || yrcText,
+            rawTlyricText: tlyricText
           };
         }
         if (lrcText && lrcText.trim()) {
@@ -8722,7 +8691,7 @@ justify-content:center;
           const official = await fetchOfficialNeteaseLyricLines(officialNeteaseId);
           if (official.lines.length) {
             await renderAMLLLines(official.lines, {
-              source: official.source || 'netease-official',
+              source: 'netease-official',
               rawLyricText: official.rawLyricText || serializeAMLLLinesToLrc(official.lines, 'main'),
               rawTlyricText: official.rawTlyricText || serializeAMLLLinesToLrc(official.lines, 'translated')
             });
@@ -8810,7 +8779,7 @@ justify-content:center;
     async function fetchNeteaseLyricAll(songId) {
       const baseUrl =
         `https://music.163.com/api/song/lyric` +
-        `?id=${encodeURIComponent(songId)}&lv=1&tv=1&yv=1&qv=1`;
+        `?id=${encodeURIComponent(songId)}&lv=1&tv=1&yv=1`;
 
       const proxies = [];
 
@@ -8837,7 +8806,7 @@ justify-content:center;
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
 
           const data = await r.json();
-          if (data && (data.lrc || data.yrc || data.qrc)) {
+          if (data && (data.lrc || data.yrc)) {
             console.log('[逐字歌词] 使用代理成功:', proxy);
             return data;
           }
@@ -8852,13 +8821,10 @@ justify-content:center;
 
         async function displayAMWordLyrics(neteaseLyricJson) {
       const yrcText = neteaseLyricJson?.yrc?.lyric || '';
-      const qrcText = neteaseLyricJson?.qrc?.lyric || '';
       const lrcText = neteaseLyricJson?.lrc?.lyric || '';
       const tlyricText = neteaseLyricJson?.tlyric?.lyric || '';
 
-      const wordLyricText = yrcText || qrcText;
-      const wordSource = qrcText ? QRC : YRC;
-      const wordLines = parseWordLyrics(wordLyricText);
+      const wordLines = parseWordLyrics(yrcText);
       if (!wordLines.length) {
         return await displayAMLyrics({ lyric: lrcText || '', tlyric: tlyricText || '' });
       }
@@ -8870,18 +8836,18 @@ justify-content:center;
         const ti = lrcToT[i];
         return ti !== -1 ? (tLines[ti]?.text || '') : '';
       });
-      const wrdTimes = wordLines.map(x => x.time);
+      const yrcTimes = wordLines.map(x => x.time);
       const lrcTimes = lrcLines.map(x => x.time);
-      const offset = estimateOffset(wrdTimes, lrcTimes);
-      const wrdToLrc = alignMonotonicByTime(wrdTimes.map(t => t + offset), lrcTimes, 1.5);
+      const offset = estimateOffset(yrcTimes, lrcTimes);
+      const yrcToLrc = alignMonotonicByTime(yrcTimes.map(t => t + offset), lrcTimes, 1.5);
       wordLines.forEach((line, i) => {
-        const li = wrdToLrc[i];
+        const li = yrcToLrc[i];
         if (li !== -1 && lrcTranslations[li]) line.translation = lrcTranslations[li];
       });
 
       const amllLines = legacyWordLinesToAMLLLines(wordLines);
       return await renderAMLLLines(amllLines, {
-        source: `netease-${wordSource}`,
+        source: 'netease-yrc',
         rawLyricText: lrcText || yrcText || serializeAMLLLinesToLrc(amllLines, 'main'),
         rawTlyricText: tlyricText || serializeAMLLLinesToLrc(amllLines, 'translated')
       });
