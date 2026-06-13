@@ -1072,16 +1072,44 @@
     async function setEqEnabled(enabled, announce = true) {
       eqSettings.enabled = !!enabled;
       if (eqSettings.enabled) {
-        // 若当前正在播放 HTTP 音源且页面是 HTTPS，先通过代理重载音频
+        // 若当前正在播放 HTTP 音源且页面是 HTTPS，先探测代理是否可用
         const currentUrl = audioPlayer.currentSrc || audioPlayer.src || '';
         const safeUrl = getEqSafeUrl(currentUrl);
         if (safeUrl !== currentUrl && currentUrl) {
+          const probeResult = await probeEqUrlSupport(safeUrl);
+          if (!probeResult.ok) {
+            // 代理不可用，不重载音频，直接拒绝开启
+            eqSettings.enabled = false;
+            persistAndRefreshEqUi();
+            showError(`当前音源不支持跨域音频处理，均衡器无法使用：${probeResult.reason}`, 4200);
+            return;
+          }
+          // 代理可用，重载音频
           const wasPlaying = !audioPlayer.paused;
           const savedTime = audioPlayer.currentTime;
+          let proxyFailed = false;
+          const onError = () => {
+            proxyFailed = true;
+            audioPlayer.removeEventListener('error', onError);
+          };
+          audioPlayer.addEventListener('error', onError, { once: true });
           audioPlayer.crossOrigin = 'anonymous';
           audioPlayer.src = safeUrl;
           if (savedTime > 0) audioPlayer.currentTime = savedTime;
           if (wasPlaying) audioPlayer.play().catch(() => {});
+          // 等一小段时间判断加载是否成功
+          await new Promise(r => setTimeout(r, 600));
+          audioPlayer.removeEventListener('error', onError);
+          if (proxyFailed) {
+            // 代理加载失败，回退到原始 URL
+            audioPlayer.src = currentUrl;
+            if (savedTime > 0) audioPlayer.currentTime = savedTime;
+            if (wasPlaying) audioPlayer.play().catch(() => {});
+            eqSettings.enabled = false;
+            persistAndRefreshEqUi();
+            showError('均衡器代理加载失败，已回退直连播放（无均衡器效果）', 4000);
+            return;
+          }
         }
 
         const support = await canEnableEqForCurrentSource();
@@ -1159,6 +1187,7 @@
 
     // CORS 代理列表 — 用于将 HTTP 音频链接转为带 CORS 头的 HTTPS 链接
     const CORS_PROXIES = [
+      'https://cors.harmoniamusicplayer.dpdns.org/?url=',
       'https://corsproxy.io/?url=',
       'https://api.allorigins.win/raw?url=',
     ];
@@ -4448,7 +4477,7 @@
             const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${normalizedSource}&id=${encodeURIComponent(playableId)}&br=${currentSettings.quality}`);
             const data = await r.json();
             if (!data.url) throw new Error('无法获取音频链接');
-            return ensureHttpsUrl(data.url.replace(/\\/g, ''));
+            return data.url.replace(/\\/g, '');
         } catch (e) {
             console.error('Error fetching audio URL:', e);
             throw e;
@@ -4648,13 +4677,8 @@
         await loadAlbumArt(song.pic_id, song.source);
 
         await requestLyricsOnlyForSong(song);
-        let audioUrl = await getAudioUrl(song.id, song.source, song);
+        const audioUrl = await getAudioUrl(song.id, song.source, song);
         audioPlayer.crossOrigin = 'anonymous';
-
-        // 若均衡器开启且页面 HTTPS 但音源 HTTP，走 CORS 代理确保 Web Audio API 可用
-        if (eqSettings.enabled) {
-          audioUrl = getEqSafeUrl(audioUrl);
-        }
 
         if (eqSettings.enabled && !eqGraphInitialized) {
           const eqSupport = await probeEqUrlSupport(audioUrl);
@@ -7438,11 +7462,9 @@
         gaplessPreloadAbort = new AbortController();
         const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
         if (gaplessPreloadAbort.signal.aborted) return;
-        // 若均衡器开启且需要跨域代理，则走代理 URL
-        const safeUrl = eqSettings.enabled ? getEqSafeUrl(audioUrl) : audioUrl;
-        gaplessPreloadUrl = safeUrl;
+        gaplessPreloadUrl = audioUrl;
         audioPlayerB.crossOrigin = 'anonymous';
-        audioPlayerB.src = safeUrl;
+        audioPlayerB.src = audioUrl;
         audioPlayerB.preload = 'auto';
         audioPlayerB.volume = 0;
         audioPlayerB.load();
