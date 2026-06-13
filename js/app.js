@@ -904,23 +904,7 @@
           cache: 'no-store',
           credentials: 'omit'
         });
-        // HEAD 成功了，但还需要验证 GET 请求也返回 CORS 头
-        // 某些服务器对 HEAD 和 GET 的 CORS 策略不同
-        try {
-          await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-store',
-            credentials: 'omit',
-            headers: { Range: 'bytes=0-0' }
-          });
-          result = { ok: true, reason: '', status: response.status };
-        } catch (getVerifyError) {
-          result = {
-            ok: false,
-            reason: '音源的 HEAD 请求支持跨域但 GET 请求不支持，均衡器可能无法正常工作。'
-          };
-        }
+        result = { ok: true, reason: '', status: response.status };
       } catch (headError) {
         try {
           const response = await fetch(url, {
@@ -1072,46 +1056,6 @@
     async function setEqEnabled(enabled, announce = true) {
       eqSettings.enabled = !!enabled;
       if (eqSettings.enabled) {
-        // 若当前正在播放 HTTP 音源且页面是 HTTPS，先探测代理是否可用
-        const currentUrl = audioPlayer.currentSrc || audioPlayer.src || '';
-        const safeUrl = getEqSafeUrl(currentUrl);
-        if (safeUrl !== currentUrl && currentUrl) {
-          const probeResult = await probeEqUrlSupport(safeUrl);
-          if (!probeResult.ok) {
-            // 代理不可用，不重载音频，直接拒绝开启
-            eqSettings.enabled = false;
-            persistAndRefreshEqUi();
-            showError(`当前音源不支持跨域音频处理，均衡器无法使用：${probeResult.reason}`, 4200);
-            return;
-          }
-          // 代理可用，重载音频
-          const wasPlaying = !audioPlayer.paused;
-          const savedTime = audioPlayer.currentTime;
-          let proxyFailed = false;
-          const onError = () => {
-            proxyFailed = true;
-            audioPlayer.removeEventListener('error', onError);
-          };
-          audioPlayer.addEventListener('error', onError, { once: true });
-          audioPlayer.crossOrigin = 'anonymous';
-          audioPlayer.src = safeUrl;
-          if (savedTime > 0) audioPlayer.currentTime = savedTime;
-          if (wasPlaying) audioPlayer.play().catch(() => {});
-          // 等一小段时间判断加载是否成功
-          await new Promise(r => setTimeout(r, 600));
-          audioPlayer.removeEventListener('error', onError);
-          if (proxyFailed) {
-            // 代理加载失败，回退到原始 URL
-            audioPlayer.src = currentUrl;
-            if (savedTime > 0) audioPlayer.currentTime = savedTime;
-            if (wasPlaying) audioPlayer.play().catch(() => {});
-            eqSettings.enabled = false;
-            persistAndRefreshEqUi();
-            showError('均衡器代理加载失败，已回退直连播放（无均衡器效果）', 4000);
-            return;
-          }
-        }
-
         const support = await canEnableEqForCurrentSource();
         if (!support.ok) {
           eqSettings.enabled = false;
@@ -1175,38 +1119,6 @@
     }
 
     // ===== 实用函数 =====
-    function ensureHttpsUrl(url) {
-      if (!url || typeof url !== 'string') return url;
-      if (window.location.protocol === 'https:' && url.startsWith('http://')) {
-        const upgraded = url.replace(/^http:\/\//, 'https://');
-        console.log('[EQ] HTTP→HTTPS 升级:', url, '→', upgraded);
-        return upgraded;
-      }
-      return url;
-    }
-
-    // CORS 代理列表 — 用于将 HTTP 音频链接转为带 CORS 头的 HTTPS 链接
-    const CORS_PROXIES = [
-      'https://cors.harmoniamusicplayer.dpdns.org/?url=',
-      'https://corsproxy.io/?url=',
-      'https://api.allorigins.win/raw?url=',
-    ];
-    let corsProxyIndex = 0;
-
-    function getEqSafeUrl(url) {
-      if (!url || typeof url !== 'string') return url;
-      // 页面是 HTTPS 且音频链接是 HTTP 时，走 CORS 代理
-      if (window.location.protocol !== 'https:' || !url.startsWith('http://')) {
-        return url;
-      }
-      // 轮询代理，避免单个代理挂掉导致全部不可用
-      const proxy = CORS_PROXIES[corsProxyIndex % CORS_PROXIES.length];
-      corsProxyIndex++;
-      const proxied = proxy + encodeURIComponent(url);
-      console.log('[EQ] CORS 代理:', url, '→', proxied);
-      return proxied;
-    }
-
     function clearError() {
       if (errorMessage) {
         errorMessage.classList.remove('active');
@@ -4677,9 +4589,7 @@
         await loadAlbumArt(song.pic_id, song.source);
 
         await requestLyricsOnlyForSong(song);
-        const rawUrl = await getAudioUrl(song.id, song.source, song);
-        // HTTPS 页面必须走代理把 HTTP 音源转成 HTTPS，否则浏览器直接拦截
-        const audioUrl = getEqSafeUrl(rawUrl);
+        const audioUrl = await getAudioUrl(song.id, song.source, song);
         audioPlayer.crossOrigin = 'anonymous';
 
         if (eqSettings.enabled && !eqGraphInitialized) {
@@ -7462,9 +7372,8 @@
       try {
         if (gaplessPreloadAbort) { gaplessPreloadAbort.abort(); }
         gaplessPreloadAbort = new AbortController();
-        const rawUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
+        const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
         if (gaplessPreloadAbort.signal.aborted) return;
-        const audioUrl = getEqSafeUrl(rawUrl);
         gaplessPreloadUrl = audioUrl;
         audioPlayerB.crossOrigin = 'anonymous';
         audioPlayerB.src = audioUrl;
