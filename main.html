@@ -11518,11 +11518,19 @@ justify-content:center;
         return kugouDfid;
     }
 
+    function forceHttpsUrl(url) {
+        if (!url || typeof url !== 'string') return url;
+        // GitHub Pages 强制 HTTPS，浏览器会将 http 音频资源自动升级为 https；
+        // 酷狗 API 返回的音频链接常为 http://，直接升级后 CDN 可能返回 403。
+        // 这里显式改为 https:// 避免浏览器自动升级导致请求失败。
+        return url.replace(/^http:\/\//i, 'https://');
+    }
+
     function pickKugouPlayableUrl(payload) {
         if (!payload || typeof payload !== 'object') return '';
-        if (typeof payload.url === 'string' && payload.url.trim()) return payload.url.trim();
-        if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return String(payload.url[0]).trim();
-        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
+        if (typeof payload.url === 'string' && payload.url.trim()) return forceHttpsUrl(payload.url.trim());
+        if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return forceHttpsUrl(String(payload.url[0]).trim());
+        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return forceHttpsUrl(String(payload.backupUrl[0]).trim());
         return '';
     }
 
