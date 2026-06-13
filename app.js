@@ -1,4 +1,4 @@
-﻿// ===== DOM Cache =====
+// ===== DOM Cache =====
     const dynamicIsland = document.getElementById('dynamicIsland');
     const dynamicIslandClose = document.getElementById('dynamicIslandClose');
     const dynamicIslandWelcome = document.getElementById('dynamicIslandWelcome');
@@ -5393,6 +5393,68 @@
         }
     });
 
+    // ===== 音频加载错误处理（403 重试） =====
+    let audioLoadRetryCount = 0;
+    let audioLoadRetrySongId = null;
+    const MAX_AUDIO_RETRIES = 2;
+
+    audioPlayer.addEventListener('error', async () => {
+      const error = audioPlayer.error;
+      if (!error) return;
+
+      // MEDIA_ERR_NETWORK = 2（网络错误，含 403）
+      const isNetworkError = error.code === MediaError.MEDIA_ERR_NETWORK;
+      const currentUrl = audioPlayer.currentSrc || audioPlayer.src || '';
+
+      console.warn(`[Audio] 加载错误 code=${error.code} url=${currentUrl}`);
+
+      if (isNetworkError && currentPlayingId) {
+        // 同一首歌的重复错误才计数
+        if (audioLoadRetrySongId !== currentPlayingId) {
+          audioLoadRetryCount = 0;
+          audioLoadRetrySongId = currentPlayingId;
+        }
+
+        if (audioLoadRetryCount < MAX_AUDIO_RETRIES) {
+          audioLoadRetryCount++;
+          console.warn(`[Audio] 403 重试 ${audioLoadRetryCount}/${MAX_AUDIO_RETRIES}，重新获取音频链接...`);
+          showDynamicIslandToast(`加载失败，正在重试 (${audioLoadRetryCount}/${MAX_AUDIO_RETRIES})...`, 2500);
+
+          try {
+            const song = currentSongData || playlist.find(s => s.id === currentPlayingId);
+            if (song) {
+              const newUrl = await getAudioUrl(song.id, song.source, song);
+              if (newUrl && newUrl !== currentUrl) {
+                const wasPlaying = isPlaying;
+                const savedTime = audioPlayer.currentTime || 0;
+                audioPlayer.src = newUrl;
+                audioPlayer.currentTime = savedTime;
+                if (wasPlaying) {
+                  await audioPlayer.play().catch(() => {});
+                }
+                return; // 重试成功，不执行后面的错误提示
+              }
+            }
+          } catch (retryErr) {
+            console.error('[Audio] 重试获取 URL 失败:', retryErr);
+          }
+        }
+
+        // 重试耗尽，提示用户
+        audioLoadRetryCount = 0;
+        audioLoadRetrySongId = null;
+        if (currentPlayingId) {
+          showError('音频加载失败（403 禁止访问），请检查网络或尝试切换音源', 5000);
+        }
+        audioPlayer.pause();
+        currentPlayingId = null;
+        updateCollapsedTextByPlayingState();
+        isPlaying = false;
+        updatePageTitle();
+        playButton.innerHTML = '<i class="fas fa-play"></i>';
+      }
+    });
+
     audioPlayer.addEventListener('loadedmetadata', () => {
       const currentTime = audioPlayer.currentTime || 0;
       const duration = audioPlayer.duration || 0;
@@ -8038,6 +8100,48 @@ if(window.opener&&window.opener.pipGetPlayMode){
           }
         }, 500);
       }
+    })();
+
+    // ====================================================================
+    // Service Worker 注册（解决酷狗 CDN 403）
+    // ====================================================================
+    (function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) {
+        console.warn('[SW] 浏览器不支持 Service Worker，酷狗 CDN 直链可能返回 403。');
+        return;
+      }
+
+      // file:// 协议不支持 SW
+      if (window.location.protocol === 'file:') {
+        console.warn('[SW] file:// 协议不支持 Service Worker，请使用本地服务器运行。');
+        return;
+      }
+
+      // 计算 SW 脚本路径（兼容 GitHub Pages 子目录部署）
+      const scriptPath = new URL('sw.js', window.location.href).pathname;
+      // scope 取页面所在目录，自动适配 /repo/ 或根路径 /
+      const scope = new URL('./', window.location.href).pathname;
+
+      navigator.serviceWorker.register(scriptPath, { scope })
+        .then((registration) => {
+          console.log('[SW] 注册成功，scope:', registration.scope);
+          // 监听 SW 更新
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              console.log('[SW] 发现新版本 Service Worker');
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                  console.log('[SW] 新版本已激活，建议刷新页面。');
+                }
+              });
+            }
+          });
+        })
+        .catch((err) => {
+          console.error('[SW] 注册失败:', err);
+          console.warn('[SW] 酷狗 CDN 音频可能无法正常播放。');
+        });
     })();
 
     // ====================================================================
