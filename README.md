@@ -133,7 +133,7 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 
 ## 💬 社区与交流
 
-- **官方博客**：[azalkmin.midc.me](https://azalkmin.midc.me/)
+- **官方博客**：[azalkmin.abrdns.com](https://azalkmin.abrdns.com/)
 - **QQ群**：点击链接加入群聊 [https://qm.qq.com/q/p4WYBXFGNO](https://qm.qq.com/q/p4WYBXFGNO)  
   或扫描下方二维码加入：
 
