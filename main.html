@@ -4790,7 +4790,7 @@ justify-content:center;
               <div class="about-open-hint">打开仓库 <i class="fas fa-arrow-up-right-from-square"></i></div>
             </a>
 
-            <a class="about-link-card" href="https://azalkmin.abrdns.com/" target="_blank" rel="noopener noreferrer">
+            <a class="about-link-card" href="https://azalkmin.midc.me/" target="_blank" rel="noopener noreferrer">
               <div class="about-link-icon"><i class="fas fa-blog"></i></div>
               <div class="about-link-title">作者博客</div>
               <div class="about-link-desc">访问博客，查看说明、记录与后续更新。</div>
@@ -4962,8 +4962,8 @@ justify-content:center;
     </div>
 </div>
 
-  <audio id="audioPlayer" crossorigin="anonymous"></audio>
-  <audio id="audioPlayerB" crossorigin="anonymous" style="display:none;"></audio>
+  <audio id="audioPlayer" referrerpolicy="no-referrer"></audio>
+  <audio id="audioPlayerB" referrerpolicy="no-referrer" style="display:none;"></audio>
 
   <!-- 分享卡片模态框 -->
   <div class="modal-overlay poster-modal-overlay" id="posterModalOverlay">
@@ -5866,6 +5866,28 @@ justify-content:center;
       }
     }
 
+    function shouldUseCorsForAudio(song = currentSongData) {
+      return eqSettings.enabled || !isKugouSongLike(song);
+    }
+
+    function configureAudioElementForSource(audioElement, song = currentSongData) {
+      if (!audioElement) return;
+      audioElement.referrerPolicy = 'no-referrer';
+      if (shouldUseCorsForAudio(song)) {
+        audioElement.crossOrigin = 'anonymous';
+      } else {
+        audioElement.removeAttribute('crossorigin');
+        audioElement.crossOrigin = null;
+      }
+    }
+
+    function getEqUnsupportedReasonForAudio(song = currentSongData) {
+      if (isKugouSongLike(song)) {
+        return '酷狗音频直链不开放 GitHub Pages 等跨域页面的 Web Audio 权限，已使用普通播放模式以避免 403。';
+      }
+      return '';
+    }
+
     async function probeEqUrlSupport(url) {
       if (!url) {
         return { ok: false, reason: '当前还没有可检测的音频地址' };
@@ -5911,6 +5933,10 @@ justify-content:center;
     }
 
     async function canEnableEqForCurrentSource() {
+      const blockedReason = getEqUnsupportedReasonForAudio(currentSongData);
+      if (blockedReason) {
+        return { ok: false, pending: false, reason: blockedReason };
+      }
       const sourceUrl = audioPlayer.currentSrc || audioPlayer.src || '';
       if (!sourceUrl) {
         return { ok: true, pending: true, reason: '' };
@@ -5946,7 +5972,7 @@ justify-content:center;
 
     async function ensureEqAudioGraph() {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      audioPlayer.crossOrigin = 'anonymous';
+      configureAudioElementForSource(audioPlayer);
       if (!AudioContextClass) {
         throw new Error('当前浏览器不支持 Web Audio API');
       }
@@ -9541,13 +9567,21 @@ justify-content:center;
 
         await requestLyricsOnlyForSong(song);
         const audioUrl = await getAudioUrl(song.id, song.source, song);
-        audioPlayer.crossOrigin = 'anonymous';
+        configureAudioElementForSource(audioPlayer, song);
+
+        const eqUnsupportedReason = getEqUnsupportedReasonForAudio(song);
+        if (eqSettings.enabled && eqUnsupportedReason) {
+          eqSettings.enabled = false;
+          persistAndRefreshEqUi();
+          showError(`当前音源不支持浏览器均衡器，已自动关闭：${eqUnsupportedReason}`, 4800);
+        }
 
         if (eqSettings.enabled && !eqGraphInitialized) {
           const eqSupport = await probeEqUrlSupport(audioUrl);
           if (!eqSupport.ok) {
             eqSettings.enabled = false;
             persistAndRefreshEqUi();
+            configureAudioElementForSource(audioPlayer, song);
             showError(`当前歌曲音源不支持浏览器均衡器，已自动关闭：${eqSupport.reason}`, 4800);
           }
         } else if (eqSettings.enabled && eqGraphInitialized) {
@@ -11518,19 +11552,11 @@ justify-content:center;
         return kugouDfid;
     }
 
-    function forceHttpsUrl(url) {
-        if (!url || typeof url !== 'string') return url;
-        // GitHub Pages 强制 HTTPS，浏览器会将 http 音频资源自动升级为 https；
-        // 酷狗 API 返回的音频链接常为 http://，直接升级后 CDN 可能返回 403。
-        // 这里显式改为 https:// 避免浏览器自动升级导致请求失败。
-        return url.replace(/^http:\/\//i, 'https://');
-    }
-
     function pickKugouPlayableUrl(payload) {
         if (!payload || typeof payload !== 'object') return '';
-        if (typeof payload.url === 'string' && payload.url.trim()) return forceHttpsUrl(payload.url.trim());
-        if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return forceHttpsUrl(String(payload.url[0]).trim());
-        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return forceHttpsUrl(String(payload.backupUrl[0]).trim());
+        if (typeof payload.url === 'string' && payload.url.trim()) return payload.url.trim();
+        if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return String(payload.url[0]).trim();
+        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
         return '';
     }
 
@@ -12334,7 +12360,7 @@ justify-content:center;
         const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
         if (gaplessPreloadAbort.signal.aborted) return;
         gaplessPreloadUrl = audioUrl;
-        audioPlayerB.crossOrigin = 'anonymous';
+        configureAudioElementForSource(audioPlayerB, nextSong);
         audioPlayerB.src = audioUrl;
         audioPlayerB.preload = 'auto';
         audioPlayerB.volume = 0;
