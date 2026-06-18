@@ -292,18 +292,18 @@ box-shadow:
 inset 0 2px 0 rgba(255,255,255,0.45),
 inset 0 -2px 0 rgba(0,0,0,0.55) !important;
 }
-.dynamic-island.expanded{
-width:520px;
-height:460px;
-border-radius:52px;
-padding:22px 26px;
-align-items:flex-start;
-cursor:default;
-background:rgba(15,15,18,0.72) !important;
-box-shadow:
-0 50px 120px rgba(0,0,0,0.82),
-inset 0 2.5px 0 rgba(255,255,255,0.5) !important;
-}
+	.dynamic-island.expanded{
+	width:540px;
+	height:480px;
+	border-radius:52px;
+	padding:22px 26px;
+	align-items:flex-start;
+	cursor:default;
+	background:rgba(15,15,18,0.72) !important;
+	box-shadow:
+	0 50px 120px rgba(0,0,0,0.82),
+	inset 0 2.5px 0 rgba(255,255,255,0.5) !important;
+	}
 .dynamic-island::before{
 content:'';
 position:absolute;
@@ -471,28 +471,36 @@ justify-content:center;
 color:#fff;
 transform:scale(1.06);
 }
-.island-results-container{
-flex:1;
-overflow-y:auto;
-margin:0 -8px;
-padding:0 8px;
-}
-.island-result-item{
-padding:14px 16px;
-border-radius:16px;
-margin-bottom:10px;
-background:var(--liquid-glass-bg-dark) !important;
-cursor:pointer;
-transition:all 0.22s ease;
-display:flex;
-align-items:center;
-justify-content:space-between;
-
-border:var(--liquid-border-dark) !important;
-backdrop-filter:var(--liquid-blur) var(--liquid-saturate) !important;
--webkit-backdrop-filter:var(--liquid-blur) var(--liquid-saturate) !important;
-box-shadow:var(--glass-depth-shadow),var(--glass-inner-glow) !important;
-}
+	.island-results-container{
+	flex:1;
+	overflow-y:auto;
+	margin:0 -8px;
+	padding:0 8px;
+	scrollbar-width:none;
+	-ms-overflow-style:none;
+	}
+	.island-results-container::-webkit-scrollbar{
+	display:none;
+	width:0;
+	height:0;
+	}
+	.island-result-item{
+	padding:14px 16px;
+	border-radius:16px;
+	margin-bottom:10px;
+	background:var(--liquid-glass-bg-dark) !important;
+	cursor:pointer;
+	transition:all 0.22s ease;
+	display:flex;
+	align-items:flex-start;
+	justify-content:space-between;
+	gap:10px;
+	
+	border:var(--liquid-border-dark) !important;
+	backdrop-filter:var(--liquid-blur) var(--liquid-saturate) !important;
+	-webkit-backdrop-filter:var(--liquid-blur) var(--liquid-saturate) !important;
+	box-shadow:var(--glass-depth-shadow),var(--glass-inner-glow) !important;
+	}
 .island-result-item:hover{
 background:rgba(255,255,255,0.07);
 transform:translateY(-2px);
@@ -503,35 +511,45 @@ background:rgba(255,45,85,0.14);
 border-color:rgba(255,45,85,0.25);
 box-shadow:0 14px 35px rgba(255,45,85,0.12);
 }
-.island-result-info{
-flex:1;
-margin-right:12px;
-}
-.island-result-title-row{
-display:flex;
-align-items:center;
-gap:8px;
-margin-bottom:4px;
-min-width:0;
-}
-.island-result-title{
-flex:1;
-min-width:0;
-font-weight:600;
-font-size:15px;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-color:var(--text-dark);
-}
-.island-result-artist{
-font-size:13px;
-color:rgba(255,255,255,0.6);
-}
-.island-result-actions{
-display:flex;
-gap:8px;
-}
+	.island-result-info{
+	flex:1;
+	min-width:0;
+	margin-right:12px;
+	overflow:hidden;
+	}
+	.island-result-title-row{
+	display:flex;
+	align-items:flex-start;
+	gap:8px;
+	margin-bottom:4px;
+	min-width:0;
+	flex-wrap:wrap;
+	}
+	.island-result-title{
+	flex:1;
+	min-width:0;
+	font-weight:600;
+	font-size:15px;
+	white-space:normal;
+	word-break:break-word;
+	overflow-wrap:anywhere;
+	line-height:1.4;
+	color:var(--text-dark);
+	}
+	.island-result-artist{
+	font-size:13px;
+	color:rgba(255,255,255,0.6);
+	white-space:normal;
+	word-break:break-word;
+	line-height:1.4;
+	}
+	.island-result-actions{
+	display:flex;
+	gap:8px;
+	flex-shrink:0;
+	align-items:center;
+	padding-top:2px;
+	}
 .island-result-action{
 background:rgba(255,255,255,0.08);
 border:1px solid rgba(255,255,255,0.08);
@@ -613,35 +631,42 @@ display:none;
 .island-error.active{
 display:block;
 }
-.island-empty{
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-height:200px;
-color:rgba(255,255,255,0.4);
-text-align:center;
-}
-.island-empty i{
-font-size:40px;
-margin-bottom:16px;
-opacity:0.5;
-}
-.island-empty-text{
-font-size:14px;
-max-width:200px;
-line-height:1.5;
-}
-.island-welcome{
-font-size:12px;
-color:rgba(255,255,255,0.6);
-text-align:center;
-margin-top:4px;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-max-width:100%;
-}
+	.island-empty{
+	display:flex;
+	flex-direction:column;
+	align-items:center;
+	justify-content:center;
+	height:220px;
+	color:rgba(255,255,255,0.45);
+	text-align:center;
+	padding:20px;
+	}
+	.island-empty i{
+	font-size:48px;
+	margin-bottom:18px;
+	opacity:0.55;
+	background:linear-gradient(135deg,rgba(255,45,85,0.5),rgba(88,86,214,0.5));
+	-webkit-background-clip:text;
+	-webkit-text-fill-color:transparent;
+	background-clip:text;
+	}
+	.island-empty-text{
+	font-size:15px;
+	max-width:280px;
+	line-height:1.6;
+	font-weight:500;
+	}
+	.island-welcome{
+	font-size:13px;
+	color:rgba(255,255,255,0.7);
+	text-align:center;
+	margin-top:6px;
+	margin-bottom:4px;
+	white-space:normal;
+	word-break:break-word;
+	line-height:1.5;
+	max-width:100%;
+	}
 /* ===== Spotify 风格侧边栏 ===== */
 .sidebar-overlay{
 position:fixed;
@@ -783,10 +808,16 @@ font-size:12px;
 color:#fff;
 background:rgba(255,255,255,0.08);
 }
-.sidebar-sort-controls{
-display:flex;
-gap:4px;
-}
+	.sidebar-sort-controls{
+	display:flex;
+	gap:4px;
+	}
+	.sidebar-source-filter-controls{
+	display:grid;
+	grid-template-columns:1fr 1fr;
+	gap:6px;
+	margin-top:8px;
+	}
 .sidebar-sort-btn{
 flex:1;
 padding:6px 8px;
@@ -1425,17 +1456,17 @@ color:#fff !important;
 background:linear-gradient(135deg,#ff375f,#ff2d55) !important;
 transform:scale(1.08);
 }
-.volume-container{
-display:flex;
-align-items:center;
-gap:10px;
-background:rgba(0,0,0,0.3);
-backdrop-filter:blur(15px) saturate(180%);
--webkit-backdrop-filter:blur(15px) saturate(180%);
-border:1px solid rgba(255,255,255,0.12);
-padding:8px 15px;
-border-radius:30px;
-}
+	.volume-container{
+	display:flex;
+	align-items:center;
+	gap:10px;
+	background:transparent;
+	backdrop-filter:none;
+	-webkit-backdrop-filter:none;
+	border:1px solid transparent;
+	padding:8px 15px;
+	border-radius:30px;
+	}
 .volume-slider{
 width:100px;
 -webkit-appearance:none;
@@ -2796,12 +2827,12 @@ body.light-theme .sidebar{
 background:#f8f8f8 !important;
 border-right:1px solid rgba(0,0,0,0.06) !important;
 }
-body.light-theme .volume-container,
-body.light-theme .lyrics-toggle-btn{
-background:rgba(255,255,255,0.3) !important;
-border:1px solid rgba(0,0,0,0.08) !important;
-color:var(--text-light);
-}
+	body.light-theme .volume-container,
+	body.light-theme .lyrics-toggle-btn{
+	background:transparent !important;
+	border:1px solid transparent !important;
+	color:var(--text-light);
+	}
 body.light-theme .island-title,
 body.light-theme .island-close,
 body.light-theme .island-welcome{
@@ -3500,27 +3531,44 @@ display:flex;
 flex-direction:column;
 gap:4px;
 }
-.nav-item{
-padding:12px 18px;
-border-radius:12px;
-cursor:pointer;
-color:rgba(255,255,255,0.6);
-font-weight:600;
-display:flex;
-align-items:center;
-gap:12px;
-transition:all 0.2s ease;
-}
-.nav-item.active{
-background:rgba(255,45,85,0.15);
-color:#fff;
-}
-.settings-main{
-flex:1;
-padding:40px;
-overflow-y:auto;
-position:relative;
-}
+	.nav-item{
+	padding:12px 18px;
+	border-radius:12px;
+	cursor:pointer;
+	color:rgba(255,255,255,0.6);
+	font-weight:600;
+	display:flex;
+	align-items:center;
+	gap:12px;
+	transition:all 0.2s ease;
+	}
+	.nav-item i{
+	width:18px;
+	text-align:center;
+	flex-shrink:0;
+	}
+	.nav-item.active{
+	background:rgba(255,45,85,0.15);
+	color:#fff;
+	}
+	.settings-main{
+	flex:1;
+	padding:40px;
+	overflow-y:auto;
+	position:relative;
+	scrollbar-width:thin;
+	scrollbar-color:rgba(255,255,255,0.15) transparent;
+	}
+	.settings-main::-webkit-scrollbar{
+	width:6px;
+	}
+	.settings-main::-webkit-scrollbar-thumb{
+	background-color:rgba(255,255,255,0.15);
+	border-radius:10px;
+	}
+	.settings-main::-webkit-scrollbar-track{
+	background:transparent;
+	}
 .settings-close-btn{
 position:absolute;
 top:20px;
@@ -4473,6 +4521,18 @@ justify-content:center;
         </div>
 
         <div class="settings-group">
+          <div class="group-title">TTML歌词来源</div>
+          <div class="setting-item vertical">
+            <div class="item-label">AMLL 社区 TTML 数据库</div>
+            <div class="radio-stack">
+              <label class="radio-label"><input type="radio" name="amllTtmlSource" value="mirror" checked> <span>镜像站 (Bikonoo · 推荐)</span></label>
+              <label class="radio-label"><input type="radio" name="amllTtmlSource" value="github"> <span>GitHub 社区库 (可能不稳定)</span></label>
+            </div>
+            <div class="item-desc" style="margin-top: 6px;">TTML 支持对唱、背景人声等高级歌词效果。镜像站更稳定，GitHub 可能因网络问题加载失败。</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
           <div class="group-title">歌曲翻译</div>
           <div class="setting-item">
             <div class="item-info">
@@ -4498,18 +4558,6 @@ justify-content:center;
           <div class="setting-item" style="background: transparent; border: none; padding: 0;">
             <button class="ios-btn secondary" id="testApiBtn">测试连接</button>
             <button class="ios-btn primary" id="saveSettingsBtn">保存设置</button>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <div class="group-title">音乐音源</div>
-          <div class="setting-item vertical">
-            <div class="item-label">默认搜索与播放音源</div>
-            <div class="segmented-control">
-              <label><input type="radio" name="musicSource" value="netease" checked><span>网易云</span></label>
-              <label><input type="radio" name="musicSource" value="kugou"><span>酷狗</span></label>
-            </div>
-            <div class="item-desc" style="margin-top: 6px;">切换后会同时影响搜索、播放和列表来源标识。</div>
           </div>
         </div>
 
@@ -4576,6 +4624,18 @@ justify-content:center;
       </div>
 
       <div class="settings-tab-content" data-tab="audio">
+        <div class="settings-group">
+          <div class="group-title">音乐音源</div>
+          <div class="setting-item vertical">
+            <div class="item-label">默认搜索与播放音源</div>
+            <div class="segmented-control">
+              <label><input type="radio" name="musicSource" value="netease" checked><span>网易云</span></label>
+              <label><input type="radio" name="musicSource" value="kugou"><span>酷狗</span></label>
+            </div>
+            <div class="item-desc" style="margin-top: 6px;">切换后会同时影响搜索、播放和列表来源标识。</div>
+          </div>
+        </div>
+
         <div class="settings-group">
           <div class="group-title">酷狗音质</div>
           <div class="setting-item vertical">
@@ -4854,6 +4914,15 @@ justify-content:center;
           <i class="fas fa-sliders-h"></i> 自定义
         </button>
       </div>
+
+      <div class="sidebar-source-filter-controls">
+        <button class="sidebar-sort-btn" id="filterNeteaseBtn" title="仅显示网易云">
+          <i class="fas fa-cloud"></i> 筛选网易云
+        </button>
+        <button class="sidebar-sort-btn" id="filterKugouBtn" title="仅显示酷狗">
+          <i class="fas fa-music"></i> 筛选酷狗
+        </button>
+      </div>
     </div>
 
     <div class="sidebar-content">
@@ -4962,8 +5031,8 @@ justify-content:center;
     </div>
 </div>
 
-  <audio id="audioPlayer" referrerpolicy="no-referrer"></audio>
-  <audio id="audioPlayerB" referrerpolicy="no-referrer" style="display:none;"></audio>
+  <audio id="audioPlayer" crossorigin="anonymous"></audio>
+  <audio id="audioPlayerB" crossorigin="anonymous" style="display:none;"></audio>
 
   <!-- 分享卡片模态框 -->
   <div class="modal-overlay poster-modal-overlay" id="posterModalOverlay">
@@ -5041,7 +5110,10 @@ justify-content:center;
     const lyricsRendererModeRadios = document.querySelectorAll('input[name="lyricsRendererMode"]');
     const AMLL_CORE_ESM_URL = 'https://esm.sh/@applemusic-like-lyrics/core@0.5.1?bundle';
     const AMLL_LYRIC_ESM_URL = 'https://esm.sh/@applemusic-like-lyrics/lyric@1.0.1?bundle';
-    const AMLL_TTML_DB_BASE = 'https://raw.githubusercontent.com/amll-dev/amll-ttml-db/main/ncm-lyrics/';
+    const AMLL_TTML_DB_MIRROR = 'https://amlldb.bikonoo.com/ncm-lyrics/';
+    const AMLL_TTML_DB_GITHUB = 'https://raw.githubusercontent.com/amll-dev/amll-ttml-db/main/ncm-lyrics/';
+    const AMLL_TTML_SOURCE_KEY = 'amllTtmlSource';
+    let AMLL_TTML_DB_BASE = localStorage.getItem(AMLL_TTML_SOURCE_KEY) === 'github' ? AMLL_TTML_DB_GITHUB : AMLL_TTML_DB_MIRROR;
     const rightcontent = document.getElementById('rightcontent');
     const lyricsToggleBtn = document.getElementById('lyricsToggleBtn');
     const originalTitle = "Harmonia - 音乐播放器";
@@ -5717,6 +5789,7 @@ justify-content:center;
     let currentSongData = null;
     let sidebarSearchQuery = '';
     let sidebarSortMode = 'none'; // 'none', 'az', 'za', 'custom'
+    let sidebarSourceFilter = null; // null, 'netease', 'kugou'
     let isDragging = false;
     let dragSourceIndex = -1;
     let customOrder = {}; // 存储每个列表的自定义顺序
@@ -5764,6 +5837,8 @@ justify-content:center;
     let lyricsRendererMode = 'amll';
     let currentLyricRenderLines = [];
     let currentLyricRenderOptions = { emptyText: '暂无歌词', hasRendered: false };
+    const LRC = 'lrc', YRC = 'yrc', QRC = 'qrc', KRC = 'krc', TTML = 'ttml';
+    let currentLyricFormat = LRC;
     const neteaseIdResolveCache = new Map();
 
     const LINE_HEIGHT = 20;
@@ -5866,28 +5941,6 @@ justify-content:center;
       }
     }
 
-    function shouldUseCorsForAudio(song = currentSongData) {
-      return eqSettings.enabled || !isKugouSongLike(song);
-    }
-
-    function configureAudioElementForSource(audioElement, song = currentSongData) {
-      if (!audioElement) return;
-      audioElement.referrerPolicy = 'no-referrer';
-      if (shouldUseCorsForAudio(song)) {
-        audioElement.crossOrigin = 'anonymous';
-      } else {
-        audioElement.removeAttribute('crossorigin');
-        audioElement.crossOrigin = null;
-      }
-    }
-
-    function getEqUnsupportedReasonForAudio(song = currentSongData) {
-      if (isKugouSongLike(song)) {
-        return '酷狗音频直链不开放 GitHub Pages 等跨域页面的 Web Audio 权限，已使用普通播放模式以避免 403。';
-      }
-      return '';
-    }
-
     async function probeEqUrlSupport(url) {
       if (!url) {
         return { ok: false, reason: '当前还没有可检测的音频地址' };
@@ -5933,10 +5986,6 @@ justify-content:center;
     }
 
     async function canEnableEqForCurrentSource() {
-      const blockedReason = getEqUnsupportedReasonForAudio(currentSongData);
-      if (blockedReason) {
-        return { ok: false, pending: false, reason: blockedReason };
-      }
       const sourceUrl = audioPlayer.currentSrc || audioPlayer.src || '';
       if (!sourceUrl) {
         return { ok: true, pending: true, reason: '' };
@@ -5972,7 +6021,7 @@ justify-content:center;
 
     async function ensureEqAudioGraph() {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      configureAudioElementForSource(audioPlayer);
+      audioPlayer.crossOrigin = 'anonymous';
       if (!AudioContextClass) {
         throw new Error('当前浏览器不支持 Web Audio API');
       }
@@ -6601,6 +6650,7 @@ justify-content:center;
       lyricsVisible = isMobileLyricsFullscreen;
 
       if (isMobileLyricsFullscreen) {
+        // 先立即切换界面，避免移动端在大量歌词测量/AMLL 同步时卡住几秒。
         document.body.classList.add('mobile-lyrics-fullscreen');
         rightcontent.classList.remove('hidden');
         lyricsToggleBtn.innerHTML = '<i class="fas fa-times"></i>';
@@ -6615,12 +6665,22 @@ justify-content:center;
         lyricsToggleBtn.style.color = '';
       }
 
-      LYRICS_OFFSET = calculateLyricsOffset();
-      rebuildLyricsMetrics(amLyricsData);
-      if (amLyricsData.length > 0 && lastLyric >= 0) {
-        UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
-      }
-      resizeAMLLPlayer();
+      const syncLyricsAfterPaint = () => {
+        LYRICS_OFFSET = calculateLyricsOffset();
+        if (isAMLLRendererMode() && amllPlayer && amllActive) {
+          resizeAMLLPlayer();
+          return;
+        }
+        if (amLyricsData.length > 0) {
+          rebuildLyricsMetrics(amLyricsData);
+          if (lastLyric >= 0) {
+            UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
+          }
+        }
+        resizeAMLLPlayer();
+      };
+
+      requestAnimationFrame(() => setTimeout(syncLyricsAfterPaint, 0));
     }
 
     function loadTranslationSettings() {
@@ -6789,10 +6849,28 @@ justify-content:center;
             return;
           }
 
+          const sortedLines = (currentLyricRenderLines || []).slice().sort((a, b) => a.startTime - b.startTime);
+          const wordLines = sortedLines.map(line => ({
+            startTime: line.startTime,
+            endTime: line.endTime,
+            text: lineTextFromAMLL(line),
+            translatedLyric: line.translatedLyric || '',
+            romanLyric: line.romanLyric || '',
+            isBG: !!line.isBG,
+            isDuet: !!line.isDuet,
+            words: (line.words || []).map(w => ({
+              startTime: w.startTime,
+              endTime: w.endTime,
+              word: w.word || ''
+            }))
+          }));
+
           const lyricData = {
             type: 'full_lyric',
-            lyric: rawLyricText || '',      // 原文歌词
-            tlyric: rawTlyricText || ''     // 翻译歌词
+            format: currentLyricFormat,
+            lyric: rawLyricText || '',      // 原文 LRC（向后兼容）
+            tlyric: rawTlyricText || '',     // 翻译 LRC（向后兼容）
+            lines: wordLines                 // 结构化词级数据
           };
 
           try {
@@ -7093,6 +7171,10 @@ justify-content:center;
             : (item.artist || '').toLowerCase();
           return name.includes(sidebarSearchQuery) || artist.includes(sidebarSearchQuery);
         });
+      }
+
+      if (sidebarSourceFilter) {
+        items = items.filter(item => getSongSource(item) === sidebarSourceFilter);
       }
 
       if (sidebarSortMode === 'az') {
@@ -7499,11 +7581,11 @@ justify-content:center;
       if (existingIdx !== -1) {
         history.splice(existingIdx, 1);
       }
-      history.push({
+      history.unshift({
         ...normalizedTrack,
         timestamp: Date.now()
       });
-      if (history.length > 50) history.shift();
+      if (history.length > 50) history.pop();
       saveHistory();
       if (currentTab === 'history') renderPlaylist();
     }
@@ -8327,6 +8409,13 @@ justify-content:center;
       rawLyricText = options.rawLyricText ?? serializeAMLLLinesToLrc(normalizedLines, 'main');
       rawTlyricText = options.rawTlyricText ?? serializeAMLLLinesToLrc(normalizedLines, 'translated');
 
+      const src = options.source || '';
+      if (/ttml/i.test(src))            currentLyricFormat = TTML;
+      else if (/yrc/i.test(src))        currentLyricFormat = YRC;
+      else if (/qrc/i.test(src))        currentLyricFormat = QRC;
+      else if (/krc/i.test(src))        currentLyricFormat = KRC;
+      else                              currentLyricFormat = LRC;
+
       if (!options.skipCache) {
         currentLyricRenderLines = normalizedLines;
         currentLyricRenderOptions = {
@@ -8598,10 +8687,13 @@ justify-content:center;
       try {
         const lyricJson = await fetchNeteaseLyricAll(neteaseId);
         const yrcText = lyricJson?.yrc?.lyric || '';
+        const qrcText = lyricJson?.qrc?.lyric || '';
         const lrcText = lyricJson?.lrc?.lyric || '';
         const tlyricText = lyricJson?.tlyric?.lyric || '';
-        if (yrcText && yrcText.trim()) {
-          const wordLines = parseWordLyrics(yrcText);
+        const wordLyricText = yrcText || qrcText;
+        const wordSource = qrcText ? QRC : YRC;
+        if (wordLyricText && wordLyricText.trim()) {
+          const wordLines = parseWordLyrics(wordLyricText);
           const lrcLines = parseLyrics(lrcText || '');
           const tLines = parseLyrics(tlyricText || '');
           const lrcToT = alignMonotonicByTime(lrcLines.map(x => x.time), tLines.map(x => x.time), 1.2);
@@ -8610,15 +8702,16 @@ justify-content:center;
             return ti !== -1 ? (tLines[ti]?.text || '') : '';
           });
           const offset = estimateOffset(wordLines.map(x => x.time), lrcLines.map(x => x.time));
-          const yrcToLrc = alignMonotonicByTime(wordLines.map(x => x.time + offset), lrcLines.map(x => x.time), 1.5);
+          const wrdToLrc = alignMonotonicByTime(wordLines.map(x => x.time + offset), lrcLines.map(x => x.time), 1.5);
           wordLines.forEach((line, i) => {
-            const li = yrcToLrc[i];
+            const li = wrdToLrc[i];
             if (li !== -1 && lrcTranslations[li]) line.translation = lrcTranslations[li];
           });
           return {
             lines: legacyWordLinesToAMLLLines(wordLines),
-            rawLyricText: lrcText || yrcText,
-            rawTlyricText: tlyricText
+            rawLyricText: lrcText || yrcText || qrcText,
+            rawTlyricText: tlyricText,
+            source: `netease-${wordSource}`
           };
         }
         if (lrcText && lrcText.trim()) {
@@ -8717,7 +8810,7 @@ justify-content:center;
           const official = await fetchOfficialNeteaseLyricLines(officialNeteaseId);
           if (official.lines.length) {
             await renderAMLLLines(official.lines, {
-              source: 'netease-official',
+              source: official.source || 'netease-official',
               rawLyricText: official.rawLyricText || serializeAMLLLinesToLrc(official.lines, 'main'),
               rawTlyricText: official.rawTlyricText || serializeAMLLLinesToLrc(official.lines, 'translated')
             });
@@ -8805,7 +8898,7 @@ justify-content:center;
     async function fetchNeteaseLyricAll(songId) {
       const baseUrl =
         `https://music.163.com/api/song/lyric` +
-        `?id=${encodeURIComponent(songId)}&lv=1&tv=1&yv=1`;
+        `?id=${encodeURIComponent(songId)}&lv=1&tv=1&yv=1&qv=1`;
 
       const proxies = [];
 
@@ -8832,7 +8925,7 @@ justify-content:center;
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
 
           const data = await r.json();
-          if (data && (data.lrc || data.yrc)) {
+          if (data && (data.lrc || data.yrc || data.qrc)) {
             console.log('[逐字歌词] 使用代理成功:', proxy);
             return data;
           }
@@ -8847,10 +8940,13 @@ justify-content:center;
 
         async function displayAMWordLyrics(neteaseLyricJson) {
       const yrcText = neteaseLyricJson?.yrc?.lyric || '';
+      const qrcText = neteaseLyricJson?.qrc?.lyric || '';
       const lrcText = neteaseLyricJson?.lrc?.lyric || '';
       const tlyricText = neteaseLyricJson?.tlyric?.lyric || '';
 
-      const wordLines = parseWordLyrics(yrcText);
+      const wordLyricText = yrcText || qrcText;
+      const wordSource = qrcText ? QRC : YRC;
+      const wordLines = parseWordLyrics(wordLyricText);
       if (!wordLines.length) {
         return await displayAMLyrics({ lyric: lrcText || '', tlyric: tlyricText || '' });
       }
@@ -8862,18 +8958,18 @@ justify-content:center;
         const ti = lrcToT[i];
         return ti !== -1 ? (tLines[ti]?.text || '') : '';
       });
-      const yrcTimes = wordLines.map(x => x.time);
+      const wrdTimes = wordLines.map(x => x.time);
       const lrcTimes = lrcLines.map(x => x.time);
-      const offset = estimateOffset(yrcTimes, lrcTimes);
-      const yrcToLrc = alignMonotonicByTime(yrcTimes.map(t => t + offset), lrcTimes, 1.5);
+      const offset = estimateOffset(wrdTimes, lrcTimes);
+      const wrdToLrc = alignMonotonicByTime(wrdTimes.map(t => t + offset), lrcTimes, 1.5);
       wordLines.forEach((line, i) => {
-        const li = yrcToLrc[i];
+        const li = wrdToLrc[i];
         if (li !== -1 && lrcTranslations[li]) line.translation = lrcTranslations[li];
       });
 
       const amllLines = legacyWordLinesToAMLLLines(wordLines);
       return await renderAMLLLines(amllLines, {
-        source: 'netease-yrc',
+        source: `netease-${wordSource}`,
         rawLyricText: lrcText || yrcText || serializeAMLLLinesToLrc(amllLines, 'main'),
         rawTlyricText: tlyricText || serializeAMLLLinesToLrc(amllLines, 'translated')
       });
@@ -9352,6 +9448,17 @@ justify-content:center;
         bgModeSelect.value = savedMode;
         updateBgVisual(savedMode);
         updateKugouAccountUI();
+
+        // 提前加载 AMLL 歌词引擎，避免首次播放时等待
+        const savedRenderer = localStorage.getItem(LYRICS_RENDERER_MODE_KEY) || 'amll';
+        if (savedRenderer === 'amll') {
+          const delayMs = isMobileDevice() ? 800 : 200;
+          setTimeout(() => {
+            ensureAMLLPlayer().catch(() => {
+              console.warn('[AMLL] 预加载失败，将在首次播放时重试');
+            });
+          }, delayMs);
+        }
     });
 
     async function getAudioUrl(id, source = currentSettings.source, song = null) {
@@ -9567,21 +9674,13 @@ justify-content:center;
 
         await requestLyricsOnlyForSong(song);
         const audioUrl = await getAudioUrl(song.id, song.source, song);
-        configureAudioElementForSource(audioPlayer, song);
-
-        const eqUnsupportedReason = getEqUnsupportedReasonForAudio(song);
-        if (eqSettings.enabled && eqUnsupportedReason) {
-          eqSettings.enabled = false;
-          persistAndRefreshEqUi();
-          showError(`当前音源不支持浏览器均衡器，已自动关闭：${eqUnsupportedReason}`, 4800);
-        }
+        audioPlayer.crossOrigin = 'anonymous';
 
         if (eqSettings.enabled && !eqGraphInitialized) {
           const eqSupport = await probeEqUrlSupport(audioUrl);
           if (!eqSupport.ok) {
             eqSettings.enabled = false;
             persistAndRefreshEqUi();
-            configureAudioElementForSource(audioPlayer, song);
             showError(`当前歌曲音源不支持浏览器均衡器，已自动关闭：${eqSupport.reason}`, 4800);
           }
         } else if (eqSettings.enabled && eqGraphInitialized) {
@@ -10440,6 +10539,7 @@ justify-content:center;
 
         sidebarSearchQuery = '';
         sidebarSortMode = 'none';
+        sidebarSourceFilter = null;
         const searchInput = document.getElementById('sidebarSearchInput');
         if (searchInput) {
           searchInput.value = '';
@@ -11093,6 +11193,23 @@ justify-content:center;
             });
         });
 
+        // TTML 歌词来源切换
+        const amllTtmlSourceRadios = document.querySelectorAll('input[name="amllTtmlSource"]');
+        const savedTtmlSource = localStorage.getItem(AMLL_TTML_SOURCE_KEY) || 'mirror';
+        amllTtmlSourceRadios.forEach(radio => {
+          if (radio.value === savedTtmlSource) radio.checked = true;
+          radio.addEventListener('change', (e) => {
+            if (!e.target.checked) return;
+            const value = e.target.value;
+            localStorage.setItem(AMLL_TTML_SOURCE_KEY, value);
+            AMLL_TTML_DB_BASE = value === 'github' ? AMLL_TTML_DB_GITHUB : AMLL_TTML_DB_MIRROR;
+            showDynamicIslandToast(
+              value === 'github' ? 'TTML 来源已切换为 GitHub 社区库' : 'TTML 来源已切换为镜像站 (Bikonoo)',
+              2200
+            );
+          });
+        });
+
         document.querySelectorAll('input[name="lyricsAnimationMode"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 if (!e.target.checked) return;
@@ -11185,12 +11302,14 @@ justify-content:center;
         updateCollapsedText('Harmonia');
     }
 
-      function initSidebarControls() {
+	      function initSidebarControls() {
         const sidebarSearchInput = document.getElementById('sidebarSearchInput');
         const sidebarSearchClear = document.getElementById('sidebarSearchClear');
         const sortAZBtn = document.getElementById('sortAZBtn');
         const sortZABtn = document.getElementById('sortZABtn');
         const customOrderBtn = document.getElementById('customOrderBtn');
+        const filterNeteaseBtn = document.getElementById('filterNeteaseBtn');
+        const filterKugouBtn = document.getElementById('filterKugouBtn');
         const sidebar = document.getElementById('sidebar');
 
         if (!sortAZBtn || !sortZABtn || !customOrderBtn) {
@@ -11263,6 +11382,22 @@ justify-content:center;
 
           renderPlaylist();
         };
+
+        if (filterNeteaseBtn) {
+          filterNeteaseBtn.onclick = () => {
+            sidebarSourceFilter = sidebarSourceFilter === 'netease' ? null : 'netease';
+            updateSortButtons();
+            renderPlaylist();
+          };
+        }
+
+        if (filterKugouBtn) {
+          filterKugouBtn.onclick = () => {
+            sidebarSourceFilter = sidebarSourceFilter === 'kugou' ? null : 'kugou';
+            updateSortButtons();
+            renderPlaylist();
+          };
+        }
       }
 
     function updatePlaylistOrderFromDisplay() {
@@ -11315,6 +11450,8 @@ justify-content:center;
       const sortAZBtn = document.getElementById('sortAZBtn');
       const sortZABtn = document.getElementById('sortZABtn');
       const customOrderBtn = document.getElementById('customOrderBtn');
+      const filterNeteaseBtn = document.getElementById('filterNeteaseBtn');
+      const filterKugouBtn = document.getElementById('filterKugouBtn');
       const sidebar = document.getElementById('sidebar');
 
       if (!sortAZBtn || !sortZABtn || !customOrderBtn) {
@@ -11336,6 +11473,13 @@ justify-content:center;
         customOrderBtn.classList.add('active');
         sidebar.classList.add('sidebar-sort-mode-custom');
         customOrderBtn.innerHTML = '<i class="fas fa-check"></i> 完成';
+      }
+
+      if (filterNeteaseBtn) {
+        filterNeteaseBtn.classList.toggle('active', sidebarSourceFilter === 'netease');
+      }
+      if (filterKugouBtn) {
+        filterKugouBtn.classList.toggle('active', sidebarSourceFilter === 'kugou');
       }
     }
     init();
@@ -11531,8 +11675,12 @@ justify-content:center;
         if (data.status !== 1) throw new Error(data.msg || '登录失败');
         const token = data.data.token;
         const userid = data.data.userid;
+        const nickname = data.data.nickname;
+        const pic = data.data.pic;
         localStorage.setItem('kugouToken', token);
         localStorage.setItem('kugouUserId', userid);
+        if (nickname) localStorage.setItem('kugouNickname', nickname);
+        if (pic) localStorage.setItem('kugouPic', pic);
         kugouToken = token;
         kugouUserId = userid;
         return data;
@@ -12360,7 +12508,7 @@ justify-content:center;
         const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
         if (gaplessPreloadAbort.signal.aborted) return;
         gaplessPreloadUrl = audioUrl;
-        configureAudioElementForSource(audioPlayerB, nextSong);
+        audioPlayerB.crossOrigin = 'anonymous';
         audioPlayerB.src = audioUrl;
         audioPlayerB.preload = 'auto';
         audioPlayerB.volume = 0;
@@ -12585,7 +12733,7 @@ justify-content:center;
       const rawArtist = (currentSongInfo?.artist || '').replace(/^[^·]*·\s*/, '');
       const isPlayingNow = isPlaying;
 
-      return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+      return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
