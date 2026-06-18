@@ -10337,7 +10337,7 @@ justify-content:center;
         return;
       }
 
-      const nextSongId = getNextSongId(currentPlayingId);
+      const nextSongId = getNextSongId(currentPlayingId, true);
       if (!nextSongId) {
         showError('无法获取下一首歌曲');
         return;
@@ -11061,7 +11061,7 @@ justify-content:center;
       playlistOrder = playlist.map(item => item.id);
     }
 
-    function getNextSongId(currentId) {
+    function getNextSongId(currentId, forceNext = false) {
         if (playlist.length === 0) return null;
         if (!currentId) return null;
 
@@ -11073,7 +11073,7 @@ justify-content:center;
         const currentIndex = playlistOrder.indexOf(currentId);
         if (currentIndex === -1) return null;
 
-        if (currentPlayMode === 'repeat') {
+        if (!forceNext && currentPlayMode === 'repeat') {
             return currentId;
         } else if (currentPlayMode === 'shuffle') {
             const randomIndex = Math.floor(Math.random() * playlistOrder.length);
