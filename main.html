@@ -13368,7 +13368,7 @@ if(window.opener&&window.opener.pipGetPlayMode){
       if (shortcutsTab) shortcutsTab.click();
     }
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Tab') { e.preventDefault(); if (!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') && !(posterModalOverlay?.classList.contains('active')) && !(settingsModalOverlay?.classList.contains('active')) && !(mvModalOverlay?.classList.contains('active'))) toggleDynamicIsland(); return; }
+      if (e.key === 'Tab') { e.preventDefault(); if (!(posterModalOverlay?.classList.contains('active')) && !(settingsModalOverlay?.classList.contains('active')) && !(mvModalOverlay?.classList.contains('active'))) toggleDynamicIsland(); return; }
       if (e.key === 'Escape') { const sc = SHORTCUTS.find(s => s.key === 'Escape'); if (sc) sc.action(); return; }
       if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return;
       const sc = SHORTCUTS.find(s => s.key === e.key);
