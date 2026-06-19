@@ -128,6 +128,7 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 3. Gemini（包括3.0Pro，3.1Pro）
 4. Grok（包括v4.1-4.3）
 5. Qwen（包括v3.5-v3.6全系列模型）
+6. 阶跃星辰（包括step-3.7-flash）
 
 ---
 
