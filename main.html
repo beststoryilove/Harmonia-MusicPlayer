@@ -11975,9 +11975,10 @@ justify-content:center;
 
     function pickKugouPlayableUrl(payload) {
         if (!payload || typeof payload !== 'object') return '';
+        // 优先使用 backupUrl（更稳定），再回退到 url
+        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
         if (typeof payload.url === 'string' && payload.url.trim()) return payload.url.trim();
         if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return String(payload.url[0]).trim();
-        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
         return '';
     }
 
