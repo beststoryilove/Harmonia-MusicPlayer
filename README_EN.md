@@ -127,6 +127,7 @@ AI models used in this project so far (sorted A–Z):
 3. Gemini(including 3.0 Pro, 3.1 Pro)
 4. Grok(including v4.1–4.3)
 5. Qwen(including all v3.5–v3.6 series models)
+6. StepFun (including step-3.7-flash)
 
 ---
 
