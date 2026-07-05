@@ -5944,7 +5944,6 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
 
     // ==================== 酷狗 API ====================
     const KUGOU_API_BASE = 'https://api-kugou.harmoniamusicplayer.dpdns.org';
-    const KUGOU_MEDIA_PROXY_BASE = 'https://kugou-proxy.harmoniamusicplayer.dpdns.org';
 
     function buildKugouApiUrl(path, params = {}, includeToken = true, skipTimestamp = true) {
       const url = new URL(`${KUGOU_API_BASE}${path}`);
@@ -12881,11 +12880,6 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
         return await res.json();
     }
 
-    function buildKugouMediaUrl(url) {
-        const mediaUrl = `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
-        return `${KUGOU_MEDIA_PROXY_BASE}/media?url=${encodeURIComponent(mediaUrl)}`;
-    }
-
     async function getKugouAudioUrlByHash(hash) {
         if (!kugouToken) throw new Error('请先在设置-账户中登录酷狗账号');
         if (!hash) throw new Error('缺少酷狗歌曲 hash');
@@ -12913,7 +12907,7 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
         if (!finalUrl) {
             throw new Error(payload?.error_msg || payload?.msg || '酷狗未返回可播放链接');
         }
-        return buildKugouMediaUrl(finalUrl);
+        return `${finalUrl}${finalUrl.includes('?') ? '&' : '?'}_=${Date.now()}`;
     }
 
     async function searchKugouSong(keyword) {
