@@ -10599,7 +10599,12 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
 
         await requestLyricsOnlyForSong(song);
         const audioUrl = await getAudioUrl(song.id, song.source, song);
-        audioPlayer.crossOrigin = 'anonymous';
+        // 酷狗 CDN 不支持 CORS，仅网易云等代理源需要 crossOrigin 以支持均衡器
+        if (normalizeMusicSource(song.source) !== 'kugou') {
+          audioPlayer.crossOrigin = 'anonymous';
+        } else {
+          audioPlayer.removeAttribute('crossorigin');
+        }
 
         if (eqSettings.enabled && !eqGraphInitialized) {
           const eqSupport = await probeEqUrlSupport(audioUrl);
