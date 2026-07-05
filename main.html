@@ -5943,7 +5943,8 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
     }
 
     // ==================== 酷狗 API ====================
-    const KUGOU_API_BASE = 'https://kugou-proxy.harmoniamusicplayer.dpdns.org';
+    const KUGOU_API_BASE = 'https://api-kugou.harmoniamusicplayer.dpdns.org';
+    const KUGOU_MEDIA_PROXY_BASE = 'https://kugou-proxy.harmoniamusicplayer.dpdns.org';
 
     function buildKugouApiUrl(path, params = {}, includeToken = true, skipTimestamp = true) {
       const url = new URL(`${KUGOU_API_BASE}${path}`);
@@ -12882,7 +12883,7 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
 
     function buildKugouMediaUrl(url) {
         const mediaUrl = `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
-        return `${KUGOU_API_BASE}/media?url=${encodeURIComponent(mediaUrl)}`;
+        return `${KUGOU_MEDIA_PROXY_BASE}/media?url=${encodeURIComponent(mediaUrl)}`;
     }
 
     async function getKugouAudioUrlByHash(hash) {
