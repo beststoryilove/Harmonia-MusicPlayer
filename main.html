@@ -12859,10 +12859,10 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
 
     function pickKugouPlayableUrl(payload) {
         if (!payload || typeof payload !== 'object') return '';
-        // 优先使用 backupUrl（更稳定），再回退到 url
-        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
+        // 酷狗直链带短期签名，主 url 通常最新；backupUrl 只做兜底，避免 514。
         if (typeof payload.url === 'string' && payload.url.trim()) return payload.url.trim();
         if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return String(payload.url[0]).trim();
+        if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
         return '';
     }
 
@@ -12907,7 +12907,7 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
         if (!finalUrl) {
             throw new Error(payload?.error_msg || payload?.msg || '酷狗未返回可播放链接');
         }
-        return finalUrl;
+        return `${finalUrl}${finalUrl.includes('?') ? '&' : '?'}_=${Date.now()}`;
     }
 
     async function searchKugouSong(keyword) {
