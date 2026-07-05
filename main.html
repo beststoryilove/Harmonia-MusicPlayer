@@ -5379,8 +5379,8 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
     </div>
 </div>
 
-  <audio id="audioPlayer" crossorigin="anonymous" referrerpolicy="no-referrer"></audio>
-  <audio id="audioPlayerB" crossorigin="anonymous" referrerpolicy="no-referrer" style="display:none;"></audio>
+  <audio id="audioPlayer" referrerpolicy="no-referrer"></audio>
+  <audio id="audioPlayerB" referrerpolicy="no-referrer" style="display:none;"></audio>
 
   <!-- 分享卡片模态框 -->
   <div class="modal-overlay poster-modal-overlay" id="posterModalOverlay">
@@ -6482,7 +6482,9 @@ body.light-theme .amll-retry-dialog .retry-btn-skip{
 
     async function ensureEqAudioGraph() {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      audioPlayer.crossOrigin = 'anonymous';
+      const source = normalizeMusicSource(currentSongData?.source || currentSettings.source);
+      if (source !== 'kugou') audioPlayer.crossOrigin = 'anonymous';
+      else audioPlayer.removeAttribute('crossorigin');
       if (!AudioContextClass) {
         throw new Error('当前浏览器不支持 Web Audio API');
       }
