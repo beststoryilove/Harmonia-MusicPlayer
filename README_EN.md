@@ -112,8 +112,6 @@ Issues and pull requests are welcome!
 
 ## 📌 Project Status
 
-- **Stable version**: v3.3.4 (260510)  
-- **Development version**: v3.4 (in testing) – [Preview](https://809blog.dpdns.org/Harmonia_Pre)  
 - **Update frequency**: ~weekly  
 - **Desktop lyrics**: [Separate repository](https://github.com/beststoryilove/Harmonia-DesktopLyrics/) (Kugou word-by-word lyrics under adaptation)
 
@@ -127,7 +125,8 @@ AI models used in this project so far (sorted A–Z):
 3. Gemini(including 3.0 Pro, 3.1 Pro)
 4. Grok(including v4.1–4.3)
 5. Qwen(including all v3.5–v3.6 series models)
-6. StepFun (including step-3.7-flash)
+6. StepFun(including step-3.7-flash)
+7. LongCat(including LongCat-2.0)
 
 ---
 
