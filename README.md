@@ -113,8 +113,6 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 
 ## 📌 项目状态
 
-- **正式版**: v3.3.4 (260510)
-- **开发版**: v3.4（开发中） - [预览地址](https://809blog.dpdns.org/Harmonia_Pre)
 - **更新频率**: 约每周一次
 - **桌面歌词**: [独立仓库](https://github.com/beststoryilove/Harmonia-DesktopLyrics/) （酷狗源逐字歌词适配中）
 
@@ -129,6 +127,7 @@ Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android
 4. Grok（包括v4.1-4.3）
 5. Qwen（包括v3.5-v3.6全系列模型）
 6. 阶跃星辰（包括step-3.7-flash）
+7. LongCat（包括LongCat-2.0）
 
 ---
 
