@@ -220,13 +220,13 @@ During the development of Harmonia, we received help from many open-source proje
 
 ---
 
-## ⭐ Star History
+## Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
  </picture>
 </a>
 
