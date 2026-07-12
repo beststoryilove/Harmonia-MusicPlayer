@@ -1,154 +1,243 @@
-# Harmonia MusicPlayer
+<div align="center">
 
-[English](README_EN.md) | 简体中文
+# 🎵 Harmonia Music Player
 
-![Harmonia](https://img.shields.io/badge/Harmonia-Music_Player-ff2d55)
-![Platform](https://img.shields.io/badge/Platform-Web-34aadc)
+<!-- 语言切换 / Language Switch -->
+[**中文**](./README.md) | [**English**](./README_EN.md)
 
-Harmonia 是一个美观、功能丰富的在线音乐播放器，灵感来源于 Apple Music 设计风格，支持逐字歌词、播放列表管理、多主题等高级特性（vibecoding project）。
+[![Banner](https://img.shields.io/badge/Harmonia-让音乐触手可即-ff2d55?style=for-the-badge&logo=applemusic&logoColor=white)](https://github.com/beststoryilove/Harmonia-MusicPlayer)
 
-[**🎧 在线体验**](https://harmoniamusicplayer.dpdns.org)
+<br/>
+
+*🎶 让音乐触手可即。*
+
+---
+
+</div>
+
+## 📖 简介
+
+**Harmonia** 是一款基于浏览器端运行的在线音乐播放器。灵感来源于 **Apple Music** 的设计语言，融合了 **iOS** 的交互美学，致力于在网页端提供流畅、优雅且功能丰富的音乐播放体验。
+
+项目使用纯前端技术栈构建（HTML / CSS / Vanilla JS），无需后端服务即可运行。音乐数据来源于 **网易云音乐** 与 **酷狗音乐**，逐字歌词渲染由 [AMLL](https://github.com/amll-dev/applemusic-like-lyrics) 提供支持。
+
+> ✨ **核心理念**：简洁、优雅、畅听 —— 让每一次播放都成为享受。
 
 ---
 
 ## ✨ 功能特性
 
-- **多平台音乐搜索与播放** - 集成多个音乐源，支持在线搜索
-- **Apple Music 风格界面** - 动态背景、3D 封面特效与灵动岛搜索面板
-- **沉浸式歌词** - 支持 KTV 风格逐字高亮与滚动歌词，点击跳转
-- **智能歌词翻译** - 集成 GLM-4-Flashx API，自动检测并翻译外语歌词
-- **播放列表管理** - 拖拽排序、收藏、播放历史，支持导入/导出
-- **桌面歌词** - 通过 WebSocket 连接独立桌面歌词客户端
-- **多主题切换** - 一键切换深色/浅色主题，支持自定义 CSS 变量
-- **响应式设计** - 适配桌面、平板与移动端
-- **播放模式** - 顺序、单曲循环、随机播放
-- **内置代理** - 提供自建网易云跨域代理，可自定义
+### 🎵 多音源播放
 
----
+<table>
+  <tr>
+    <td align="center"><b>网易云音乐</b></td>
+    <td align="center"><b>酷狗音乐</b></td>
+  </tr>
+  <tr>
+    <td>海量华语曲库，搜索播放</td>
+    <td>高品质音源，VIP 身份领取</td>
+  </tr>
+</table>
 
-## 🚀 快速开始
+- 支持 **网易云** / **酷狗** 双音源切换
+- 酷狗音质可选：**128 MP3 / 320 MP3 / FLAC / 无损**
+- 酷狗账号登录（二维码 / 手机号），可同步歌单与领取概念版 VIP
 
-**在线使用**  
-直接访问 [https://harmoniamusicplayer.dpdns.org](https://harmoniamusicplayer.dpdns.org)
+### 🎤 逐字歌词 (AML)
 
-**本地运行**
-```bash
-git clone https://github.com/beststoryilove/Harmonia-MusicPlayer.git
-cd Harmonia-MusicPlayer
-python -m http.server 8000   # Python 3
-```
-浏览器打开 `http://localhost:8000`
+- **AMLL (Apple Music-like Lyrics)** 引擎驱动，逐字填充动画
+- 支持翻译 / 罗马音 切换显示
+- 支持 **TTML** 高级歌词格式（对唱、背景人声等）
+- 经典模式 / AMLL 模式可自由切换
+- 多种动画模式：**视觉优先 / 性能优先 / 预览模式**
 
-**基本操作**  
-- 点击顶部灵动岛或按 `Tab` 键搜索音乐  
-- 右下角按钮显示/隐藏歌词面板  
-- 右上角图标切换主题，设置中启用翻译并填入 API 令牌
+### 🏝️ 灵动岛 (Dynamic Island)
 
----
+- 灵感源自 Apple 的 Dynamic Island
+- 折叠态显示「正在播放」状态，点击展开搜索面板
+- 集成搜索框、搜索结果、分页、错误提示
+- 支持 Toast 消息推送
 
-## 🛠 技术栈
+### 📋 播放列表与歌单
 
-| 分类 | 技术 |
+- **播放列表**：添加、移除、拖拽排序、批量管理
+- **我的收藏**：一键收藏喜欢的歌曲
+- **播放历史**：自动记录，最多保留 50 首
+- **我的歌单**：创建本地歌单 / 同步酷狗歌单
+- 支持 A-Z 排序、自定义排序、音源筛选
+- 右键菜单「加入歌单」（含长按触屏支持）
+
+### 🎨 视觉与主题
+
+- **深色 / 浅色** 双主题一键切换
+- 专辑封面 **3D 倾斜** 效果（鼠标悬停随动）
+- **Liquid Glass**（液态玻璃）毛玻璃质感 UI
+- 背景随专辑封面主色调动态变化
+- **流体动画** 背景层
+- 播放器布局：**Harmonia 经典 / Apple Music** 风格可切换
+
+### 🎛️ 音频均衡器
+
+- **10 段 EQ** 均衡器（31Hz ~ 16kHz）
+- 内置 **13 种预设**：平坦、温暖、低音增强、深沉低频、人声增强、播客、明亮、电子、摇滚、古典、爵士、原声、舞曲
+- 自定义前级增益（Preamp）±12dB
+- 基于 **Web Audio API** 实时处理
+
+### 🔗 分享与导出
+
+- **分享卡片**：生成精美海报（1080×1920），支持复制到剪贴板 / 下载
+- **Mini 播放器**：PiP（画中画）窗口，支持桌面悬浮播放
+- **桌面歌词**：通过 PiP 或 WebSocket 连接实现桌面歌词
+- **保存专辑图**：一键下载当前封面原图
+
+### 🌐 AI 翻译（实验性功能）
+
+- 集成 **GLM-4.7-Flash** AI 翻译
+- 支持「仅翻译外语歌」/「翻译所有外语歌」两种模式
+- 自动将歌词翻译为中文，逐行对照显示
+
+### ⌨️ 快捷键
+
+| 按键 | 功能 |
 |------|------|
-| 核心 | HTML5, CSS3, JavaScript (ES6+) |
-| 音频 | Web Audio API |
-| 存储 | Web Storage (localStorage) |
-| 图形 | Canvas API (封面取色) |
-| 通信 | WebSocket (桌面歌词) |
-| 拖拽 | Drag & Drop API |
-| 媒体控制 | Media Session API |
-| 歌词 | LRC 解析引擎，支持逐字 |
-| 翻译 | GLM-4-Flashx API (Bigmodel) |
-| 字体 | PingFang SC, SF Pro Display, Font Awesome 6 |
+| `Space` | 播放 / 暂停 |
+| `← / →` | 上一曲 / 下一曲 |
+| `↑ / ↓` | 音量 ±5% |
+| `L` | 切换歌词 |
+| `T` | 切换主题 |
+| `S` | 聚焦搜索 |
+| `M` | 打开/关闭侧栏 |
+| `R` | 切换播放模式 |
+| `P` | 分享卡片 |
+| `D` | Mini 播放器 |
+| `Tab` | 展开/收起灵动岛 |
+| `?` | 快捷键列表 |
+| `Esc` | 关闭弹窗 |
+
+### 📱 响应式设计
+
+- 完美适配 **桌面 / 平板 / 手机**
+- 移动端专属全屏歌词模式
+- 触屏拖拽排序、长按菜单
+- 智能降级（移动端禁用高性能毛玻璃以节省电量）
 
 ---
 
-## 📁 项目结构
+## 🏗️ 技术架构
 
 ```
-Harmonia-MusicPlayer/
-├── index.html              # 主页面
-├── fonts/                  # 字体文件
-├── default.svg             # 默认专辑封面
-└── README.md
+Harmonia/
+├── main.html              # 主页面（含所有 DOM 结构与模态框）
+├── css/
+│   ├── variables.css      # CSS 变量 / 字体定义
+│   ├── base.css           # 全局样式 / 动态岛 / 通用组件
+│   ├── layout.css         # 主布局
+│   ├── sidebar.css        # 侧边栏 / 播放列表
+│   ├── search.css         # 搜索面板样式
+│   ├── player.css         # 播放器控件 / 歌词样式
+│   ├── settings.css       # 设置面板
+│   ├── lyrics.css         # 歌词增强动画
+│   ├── share.css          # 分享卡片模态框
+│   └── responsive.css     # 响应式适配
+├── js/
+│   ├── main.js            # 主逻辑 (~9300 行)
+│   │   ├── 灵动岛控制
+│   │   ├── 播放 / 暂停 / 切歌
+│   │   ├── 搜索 / 分页
+│   │   ├── 歌词解析与渲染 (AMLL + 经典)
+│   │   ├── 歌单 CRUD
+│   │   ├── 酷狗 API / VIP
+│   │   ├── 均衡器 (Web Audio)
+│   │   ├── PiP 画中画
+│   │   ├── 分享卡片生成
+│   │   ├── 主题 / 设置持久化
+│   │   └── 快捷键 / 初始化
+│   |
+│   └── MODULES.md         # 模块文档
+└── fonts/
+    ├── PingFangSC-Regular.woff2
+    ├── PingFangSC-Semibold.woff2
+    ├── sf-pro-display_regular.woff2
+    └── sf-pro-display_semibold.woff2
 ```
 
----
+### 技术栈
 
-## ⚙️ 配置
-
-- **翻译 API**：在 [Bigmodel](https://open.bigmodel.cn) 获取 API 令牌，填入设置即可
-- **代理服务器**：内置自建网易云代理，可在设置中自定义
-
----
-
-## 🌐 浏览器兼容性
-
-Chrome 60+ · Firefox 55+ · Safari 12+ · Edge 79+ · iOS Safari 12+ · Android Chrome 60+
-
-部分高级功能（如拖拽排序）可能在旧版浏览器中受限。
+| 类别 | 技术 |
+|------|------|
+| **Markup** | HTML5 |
+| **Styles** | CSS3 (Liquid Glass, Flexbox, Grid, Animation, Backdrop Filter) |
+| **Script** | Vanilla JavaScript (ES6+) / 零依赖 |
+| **歌词引擎** | [@applemusic-like-lyrics/core](https://github.com/amll-dev/applemusic-like-lyrics) (ESM) |
+| **音频处理** | Web Audio API (10 段 EQ) |
+| **桌面扩展** | Picture-in-Picture API / WebSocket |
+| **图标** | [Font Awesome 6.4](https://fontawesome.com/) |
+| **字体** | Apple PingFang / SF Pro |
 
 ---
 
-## 🙏 致谢
+## 🤖 所使用的 AI 模型
 
-- 音乐 API 提供：[GD音乐台开发者API](https://music-api.gdstudio.xyz)
-- 字体：Apple PingFang, SF Pro
-- 图标库：Font Awesome
-- 设计灵感：Apple Music, iOS
-- 歌词展示参考：[mengobs/musicplayer](https://github.com/mengobs/musicplayer)
+> 在 Harmonia 的开发过程中，以下 AI 模型为代码编写、架构设计、功能实现等提供了重要帮助。
 
----
+目前该项目所使用过的 AI 模型（以 A-Z 排序）：
 
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-1. Fork 本仓库
-2. 创建分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
----
-
-## 📌 项目状态
-
-- **更新频率**: 约每周一次
-- **桌面歌词**: [独立仓库](https://github.com/beststoryilove/Harmonia-DesktopLyrics/) （酷狗源逐字歌词适配中）
-
----
-
-## 🤖 所使用的AI模型
-
-目前该项目所使用过的AI模型（以A-Z排序）：
-1. ChatGPT（包括GPT4.5，GPT5，GPT5.1-5.5）
-2. Deepseek（包括R1，V3，V3.1，V3.2，V3.2 speciale，V4）
-3. Gemini（包括3.0Pro，3.1Pro）
-4. Grok（包括v4.1-4.3）
-5. Qwen（包括v3.5-v3.6全系列模型）
-6. 阶跃星辰（包括step-3.7-flash）
-7. LongCat（包括LongCat-2.0）
+- **ChatGPT**（包括 GPT4.5、GPT5、GPT5.1-5.5）
+- **Deepseek**（包括 R1、V3、V3.1、V3.2、V3.2 speciale、V4）
+- **Gemini**（包括 3.0Pro、3.1Pro）
+- **Grok**（包括 v4.1-4.3）
+- **Qwen**（包括 v3.5-v3.6 全系列模型）
+- **阶跃星辰**（包括 step-3.7-flash）
+- **LongCat**（包括 LongCat-2.0）
 
 ---
 
 ## 💬 社区与交流
 
-- **官方博客**：[azalkmin.abrdns.com](https://azalkmin.abrdns.com/)
-- **QQ群**：点击链接加入群聊 [https://qm.qq.com/q/p4WYBXFGNO](https://qm.qq.com/q/p4WYBXFGNO)  
-  或扫描下方二维码加入：
+我们欢迎所有用户加入社区，反馈问题、分享歌单或提出建议！
 
-<img src="https://raw.githubusercontent.com/beststoryilove/Harmonia-MusicPlayer/main/qrcode_1779913195527.jpg" width="150" alt="QQ群二维码"/>
+| 渠道 | 链接 |
+|------|------|
+| 🌐 **官方博客** | [azalkmin.abrdns.com](https://azalkmin.abrdns.com) |
+| 💬 **QQ 群** | [点击加入](https://qm.qq.com/q/p4WYBXFGNO) |
+| 📱 **扫码入群** | <img src="qrcode_1779913195527.jpg" width="120" alt="Harmonia QQ 群二维码"> |
 
 ---
 
-## 📊 Star History
+## 🙏 致谢
+
+在 Harmonia 的开发过程中，我们得到了许多开源项目、API 和资源的帮助，在此表示衷心感谢：
+
+| 项目 / 资源 | 用途 |
+|-------------|------|
+| [GD 音乐台开发者 API](https://music-api.gdstudio.xyz) | 音乐 API 提供 |
+| [酷狗音乐 API](https://github.com/MakcRe/KuGouMusicApi) | 酷狗音乐 API 提供（Vercel 部署） |
+| Apple **PingFang** / **SF Pro** | 字体资源 |
+| [Font Awesome](https://fontawesome.com/) | 图标库 |
+| [Apple Music](https://music.apple.com/) & [iOS](https://www.apple.com/ios/) | 设计灵感 |
+| [mengobs/musicplayer](https://github.com/mengobs/musicplayer) | 歌词展示参考 |
+| [AMLL (Apple Music-like Lyrics)](https://github.com/amll-dev/applemusic-like-lyrics) | 逐字歌词引擎 |
+
+---
+
+## ⭐ Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=bottom-right" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=bottom-right" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=bottom-right" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
  </picture>
 </a>
 
-**Harmonia - 让音乐触手可及** 🎶
+---
+
+<div align="center">
+
+🌟 **如果 Harmonia 让你享受到了音乐的魅力，欢迎给我们一个 Star！** 🌟
+
+<sub>Built with ❤️ and AI · 让音乐触手可即</sub>
+
+</div>
+
