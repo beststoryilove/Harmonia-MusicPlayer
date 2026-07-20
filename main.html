@@ -20,9 +20,11 @@
 <link rel="stylesheet" href="css/lyrics.css"/>
 <link rel="stylesheet" href="css/share.css"/>
 <link rel="stylesheet" href="css/responsive.css"/>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com"/>
 <link rel="preconnect" href="https://esm.sh"/>
 <link rel="preconnect" href="https://unpkg.com"/>
 <link rel="preconnect" href="https://raw.githubusercontent.com"/>
+<link rel="preconnect" href="https://v2.xxapi.cn"/>
 </head>
 <body>
   <div class="am-background"></div>
@@ -38,10 +40,6 @@
       <div class="island-header">
         <span class="island-title">Harmonia</span>
         <span class="island-close" id="dynamicIslandClose">按 Tab 收起</span>
-      </div>
-
-      <div class="island-welcome" id="dynamicIslandWelcome">
-        欢迎使用Harmonia！ 当前正在播放：无
       </div>
 
       <div class="island-search-container">
@@ -143,27 +141,29 @@
 
 <!-- 设置模态框 -->
 	<div class="modal-overlay settings-modal-overlay" id="settingsModalOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-	  <div class="settings-container liquid-glass">
-	    <div class="settings-sidebar">
+		  <div class="settings-container liquid-glass">
+		    <div class="settings-sidebar">
 	      <div class="sidebar-header">
 	        <i class="fas fa-cog"></i>
 	        <span id="settingsTitle">设置</span>
 	      </div>
-	      <div class="settings-nav" role="tablist">
-	        <div class="nav-item active" data-tab="lyrics" role="tab" aria-selected="true" tabindex="0"><i class="fas fa-font"></i> 歌词</div>
-	        <div class="nav-item" data-tab="visual" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-eye"></i> 视觉</div>
-	        <div class="nav-item" data-tab="audio" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-sliders-h"></i> 音频</div>
-	        <div class="nav-item" data-tab="account" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-user-circle"></i> 账户</div>
-	        <div class="nav-item" data-tab="about" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-circle-info"></i> 关于</div>
-	        <div class="nav-item" data-tab="changelog" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-clock-rotate-left"></i> 更新日志</div>
-		        <div class="nav-item" data-tab="shortcuts" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-keyboard"></i> 快捷键</div>
-		        <div class="nav-item" data-tab="experimental" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-flask"></i> 实验性功能</div>
+      <div class="settings-nav" role="tablist">
+        <div class="nav-item active" data-tab="lyrics" role="tab" aria-selected="true" tabindex="0"><i class="fas fa-font"></i> 歌词</div>
+        <div class="nav-item" data-tab="visual" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-eye"></i> 视觉</div>
+        <div class="nav-item" data-tab="audio" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-sliders-h"></i> 音频</div>
+        <div class="nav-item" data-tab="shortcuts" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-keyboard"></i> 快捷键</div>
+        <div class="nav-item" data-tab="account" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-user-circle"></i> 账户</div>
+        <div class="nav-item" data-tab="experimental" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-flask"></i> 实验性功能</div>
+        <div class="nav-item" data-tab="stats" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-chart-bar"></i> 统计</div>
+        <div class="nav-item" data-tab="changelog" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-clock-rotate-left"></i> 更新日志</div>
+        <div class="nav-item" data-tab="about" role="tab" aria-selected="false" tabindex="-1"><i class="fas fa-circle-info"></i> 关于</div>
       </div>
     </div>
 
 	    <div class="settings-main">
 	      <button class="settings-close-btn" id="settingsModalClose" aria-label="关闭设置"><i class="fas fa-times"></i></button>
 	
+
 	      <div class="settings-tab-content active" data-tab="lyrics" role="tabpanel" aria-labelledby="settingsTabLyrics">
 	        <div class="settings-group">
 	          <div class="group-title">歌词显示</div>
@@ -191,17 +191,10 @@
 
 	      </div>
 
+      
       <div class="settings-tab-content" data-tab="visual" role="tabpanel">
-	        <div class="settings-group">
-	          <div class="group-title">播放器外观</div>
-          <div class="setting-item vertical">
-            <div class="item-label">控件布局</div>
-            <div class="segmented-control">
-              <label><input type="radio" name="playerControlsLayout" value="classic" checked><span>Harmonia 经典</span></label>
-              <label><input type="radio" name="playerControlsLayout" value="apple-music"><span>Apple Music</span></label>
-            </div>
-          </div>
-
+        <div class="settings-group">
+          <div class="group-title">播放器外观</div>
           <div class="setting-item vertical">
             <div class="item-label">歌词动画模式</div>
             <div class="segmented-control">
@@ -209,11 +202,30 @@
               <label><input type="radio" name="lyricsAnimationMode" value="performance"><span>性能优先</span></label>
               <label><input type="radio" name="lyricsAnimationMode" value="preview"><span>预览模式</span></label>
             </div>
-	            <div class="item-desc" style="margin-top: 6px;">选择后立即生效，可随时改回。</div>
-	          </div>
-	        </div>
-	      </div>
+            <div class="item-desc" style="margin-top: 6px;">选择后立即生效，可随时改回。</div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="group-title">进度条时间显示</div>
+          <div class="setting-item vertical">
+            <div class="item-label">时间显示模式</div>
+            <div class="segmented-control" id="timeDisplayModeControl">
+              <label><input type="radio" name="timeDisplayMode" value="remaining" checked><span>已播放 + 剩余</span></label>
+              <label><input type="radio" name="timeDisplayMode" value="total"><span>已播放 + 总时长</span></label>
+            </div>
+            <div class="item-desc" style="margin-top:6px">选择进度条右侧时间的显示方式。</div>
+          </div>
+          <div class="setting-item">
+            <div class="time-preview-bar">
+              <span class="tp-current" id="tpCurrent">0:00</span>
+              <span class="tp-quality">无损</span>
+              <span class="tp-duration" id="tpDuration">-3:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      
       <div class="settings-tab-content" data-tab="audio" role="tabpanel">
 	        <div class="settings-group">
 	          <div class="group-title">音乐音源</div>
@@ -243,6 +255,20 @@
 
 	      </div>
 
+      
+      <div class="settings-tab-content" data-tab="shortcuts" role="tabpanel">
+        <div class="settings-group">
+          <div class="group-title">键盘快捷键</div>
+          <div class="setting-item vertical" style="gap:4px;">
+            <div class="item-desc" style="margin-bottom:8px;">以下快捷键在未聚焦输入框时生效。按 <b>?</b> 可快速打开此页面。</div>
+            <div id="shortcutsList" style="width:100%;font-size:13px;line-height:2.2;color:rgba(255,255,255,0.8);">
+              <!-- 由 JS 动态填充 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
 	      <div class="settings-tab-content" data-tab="account" role="tabpanel">
         <div class="settings-group">
           <div class="group-title">酷狗账号验证 (用于获取完整歌词库)</div>
@@ -263,46 +289,6 @@
               </div>
             </div>
 
-            <div id="kugouAccountInfo" style="display: none; align-items: center; gap: 15px; margin-left: 10px; padding-left: 25px; border-left: 1px solid rgba(128,128,128,0.2);">
-              <img id="kugouAvatar" src="" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); background: rgba(255,255,255,0.1);">
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="font-size: 15px; font-weight: 600;" class="item-label" id="kugouNicknameLabel">当前账号：未知</div>
-                <div style="display: flex; gap: 8px;">
-                  <button id="kugouTestTokenBtn" class="ios-btn secondary" style="padding: 6px 12px; font-size: 12px;">测试有效性</button>
-                  <button id="kugouLogoutBtn" class="ios-btn secondary" style="padding: 6px 12px; font-size: 12px; color: var(--error-color);">退出登录</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-group" style="margin-top: 26px; margin-bottom: 0;">
-            <div class="group-title">概念版 VIP</div>
-            <div class="setting-item vertical">
-              <div class="vip-status-card">
-                <div class="vip-status-icon"><i class="fas fa-crown"></i></div>
-                <div class="vip-status-main">
-                  <div class="vip-status-line">
-                    <div class="item-label" id="kugouVipStatusText">VIP 身份：未识别</div>
-                    <span class="vip-pill" id="kugouVipStatusPill">待检测</span>
-                  </div>
-                  <div class="item-desc" id="kugouVipDetailText">登录酷狗账号后，可以查看你的概念版 VIP、普通 VIP / TVIP 状态以及到期时间。</div>
-                </div>
-              </div>
-            </div>
-            <div class="setting-item">
-              <div class="item-info">
-                <div class="item-label">每日首次访问自动领取</div>
-                <div class="item-desc">开启后每天自动尝试一次；如果失败了，当天不会重复请求，你也可以手动再试。</div>
-              </div>
-              <label class="switch"><input type="checkbox" id="kugouVipAutoToggle"><span class="slider"></span></label>
-            </div>
-            <div class="setting-item vertical">
-              <div class="vip-actions">
-                <button id="kugouVipRefreshBtn" class="ios-btn secondary" type="button"><i class="fas fa-sync-alt"></i> 识别 VIP 身份</button>
-                <button id="kugouVipAutoBtn" class="ios-btn primary" type="button"><i class="fas fa-bolt"></i> 自动领取、升级概念版 VIP</button>
-              </div>
-              <div class="vip-progress-text" id="kugouVipProgressText">状态以酷狗接口返回为准，不会凭空捏造；领取时按当天剩余次数操作，并做了防重复提交和频率限制。</div>
-            </div>
           </div>
 
           <div class="divider">或使用手机号验证</div>
@@ -315,86 +301,54 @@
             </div>
             <button id="kugouLoginBtn" class="ios-btn secondary" style="width: 100%;">手机号登录</button>
           </div>
-        </div>
-      </div>
 
-      <div class="settings-tab-content" data-tab="about" role="tabpanel">
-        <div class="settings-group">
-          <div class="group-title">关于 Harmonia</div>
-          <div class="setting-item vertical about-hero-card">
-            <div class="about-title-row">
-              <div class="about-app-icon"><i class="fas fa-music"></i></div>
-              <div>
-                <div class="about-app-name">Harmonia Music Player</div>
-                <div class="item-desc">在线音乐播放器 · AMLL 逐字歌词 · 多音源歌词增强</div>
-              </div>
-            </div>
-            <div class="about-app-desc">感谢使用 Harmonia。你可以通过以下入口查看项目源码、加入 QQ 群反馈问题，或访问作者博客获取更新说明。</div>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <div class="group-title">项目入口</div>
-          <div class="about-link-grid">
-            <a class="about-link-card" href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" rel="noopener noreferrer">
-              <div class="about-link-icon"><i class="fab fa-github"></i></div>
-              <div class="about-link-title">GitHub 仓库</div>
-              <div class="about-link-desc">查看源码、提交 Issue、获取最新版本。</div>
-              <div class="about-open-hint">打开仓库 <i class="fas fa-arrow-up-right-from-square"></i></div>
-            </a>
-
-            <a class="about-link-card" href="https://azalkmin.midc.me/" target="_blank" rel="noopener noreferrer">
-              <div class="about-link-icon"><i class="fas fa-blog"></i></div>
-              <div class="about-link-title">作者博客</div>
-              <div class="about-link-desc">访问博客，查看说明、记录与后续更新。</div>
-              <div class="about-open-hint">打开博客 <i class="fas fa-arrow-up-right-from-square"></i></div>
-            </a>
-
-            <a class="about-link-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
-              <div class="about-link-icon"><i class="fab fa-qq"></i></div>
-              <div class="about-link-title">QQ 群入口</div>
-              <div class="about-link-desc">加入交流群，反馈歌词、音源与播放器问题。</div>
-              <div class="about-open-hint">打开 QQ 群 <i class="fas fa-arrow-up-right-from-square"></i></div>
-            </a>
-
-            <a class="about-link-card about-qq-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
-              <img class="about-qq-qr" src="https://raw.githubusercontent.com/beststoryilove/Harmonia-MusicPlayer/main/qrcode_1779913195527.jpg" alt="Harmonia QQ 群二维码">
-              <div class="about-qq-copy">
-                <div class="about-link-title">扫码加入 QQ 群</div>
-                <div class="about-link-desc">二维码来自项目仓库，点击卡片也可以直接打开 QQ 群邀请链接。</div>
-                <div class="about-open-hint">https://qm.qq.com/q/p4WYBXFGNO</div>
-              </div>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-tab-content" data-tab="shortcuts" role="tabpanel">
-        <div class="settings-group">
-          <div class="group-title">键盘快捷键</div>
-          <div class="setting-item vertical" style="gap:4px;">
-            <div class="item-desc" style="margin-bottom:8px;">以下快捷键在未聚焦输入框时生效。按 <b>?</b> 可快速打开此页面。</div>
-            <div id="shortcutsList" style="width:100%;font-size:13px;line-height:2.2;color:rgba(255,255,255,0.8);">
-              <!-- 由 JS 动态填充 -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-tab-content" data-tab="changelog" role="tabpanel">
-        <div class="settings-group">
-          <div class="group-title">更新日志</div>
-          <div class="setting-item vertical" style="gap:0;">
-            <div class="item-desc" style="margin-bottom:8px;">数据来源：GitHub Releases · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer/releases" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color);">查看全部</a></div>
-            <div id="changelogContent" style="width:100%;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.75);max-height:55vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.12) transparent;">
-              <div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);">
-                <i class="fas fa-spinner fa-spin"></i> 正在加载更新日志...
+          <div id="kugouAccountInfo" style="display: none; align-items: center; gap: 15px; margin-top: 18px;">
+            <img id="kugouAvatar" src="" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); background: rgba(255,255,255,0.1);">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="font-size: 15px; font-weight: 600;" class="item-label" id="kugouNicknameLabel">当前账号：未知</div>
+              <div style="display: flex; gap: 8px;">
+                <button id="kugouTestTokenBtn" class="ios-btn secondary" style="padding: 6px 12px; font-size: 12px;">测试有效性</button>
+                <button id="kugouLogoutBtn" class="ios-btn secondary" style="padding: 6px 12px; font-size: 12px; color: var(--error-color);">退出登录</button>
               </div>
             </div>
           </div>
+
+          <div class="settings-group" style="margin-top: 26px; margin-bottom: 0;">
+            <div class="group-title">概念版 VIP</div>
+            <div class="setting-item vertical">
+              <div class="vip-card">
+                <div class="vip-card-head">
+                  <div class="vip-icon"><i class="fas fa-crown"></i></div>
+                  <div class="vip-id">
+                    <span class="vip-title" id="kugouVipStatusText">VIP 身份：未识别</span>
+                    <span class="vip-badge" id="kugouVipStatusPill">待检测</span>
+                  </div>
+                </div>
+                <div class="vip-card-body">
+                  <p class="vip-desc" id="kugouVipDetailText">登录后自动同步你的 VIP 状态，每天首次打开应用时会尝试领取当日权益。</p>
+                </div>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="item-info">
+                <div class="item-label">每天首次打开时自动领取</div>
+                <div class="item-desc">开启后每天打开应用时自动领取一次当日 VIP 权益；失败也不会重复打扰你。</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="kugouVipAutoToggle"><span class="slider"></span></label>
+            </div>
+            <div class="setting-item vertical">
+              <div class="vip-actions">
+                <button id="kugouVipRefreshBtn" class="ios-btn secondary" type="button"><i class="fas fa-sync-alt"></i> 刷新状态</button>
+                <button id="kugouVipAutoBtn" class="ios-btn primary" type="button"><i class="fas fa-bolt"></i> 领取并升级</button>
+              </div>
+              <div class="vip-tip" id="kugouVipProgressText">实际权益以酷狗返回为准；领取进度会在操作时展示在这里。</div>
+            </div>
+          </div>
+
         </div>
       </div>
 
+      
       <div class="settings-tab-content" data-tab="experimental" role="tabpanel">
         <div class="settings-group">
           <div class="group-title">歌曲翻译</div>
@@ -407,22 +361,69 @@
           </div>
 
           <div class="setting-item vertical">
-            <div class="item-label">翻译范围</div>
-            <div class="radio-stack">
-              <label class="radio-label"><input type="radio" name="translationScope" value="no-translation" checked> <span>仅翻译没有翻译的外语歌</span></label>
-              <label class="radio-label"><input type="radio" name="translationScope" value="all-foreign"> <span>翻译所有外语歌</span></label>
-            </div>
+            <div class="item-label">API 令牌</div>
+            <input type="password" class="ios-input" id="apiTokenInput" placeholder="请输入 API Key">
+            <div class="item-desc" style="margin-top: 4px;">大部分服务商使用 Bearer Token 认证，令牌将明文存储在浏览器本地</div>
           </div>
 
-          <div class="setting-item vertical">
-            <div class="item-label">API 令牌 (GLM-4.7-Flash)</div>
-            <input type="password" class="ios-input" id="apiTokenInput" placeholder="请输入 Bigmodel API Key">
-            <div class="item-desc" style="margin-top: 4px;">请前往 Bigmodel 注册账号并创建API令牌。⚠️ 令牌将明文存储在浏览器本地，请勿在公共设备上使用。</div>
+<!-- Translation settings enhanced UI - Insert before the existing "API 令牌" setting item -->
+<div class="setting-item vertical">
+  <div class="item-label">API 端点预设</div>
+  <select id="transEndpointSelect" class="ios-input" style="width:100%;">
+    <option value="0">OpenAI</option>
+    <option value="1">DeepSeek</option>
+    <option value="2">智谱 AI (GLM)</option>
+    <option value="3">通义千问</option>
+    <option value="4">Moonshot</option>
+    <option value="5">Anthropic</option>
+    <option value="6">LongCat</option>
+    <option value="7">自定义</option>
+  </select>
+</div>
+
+<div class="setting-item vertical">
+  <div class="item-label">API Base URL</div>
+  <input type="text" class="ios-input" id="transBaseUrlInput" placeholder="https://api.openai.com/v1" style="width:100%;">
+  <div class="item-desc" style="margin-top:4px;">支持 OpenAI 兼容格式 (如 DeepSeek、通义千问、Moonshot 等)，大部分服务商使用 /v1/chat/completions 路径</div>
+</div>
+
+<div class="setting-item vertical">
+  <div class="item-label">模型名称</div>
+  <input type="text" class="ios-input" id="transModelInput" placeholder="gpt-4o-mini" style="width:100%;">
+  <div class="item-desc" style="margin-top:4px;">输入你要使用的模型名称，端点切换时会自动填充默认值，你也可以自定义修改为任意模型</div>
+</div>
+
+<div class="setting-item" style="background: transparent; border: none; padding: 0; margin-top: 8px;">
+  <button class="ios-btn secondary" id="testApiBtn">测试连接</button>
+  <button class="ios-btn primary" id="saveSettingsBtn">保存设置</button>
+</div>
+
+<!-- Thinking Mode Toggle -->
+<div class="setting-item">
+  <div class="item-info">
+    <div class="item-label">思考模式</div>
+    <div class="item-desc">开启后 AI 会先思考再翻译，质量更高但响应更慢</div>
+  </div>
+  <label class="switch"><input type="checkbox" id="thinkingModeToggle"><span class="slider"></span></label>
+</div>
+
+<!-- Auto Retry Toggle -->
+<div class="setting-item">
+  <div class="item-info">
+    <div class="item-label">自动重试</div>
+    <div class="item-desc">翻译结果不完整时自动重试（最多 2 次）</div>
+  </div>
+  <label class="switch"><input type="checkbox" id="autoRetryToggle"><span class="slider"></span></label>
+</div>
+
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">AI 翻译缓存</div>
+              <div class="item-desc" id="aiTransCacheStats">正在统计...</div>
+            </div>
+            <button class="ios-btn secondary" id="clearAiTransCacheBtn" type="button" style="padding:6px 12px;font-size:12px; color:var(--error-color);">清空</button>
           </div>
-          <div class="setting-item" style="background: transparent; border: none; padding: 0;">
-            <button class="ios-btn secondary" id="testApiBtn">测试连接</button>
-            <button class="ios-btn primary" id="saveSettingsBtn">保存设置</button>
-          </div>
+
         </div>
 
         <div class="settings-group">
@@ -453,13 +454,6 @@
             <label class="switch"><input type="checkbox" id="enableWordLyricJump"><span class="slider"></span></label>
           </div>
           <div class="setting-item vertical">
-            <div class="item-label">获取方式</div>
-            <div class="radio-stack">
-              <label class="radio-label"><input type="radio" name="wordLyricsSource" value="netease"> <span>网易云库 (简单，开箱即用，但不全)</span></label>
-              <label class="radio-label"><input type="radio" name="wordLyricsSource" value="kugou"> <span>酷狗库 (麻烦，但逐字歌词全)</span></label>
-            </div>
-          </div>
-          <div class="setting-item vertical">
             <div class="item-label">网易云歌词代理</div>
             <input type="text" class="ios-input" id="neteaseProxyInput" placeholder="留空则使用内置代理">
             <div class="item-desc" style="margin-top: 4px;">用于解决请求网易云逐字歌词时的跨域(CORS)问题。</div>
@@ -475,23 +469,9 @@
             </div>
             <label class="switch"><input type="checkbox" id="crossfadeToggle"><span class="slider"></span></label>
           </div>
-          <div class="setting-item">
+		          <div class="setting-item">
             <div class="item-info">
-              <div class="item-label">启用专辑图 3D 效果</div>
-              <div class="item-desc">鼠标悬停时卡片随动 (移动端无效)</div>
-            </div>
-            <label class="switch"><input type="checkbox" id="albumEffectToggle"><span class="slider"></span></label>
-          </div>
-	          <div class="setting-item">
-	            <div class="item-info">
-	              <div class="item-label">无操作自动隐藏</div>
-	              <div class="item-desc">3 秒无操作后自动隐藏灵动岛、菜单栏等按钮</div>
-	            </div>
-	            <label class="switch"><input type="checkbox" id="idleHideToggle"><span class="slider"></span></label>
-	          </div>
-	          <div class="setting-item">
-	            <div class="item-info">
-	              <div class="item-label">桌面歌词</div>
+              <div class="item-label">桌面歌词</div>
 	              <div class="item-desc">使用 PIP 生成一个窗口以实现桌面歌词，开启后可在播放界面右下角控制</div>
 	            </div>
 	            <label class="switch"><input type="checkbox" id="desktopLyricsToggle"><span class="slider"></span></label>
@@ -550,6 +530,80 @@
         </div>
       </div>
 
+      
+      <div class="settings-tab-content" data-tab="stats" role="tabpanel">
+        <div class="settings-group">
+          <div class="group-title">听歌统计</div>
+          <div id="statsContent" style="width:100%;min-height:200px;">
+            <div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);">
+              <i class="fas fa-chart-bar" style="font-size:24px;margin-bottom:8px;"></i>
+              <div>打开此页面查看你的听歌统计</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      <div class="settings-tab-content" data-tab="changelog" role="tabpanel">
+        <div class="settings-group">
+          <div class="group-title">更新日志</div>
+          <div class="setting-item vertical" style="gap:0;">
+            <div class="item-desc" style="margin-bottom:8px;">数据来源：GitHub Releases · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer/releases" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color);">查看全部</a></div>
+            <div id="changelogContent" style="width:100%;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.75);max-height:55vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.12) transparent;">
+              <div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);">
+                <i class="fas fa-spinner fa-spin"></i> 正在加载更新日志...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      <div class="settings-tab-content" data-tab="about" role="tabpanel">
+        <div class="settings-group">
+          <div class="group-title">关于 Harmonia</div>
+          <div class="setting-item vertical about-hero-card">
+            <div class="about-title-row">
+              <div class="about-app-icon"><i class="fas fa-music"></i></div>
+              <div>
+                <div class="about-app-name">Harmonia Music Player</div>
+                <div class="item-desc">在线音乐播放器 · AMLL 逐字歌词 · 多音源歌词增强</div>
+              </div>
+            </div>
+            <div class="about-app-desc">感谢使用 Harmonia。你可以通过以下入口查看项目源码、加入 QQ 群反馈问题。</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="group-title">项目入口</div>
+          <div class="about-link-grid">
+            <a class="about-link-card" href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" rel="noopener noreferrer">
+              <div class="about-link-icon"><i class="fab fa-github"></i></div>
+              <div class="about-link-title">GitHub 仓库</div>
+              <div class="about-link-desc">查看源码、提交 Issue、获取最新版本。</div>
+              <div class="about-open-hint">打开仓库 <i class="fas fa-arrow-up-right-from-square"></i></div>
+            </a>
+
+            <a class="about-link-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
+              <div class="about-link-icon"><i class="fab fa-qq"></i></div>
+              <div class="about-link-title">QQ 群入口</div>
+              <div class="about-link-desc">加入交流群，反馈歌词、音源与播放器问题。</div>
+              <div class="about-open-hint">打开 QQ 群 <i class="fas fa-arrow-up-right-from-square"></i></div>
+            </a>
+
+            <a class="about-link-card about-qq-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
+              <img class="about-qq-qr" src="qrcode_1779913195527.jpg" alt="Harmonia QQ 群二维码" loading="lazy">
+              <div class="about-qq-copy">
+                <div class="about-link-title">扫码加入 QQ 群</div>
+                <div class="about-link-desc">二维码来自项目仓库，点击卡片也可以直接打开 QQ 群邀请链接。</div>
+                <div class="about-open-hint">https://qm.qq.com/q/p4WYBXFGNO</div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    
     </div>
   </div>
 </div>
@@ -615,18 +669,14 @@
           <div class="playlists-toolbar-actions">
             <span class="playlists-last-sync" id="playlistsLastSync"></span>
             <button class="create-playlist-btn secondary" id="syncKugouPlaylistsBtn" title="从酷狗账号同步歌单"><i class="fas fa-sync-alt"></i> 同步</button>
-            <button class="create-playlist-btn" id="createPlaylistBtn"><i class="fas fa-plus"></i> 新建</button>
           </div>
         </div>
         <div class="playlists-grid" id="playlistsGrid"></div>
         <div class="playlists-empty" id="playlistsEmpty" style="display:none;">
           <i class="fas fa-music"></i>
-          <div id="playlistsEmptyText">还没有任何歌单<br/>登录酷狗账号同步你的歌单，或点「新建」创建本地歌单</div>
+          <div id="playlistsEmptyText">还没有任何歌单<br/>登录酷狗账号同步你的歌单，或导入歌单文件</div>
           <button class="create-playlist-btn playlists-empty-btn" id="emptySyncBtn" style="display:none;">
             <i class="fas fa-sync-alt"></i> 同步酷狗歌单
-          </button>
-          <button class="create-playlist-btn playlists-empty-btn" id="emptyCreatePlaylistBtn">
-            <i class="fas fa-plus"></i> 创建歌单
           </button>
         </div>
       </div>
@@ -670,48 +720,83 @@
 
   <!-- 主播放器 -->
   <div class="main-player">
-    <!-- 左侧：专辑封面 -->
+    <!-- 左侧：卡片式播放器 -->
     <div class="leftcontent">
-      <div>
-        <div class="album-art-container" id="albumArtContainer">
-          <div class="album-art-wrapper">
-            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="专辑封面" class="album-art" id="albumArt" loading="lazy" />
+      <div class="player-card">
+        <!-- 专辑封面 -->
+        <div class="album-cover">
+          <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="专辑封面" id="albumArt" loading="lazy" />
+        </div>
+
+        <!-- 歌曲信息 -->
+        <div class="track-meta">
+          <div class="text-info">
+            <div class="song-title" id="nowPlayingTitle">歌曲标题</div>
+            <div class="artist-album" id="nowPlayingArtist">未知歌手</div>
+          </div>
+          <div class="meta-actions">
+            <svg id="playerStarBtn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <svg id="playerMoreBtn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer" title="更多" aria-label="更多播放控制">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="19" cy="12" r="1"></circle>
+              <circle cx="5" cy="12" r="1"></circle>
+            </svg>
           </div>
         </div>
 
-        <div class="player-info">
-          <div class="time-display">
-            <span id="currentTime">0:00</span>
-            <div class="player-meta">
-              <div class="now-playing-title" id="nowPlayingTitle">歌曲标题</div>
-              <div class="now-playing-artist" id="nowPlayingArtist">未知歌手</div>
-            </div>
-            <span id="duration">0:00</span>
-          </div>
-
-          <div class="progress-container">
-            <div class="progress-bar" id="progressBar">
-              <div class="progress" id="progress"></div>
+        <!-- 进度条 -->
+        <div class="progress-section">
+          <div class="progress-track-container" id="progressTrackContainer">
+            <div class="bar-wrapper" id="progressBar">
+              <div class="bar-fill" id="progress"></div>
             </div>
           </div>
-
-          <div class="controls">
-            <button class="control-button" id="prevButton" aria-label="上一曲">
-              <i class="fas fa-step-backward"></i>
-            </button>
-            <button class="control-button play-button" id="playButton" aria-label="播放/暂停">
-              <i class="fas fa-play"></i>
-            </button>
-            <button class="control-button" id="nextButton" aria-label="下一曲">
-              <i class="fas fa-step-forward"></i>
-            </button>
-            <button class="play-mode-btn" id="playModeBtn" title="循环播放">
-              <i class="fas fa-redo"></i>
-            </button>
-            <div class="volume-container">
-              <i class="fas fa-volume-up" style="color: var(--text-muted-dark);"></i>
-              <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.7" />
+          <div class="progress-info">
+            <span class="time" id="currentTime">0:00</span>
+            <div class="quality-tag">
+              <svg class="quality-icon" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M7 15V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 15V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M17 15V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span id="qualityText">无损</span>
             </div>
+            <span class="time" id="duration">0:00</span>
+          </div>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="controls">
+          <button class="control-btn btn-small" id="playModeBtn" title="随机播放"><i class="fas fa-random"></i></button>
+          <button class="control-btn btn-skip" id="prevButton" aria-label="上一曲"><i class="fas fa-backward"></i></button>
+          <button class="control-btn btn-play" id="playButton" aria-label="播放/暂停"><i class="fas fa-play"></i></button>
+          <button class="control-btn btn-skip" id="nextButton" aria-label="下一曲"><i class="fas fa-forward"></i></button>
+          <button class="control-btn btn-small" id="repeatBtn" title="单曲循环"><i class="fas fa-repeat"></i></button>
+        </div>
+
+        <!-- 音量 -->
+        <div class="volume-section">
+          <div class="volume-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            </svg>
+          </div>
+          <div class="volume-track-container" id="volumeTrackContainer">
+            <div class="bar-wrapper" id="volumeBar">
+              <div class="bar-fill" id="volumeFill"></div>
+            </div>
+            <!-- 透明 range 输入：与 .bar-fill 同步，兼容现有 JS 音量逻辑 -->
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.7" />
+          </div>
+          <div class="volume-icon large">
+            <svg viewBox="0 0 24 24">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
           </div>
         </div>
       </div>
@@ -775,6 +860,46 @@
         <div class="poster-footer-line"></div>
         <div class="poster-footer-text">Harmonia Music Player</div>
         <div class="poster-footer-hint">点击上方按钮分享给你的朋友</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 播放器更多菜单模态框 -->
+  <div class="modal-overlay player-more-overlay" id="playerMoreOverlay">
+    <div class="player-more-modal">
+      <div class="player-more-header">
+        <h3 class="player-more-title">播放控制</h3>
+        <button class="player-more-close" id="playerMoreClose"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="player-more-body">
+        <!-- 睡眠定时 -->
+        <div class="pm-section">
+          <div class="pm-section-header"><i class="fas fa-moon"></i><span>睡眠定时</span></div>
+          <div class="pm-section-body">
+            <div class="pm-timer-display" id="sleepTimerDisplay">未设置</div>
+            <div class="pm-timer-buttons">
+              <button class="pm-timer-btn" data-minutes="15">15分钟</button>
+              <button class="pm-timer-btn" data-minutes="30">30分钟</button>
+              <button class="pm-timer-btn" data-minutes="60">60分钟</button>
+              <button class="pm-timer-btn" data-minutes="90">90分钟</button>
+            </div>
+            <button class="pm-timer-cancel" id="sleepTimerCancel" style="display:none;">取消定时</button>
+          </div>
+        </div>
+        <!-- 倍速播放 -->
+        <div class="pm-section">
+          <div class="pm-section-header"><i class="fas fa-tachometer-alt"></i><span>倍速播放</span></div>
+          <div class="pm-section-body">
+            <div class="pm-speed-buttons">
+              <button class="pm-speed-btn" data-speed="0.5">0.5x</button>
+              <button class="pm-speed-btn" data-speed="0.75">0.75x</button>
+              <button class="pm-speed-btn active" data-speed="1">1x</button>
+              <button class="pm-speed-btn" data-speed="1.25">1.25x</button>
+              <button class="pm-speed-btn" data-speed="1.5">1.5x</button>
+              <button class="pm-speed-btn" data-speed="2">2x</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
