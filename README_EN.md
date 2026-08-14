@@ -220,6 +220,14 @@ During the development of Harmonia, we received help from many open-source proje
 
 ---
 
+## 📖 Upcoming Plans
+
+In future development, we will update the project every 1–2 weeks.
+
+Below are our current upcoming plans.
+
+We are currently planning to package installers, with the initial release platforms set to Windows and Android. At that time, we will provide a migration entry on the web version, supporting the export of configuration files. This will allow you to quickly migrate your web-based data—such as playlists and preference settings—to the client.
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
