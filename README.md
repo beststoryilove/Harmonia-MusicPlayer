@@ -221,6 +221,14 @@ Harmonia/
 
 ---
 
+## 📖 近期计划
+
+在未来的开发中，我们会以1-2周的频率对项目进行更新。
+
+下方为目前我们的近期计划。
+
+目前我们正在计划封装安装包，发布平台暂定为WIndows与Android。届时，我们将在网页端提供迁移入口，支持导出配置文件。你可以快速将网页端的播放列表/设置偏好等相关数据迁移至客户端。
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
