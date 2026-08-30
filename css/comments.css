@@ -1,0 +1,148 @@
+/* ============================================================
+   酷狗「歌曲评论」面板（播放器 更多 → 歌曲评论）
+   - 承载于 player-content-overlay 的 pm-section（data-section="comments"）
+   - 匿名只读（/comment/music），点赞/回复仅为计数展示
+   ============================================================ */
+
+.cmt-body{
+  display:flex;flex-direction:column;gap:10px;
+  min-height:340px;
+}
+
+/* 头部：歌名 + 评论总数 */
+.cmt-header{
+  display:flex;align-items:baseline;gap:10px;min-width:0;
+  padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.cmt-song{
+  flex:1;min-width:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.92);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cmt-count{
+  flex-shrink:0;font-size:10.5px;color:rgba(255,255,255,0.4);
+  font-variant-numeric:tabular-nums;
+}
+
+/* 评论列表 */
+/* 固定高度：模态总高恒定，加载中/短列表不会塌陷居中跳动 */
+.cmt-list{
+  height:42vh;
+  overflow-y:auto;padding:2px 2px;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.cmt-list::-webkit-scrollbar{display:none;width:0;height:0}
+.cmt-item{
+  display:flex;gap:10px;padding:11px 2px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.cmt-item:last-child{border-bottom:none}
+.cmt-avatar{
+  width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;
+  background:rgba(255,255,255,0.07);
+}
+.cmt-avatar-fallback{
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:rgba(255,255,255,0.3);
+}
+.cmt-main{flex:1;min-width:0}
+.cmt-head{
+  display:flex;align-items:baseline;gap:8px;min-width:0;
+}
+.cmt-user{
+  font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+}
+.cmt-meta{
+  flex-shrink:0;font-size:10px;color:rgba(255,255,255,0.35);
+  font-variant-numeric:tabular-nums;
+}
+.cmt-content{
+  font-size:12.5px;line-height:1.65;color:rgba(255,255,255,0.82);
+  margin-top:4px;word-break:break-word;overflow-wrap:anywhere;
+}
+/* 评论配图（images 数组；点击经委托打开原图） */
+.cmt-images{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;
+}
+.cmt-image{
+  display:block;max-width:min(220px,100%);max-height:160px;
+  border-radius:8px;cursor:zoom-in;object-fit:cover;
+  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.04);
+}
+.cmt-foot{
+  display:flex;gap:16px;margin-top:6px;
+  font-size:10.5px;color:rgba(255,255,255,0.42);
+}
+.cmt-foot i{font-size:10px;margin-right:4px;opacity:0.8}
+
+/* 空态 / 加载态 */
+.cmt-empty{
+  display:flex;align-items:center;justify-content:center;
+  min-height:180px;color:rgba(255,255,255,0.5);font-size:12.5px;
+  text-align:center;padding:20px;line-height:1.7;
+}
+
+/* 分页 */
+.cmt-pager{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);
+  font-size:11.5px;color:rgba(255,255,255,0.5);
+  font-variant-numeric:tabular-nums;
+}
+.cmt-page-btn{
+  padding:6px 16px;font-size:11.5px;font-weight:600;border:none;border-radius:7px;
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);cursor:pointer;
+  transition:all 0.15s ease;
+}
+.cmt-page-btn:hover:not(:disabled){background:rgba(255,255,255,0.12);color:#fff}
+.cmt-page-btn:disabled{opacity:0.35;cursor:not-allowed}
+
+/* ── 楼中楼子视图（/comment/floor 回复独立界面） ── */
+.cmt-view{display:flex;flex-direction:column;gap:10px;min-height:0;flex:1}
+.cmt-replies-head{
+  display:flex;align-items:center;gap:10px;min-width:0;
+  padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.cmt-back{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 11px;font-size:11.5px;font-weight:600;border:none;border-radius:7px;
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);cursor:pointer;
+  transition:all 0.18s ease;white-space:nowrap;flex-shrink:0;
+}
+.cmt-back:hover{background:rgba(255,255,255,0.12);color:#fff}
+.cmt-replies-title{
+  flex:1;min-width:0;text-align:right;
+  font-size:10.5px;color:rgba(255,255,255,0.42);
+  font-variant-numeric:tabular-nums;
+}
+/* 父评论上下文引用框（回复界面顶部；限高防超长父评论撑爆模态） */
+.cmt-parent{
+  padding:4px 12px;border-radius:10px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);
+  max-height:18vh;overflow-y:auto;
+  scrollbar-width:none;
+}
+.cmt-parent::-webkit-scrollbar{display:none;width:0;height:0}
+.cmt-parent .cmt-item{padding:8px 0;border-bottom:none}
+.cmt-parent .cmt-foot{display:none}
+.cmt-replies-list{height:36vh}
+
+/* 评论区面板：外层滚动条一并隐藏（内容高度已约束，正常不触发滚动） */
+.player-content-body:has(.cmt-body){scrollbar-width:none}
+.player-content-body:has(.cmt-body)::-webkit-scrollbar{display:none;width:0;height:0}
+.cmt-replies-btn{
+  background:none;border:none;padding:0;
+  font-size:10.5px;font-weight:600;color:var(--primary-color);cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;
+  transition:color 0.15s ease;
+}
+.cmt-replies-btn:hover{color:#ff6b81}
+.cmt-replies-btn .cmt-replies-caret{font-size:8px;transition:transform 0.2s ease}
+.cmt-replies-static{
+  font-size:10.5px;color:rgba(255,255,255,0.42);
+  display:inline-flex;align-items:center;gap:5px;
+}
+
+/* 滚动条已在 .cmt-list 统一隐藏（scrollbar-width:none + WebKit display:none） */

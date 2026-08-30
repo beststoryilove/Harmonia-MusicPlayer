@@ -1,0 +1,95 @@
+/* ============================================================
+   Windows 自绘窗口栏（titlebar）
+   仅当桌面客户端（titleBarStyle: 'hidden'，win32）注入 body.harmonia-titlebar
+   类时才显示与生效；网页版 / 移动端 / macOS 下 .win-titlebar 恒为 display:none。
+   - 拖动与双击最大化由 -webkit-app-region: drag 原生提供；按钮区域 no-drag
+   - z-index 10001：高于业务 UI 与模态层（splash 开屏 99999 除外），
+     保证任意时刻可拖动/最小化/关闭窗口（与原生窗口栏行为一致）
+   - 顶部固定 UI（动态岛/菜单钮/FAB/侧栏/主播放器）按断点同步下移
+   ============================================================ */
+.win-titlebar{display:none}
+
+body.harmonia-titlebar{
+  --titlebar-h:38px;
+}
+
+body.harmonia-titlebar .win-titlebar{
+  position:fixed;top:0;left:0;right:0;height:var(--titlebar-h);
+  display:flex;align-items:stretch;z-index:10001;
+  -webkit-app-region:drag;app-region:drag;
+  background:linear-gradient(to bottom,rgba(8,9,13,0.62),rgba(8,9,13,0.34));
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  backdrop-filter:blur(18px) saturate(150%);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+
+/* 品牌区 */
+body.harmonia-titlebar .tb-brand{
+  display:flex;align-items:center;gap:9px;padding:0 14px 0 16px;
+  color:rgba(255,255,255,0.82);letter-spacing:2.2px;font-size:11.5px;font-weight:700;
+  white-space:nowrap;
+}
+body.harmonia-titlebar .tb-brand i{
+  font-size:12px;color:var(--primary-color);
+  text-shadow:0 0 12px rgba(255,45,85,0.5);
+}
+
+/* 中部弹性拖动区 */
+body.harmonia-titlebar .tb-drag{flex:1}
+
+/* 窗口控制按钮（Windows 惯例 46px 宽；关闭键悬停红底） */
+body.harmonia-titlebar .tb-controls{
+  display:flex;-webkit-app-region:no-drag;app-region:no-drag;
+}
+body.harmonia-titlebar .tb-btn{
+  width:46px;border:none;background:transparent;color:rgba(255,255,255,0.78);
+  display:flex;align-items:center;justify-content:center;cursor:default;
+  padding:0;border-radius:0;
+  transition:background 0.12s ease,color 0.12s ease;
+}
+body.harmonia-titlebar .tb-btn svg{
+  width:10px;height:10px;display:block;stroke-width:1;fill:none;
+  stroke:currentColor;stroke-linecap:square;
+}
+body.harmonia-titlebar .tb-btn:hover{background:rgba(255,255,255,0.10);color:#fff}
+body.harmonia-titlebar .tb-btn:active{background:rgba(255,255,255,0.16)}
+body.harmonia-titlebar .tb-close:hover{background:#e81123;color:#fff}
+body.harmonia-titlebar .tb-close:active{background:#f26b7a}
+
+/* 最大化 / 还原 图标切换（win:state-changed 驱动 .maximized 类）。
+   注意特异性：.tb-btn svg{display:block} 为 (0,2,1)，隐藏还原图标必须
+   用 .tb-btn svg.tb-icon-restore（0,3,1）才能压过它，否则两图标叠显 */
+body.harmonia-titlebar .tb-btn svg.tb-icon-restore{display:none}
+body.harmonia-titlebar .win-titlebar.maximized .tb-btn svg.tb-icon-max{display:none}
+body.harmonia-titlebar .win-titlebar.maximized .tb-btn svg.tb-icon-restore{display:block}
+
+/* 全屏：窗口栏让位 */
+body.harmonia-titlebar .win-titlebar.fullscreen{display:none}
+
+/* ── 顶部固定 UI 下移（仅自绘窗口栏启用时） ── */
+body.harmonia-titlebar .dynamic-island{top:calc(20px + var(--titlebar-h))}
+body.harmonia-titlebar .menu-toggle{top:calc(20px + var(--titlebar-h))}
+/* html 前缀 + ID 特异性：player.css 的规则是 `.fab-menu,#fabMenu{top:12px !important}`，
+   其中 #fabMenu 为 ID 选择器（1,0,0）——class 覆盖（0,2,2）在 !important 对决中永远落败
+   （诊断实证：两种窗口态下 computed top 恒为 12px）。必须以 ID 特异性覆盖：
+   18px 偏移使 FAB（56px）与左侧菜单按钮（58px+52px）垂直同心（中心均 84px）；
+   right:20px 与 menu-toggle 的 left:20px 左右对称 */
+html body.harmonia-titlebar #fabMenu{
+  top:calc(18px + var(--titlebar-h)) !important;
+  right:20px !important;
+}
+body.harmonia-titlebar .sidebar{top:var(--titlebar-h);height:calc(100% - var(--titlebar-h))}
+body.harmonia-titlebar .main-player{top:calc(50% + var(--titlebar-h) / 2)}
+
+/* 与 responsive.css 断点保持同步 */
+@media (max-width:1200px){
+  body.harmonia-titlebar .main-player{top:calc(80px + var(--titlebar-h))}
+}
+@media (max-width:768px){
+  body.harmonia-titlebar .main-player{top:calc(70px + var(--titlebar-h))}
+  body.harmonia-titlebar .dynamic-island{top:calc(10px + var(--titlebar-h))}
+}
+
+@media (prefers-reduced-motion: reduce){
+  body.harmonia-titlebar .tb-btn{transition:none}
+}

@@ -1,0 +1,207 @@
+/* ============================================================
+   酷狗「发现」功能组样式（排行榜 / 私人FM / 每日推荐 / 听相似 / 热搜词）
+   - 模态复用 .modal-overlay 基础布局，外观与设置/分享模态一致（liquid-glass）
+   - 热搜词 chips 展示在灵动岛搜索空态
+   ============================================================ */
+
+/* ── 模态骨架 ── */
+/* 项目无 .modal-overlay 公共基类，各模态自带定位（对齐 .settings-modal-overlay） */
+.discovery-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(8px) !important;
+  -webkit-backdrop-filter:blur(8px) !important;
+  display:flex;align-items:center;justify-content:center;
+  z-index:2001;
+  opacity:0;visibility:hidden;
+  transition:opacity 0.3s ease,visibility 0.3s ease;
+}
+.discovery-overlay.active{opacity:1;visibility:visible}
+.discovery-overlay .discovery-modal{transform:translateY(14px) scale(0.98);transition:transform 0.3s ease}
+.discovery-overlay.active .discovery-modal{transform:translateY(0) scale(1)}
+.discovery-modal{
+  width:min(620px,92vw);
+  max-height:min(76vh,720px);
+  display:flex;flex-direction:column;
+  padding:0;
+}
+.discovery-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 20px 12px;
+}
+.discovery-title{
+  display:flex;align-items:center;gap:10px;
+  font-size:16px;font-weight:700;color:#fff;letter-spacing:0.3px;
+}
+.discovery-title i{color:var(--primary-color)}
+.discovery-close{
+  background:none;border:none;color:rgba(255,255,255,0.55);
+  font-size:18px;width:34px;height:34px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;
+}
+.discovery-close:hover{background:rgba(255,255,255,0.1);color:#fff}
+
+.discovery-tabs{
+  display:flex;gap:6px;padding:0 20px 12px;
+}
+.discovery-tab{
+  flex:1;padding:9px 0;cursor:pointer;font-size:13px;font-weight:600;
+  color:rgba(255,255,255,0.5);text-align:center;border-radius:8px;
+  background:rgba(255,255,255,0.04);transition:all 0.2s ease;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.discovery-tab i{font-size:12px}
+.discovery-tab:hover{color:rgba(255,255,255,0.8);background:rgba(255,255,255,0.07)}
+.discovery-tab.active{
+  background:rgba(255,45,85,0.15);color:var(--primary-color);font-weight:700;
+}
+
+.discovery-body{
+  flex:1;min-height:220px;overflow-y:auto;padding:4px 20px 20px;
+}
+.discovery-loading,.discovery-empty,.discovery-error{
+  display:flex;align-items:center;justify-content:center;
+  min-height:200px;color:rgba(255,255,255,0.55);font-size:13px;text-align:center;padding:20px;
+}
+.discovery-error{color:var(--error-color)}
+
+/* ── 排行榜：榜单网格 ── */
+.discovery-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.discovery-rank-card{
+  padding:16px 14px;border-radius:12px;cursor:pointer;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+  transition:all 0.2s ease;
+}
+.discovery-rank-card:hover{
+  background:rgba(255,45,85,0.1);border-color:rgba(255,45,85,0.25);
+  transform:translateY(-2px);
+}
+.discovery-rank-name{
+  font-size:13px;font-weight:700;color:rgba(255,255,255,0.92);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.discovery-rank-cycle{
+  font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;
+}
+
+/* ── 排行榜：歌曲列表 ── */
+.discovery-songs-head{
+  display:flex;align-items:center;gap:10px;padding:2px 0 10px;
+  position:sticky;top:0;z-index:2;
+  background:linear-gradient(to bottom,rgba(16,18,26,0.92),rgba(16,18,26,0.75) 75%,transparent);
+}
+.discovery-back,.discovery-addall{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 11px;font-size:11.5px;font-weight:600;border:none;border-radius:7px;
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);cursor:pointer;
+  transition:all 0.18s ease;white-space:nowrap;flex-shrink:0;
+}
+.discovery-back:hover{background:rgba(255,255,255,0.12);color:#fff}
+.discovery-addall{background:rgba(255,45,85,0.16);color:var(--primary-color)}
+.discovery-addall:hover{background:rgba(255,45,85,0.28);color:#fff}
+.discovery-addall:disabled{opacity:0.5;cursor:wait}
+.discovery-songs-title{
+  flex:1;min-width:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.9);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.discovery-songs{display:flex;flex-direction:column;gap:4px}
+.discovery-song{
+  display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;
+  cursor:pointer;transition:background 0.15s ease;
+}
+.discovery-song:hover{background:rgba(255,255,255,0.06)}
+.discovery-song-idx{
+  width:26px;text-align:right;font-size:12px;font-weight:700;
+  color:rgba(255,255,255,0.35);flex-shrink:0;
+  font-variant-numeric:tabular-nums;
+}
+.discovery-song-info{flex:1;min-width:0}
+.discovery-song-name{
+  font-size:13px;font-weight:600;color:rgba(255,255,255,0.92);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.discovery-song-artist{
+  font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.discovery-song-play{
+  font-size:12px;color:rgba(255,255,255,0.4);opacity:0;transition:opacity 0.15s ease;
+  flex-shrink:0;
+}
+.discovery-song:hover .discovery-song-play{opacity:1;color:var(--primary-color)}
+
+.discovery-pager{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  padding:14px 0 4px;font-size:12px;color:rgba(255,255,255,0.5);
+}
+.discovery-page-btn{
+  padding:6px 14px;font-size:12px;font-weight:600;border:none;border-radius:7px;
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);cursor:pointer;
+  transition:all 0.15s ease;
+}
+.discovery-page-btn:hover:not(:disabled){background:rgba(255,255,255,0.12);color:#fff}
+.discovery-page-btn:disabled{opacity:0.35;cursor:not-allowed}
+
+/* ── 电台面板（私人FM / 每日推荐） ── */
+.discovery-radio{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:260px;gap:16px;text-align:center;padding:20px;
+}
+.discovery-radio-title{font-size:20px;font-weight:700;color:#fff}
+.discovery-radio-desc{
+  font-size:12.5px;line-height:1.7;color:rgba(255,255,255,0.55);max-width:400px;
+}
+.discovery-radio-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.discovery-primary,.discovery-secondary{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 22px;font-size:13px;font-weight:700;border:none;border-radius:999px;
+  cursor:pointer;transition:all 0.2s ease;
+}
+.discovery-primary{
+  background:var(--primary-gradient);color:#fff;
+  box-shadow:0 4px 16px rgba(255,45,85,0.3);
+}
+.discovery-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,45,85,0.4)}
+.discovery-primary:active{transform:scale(0.97)}
+.discovery-secondary{
+  background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);
+  border:1px solid rgba(255,255,255,0.1);
+}
+.discovery-secondary:hover{background:rgba(255,255,255,0.13);color:#fff}
+.discovery-radio-note{font-size:10.5px;color:rgba(255,255,255,0.32)}
+
+/* ── 灵动岛搜索空态热搜词 ── */
+.island-hot{
+  display:flex;flex-wrap:wrap;gap:7px;justify-content:center;
+  margin-top:14px;padding:0 4px;
+}
+.island-hot:empty{display:none}
+.island-hot-chip{
+  padding:6px 12px;font-size:11.5px;font-weight:600;border:none;border-radius:999px;
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.72);cursor:pointer;
+  border:1px solid rgba(255,255,255,0.08);
+  transition:all 0.18s ease;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.island-hot-chip:hover{
+  background:rgba(255,45,85,0.16);color:#fff;border-color:rgba(255,45,85,0.3);
+  transform:translateY(-1px);
+}
+
+/* ── 响应式：窄窗口单列榜单 ── */
+@media (max-width:520px){
+  .discovery-grid{grid-template-columns:1fr}
+  .discovery-modal{width:94vw;max-height:80vh}
+}
+
+/* 移动端：灵动岛空态热词紧凑化——岛展开高度固定（400px），空态内容
+   （音符图标 + 文案 + 热词）必须完整可见，不能撑破或被裁剪 */
+@media (max-width:768px){
+  .island-hot{gap:5px;margin-top:8px;padding:0 2px}
+  .island-hot-chip{padding:4px 9px;font-size:10px;max-width:46%}
+  .island-empty{padding:10px 10px 12px;min-height:0}
+  .island-empty i{font-size:34px;margin-bottom:8px}
+  .island-empty-text{font-size:13px}
+}

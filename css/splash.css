@@ -1,0 +1,347 @@
+/* 开屏加载动画（Splash Screen）v4 —— "播放器走带" 布局 · 深空黑胶质感
+   设计语言：把开屏做成 Harmonia 自己的播放器界面，而非居中模板——
+   左上品牌角标 + 右上 LOADING 指示；左下超大字标与曲目式状态行（01 — 正在加载资源）；
+   右侧一颗缓慢旋转的黑胶唱片提供视觉层次；底部全宽"选段"进度条与百分比读数。
+   v4（方向 A）：唱片获得旋转高光扇面/音轨明暗带/渐隐边缘/立体盘芯；
+   氛围光加倍 + 全屏细颗粒消除死黑；字标品牌色微光；进度末端更亮。
+   依赖：仅本文件 + js/splash.js；音符为内联 SVG，不依赖图标字体/CDN。
+   生命周期由 js/splash.js 控制：就绪信号 → 进度补满 → .splash-leaving 淡出 → 移除节点。 */
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999; /* 高于主界面所有层级（当前最高 10000） */
+  display: flex;
+  overflow: hidden;
+  background: #000;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
+}
+
+/* 全屏细颗粒：消除大面积死黑的"空"，均匀叠在最上层（3% 亮度，静态） */
+.splash-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1.4px);
+  background-size: 3px 3px;
+  pointer-events: none;
+}
+
+/* 淡出：由 splash.js 添加该类，结束后整个节点从 DOM 移除 */
+.splash-screen.splash-leaving {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ── 氛围层 ─────────────────────────────────────────── */
+
+/* 环境光晕：品牌粉 + 辅助靛蓝 + 过渡粉三团低饱和光，缓慢漂移（v4 强度加倍） */
+.splash-bg {
+  position: absolute;
+  inset: -25%;
+  background:
+    radial-gradient(40% 36% at 24% 22%, rgba(255, 45, 85, 0.20), transparent 70%),
+    radial-gradient(44% 40% at 76% 82%, rgba(88, 86, 214, 0.16), transparent 72%),
+    radial-gradient(26% 26% at 60% 34%, rgba(255, 95, 126, 0.08), transparent 70%);
+  filter: blur(48px);
+  animation: splash-drift 16s ease-in-out infinite alternate;
+}
+
+/* 黑胶唱片：右缘垂直居中。v4 质感——旋转高光扇面（conic）+ 细沟纹 + 三段音轨
+   明暗带 + 立体粉芯（见 ::after）；外缘用 mask 渐隐融入背景，避免生硬圆切割。 */
+.splash-disc {
+  position: absolute;
+  top: 50%;
+  right: 5%;
+  width: min(56vmin, 500px);
+  height: min(56vmin, 500px);
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background:
+    conic-gradient(from 30deg,
+      transparent 0deg,
+      rgba(255, 255, 255, 0.06) 26deg,
+      rgba(255, 255, 255, 0.015) 52deg,
+      transparent 92deg,
+      transparent 200deg,
+      rgba(255, 255, 255, 0.028) 226deg,
+      transparent 262deg),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4px),
+    radial-gradient(circle at 50% 50%,
+      rgba(255, 45, 85, 0.55) 0 12%,
+      rgba(255, 45, 85, 0.26) 12.5% 14%,
+      rgba(24, 24, 28, 0.96) 14.5% 29%,
+      rgba(12, 12, 15, 0.97) 29% 56%,
+      rgba(18, 18, 22, 0.96) 56% 99%,
+      transparent 100%);
+  box-shadow: 0 0 130px rgba(255, 45, 85, 0.16), inset 0 0 70px rgba(0, 0, 0, 0.55);
+  -webkit-mask-image: radial-gradient(circle, #000 96.5%, transparent 100%);
+  mask-image: radial-gradient(circle, #000 96.5%, transparent 100%);
+  animation: splash-spin 26s linear infinite;
+}
+
+/* 唱片盘芯：偏光高光 + 三层粉色 label 环 + 暗色圈边与品牌光晕（替代旧中心孔） */
+.splash-disc::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24%;
+  height: 24%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.30), transparent 46%),
+    radial-gradient(circle, #ff3d63 0 55%, #e02350 55% 76%, #b81b3b 76% 100%);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 45, 85, 0.5);
+}
+
+/* 暗角：边缘压暗，聚焦左下内容区（v4 减弱，让氛围光透出） */
+.splash-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 120% at 28% 60%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* ── 内容层：三段式 chrome ───────────────────────────── */
+
+.splash-chrome {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 4.5vw, 52px);
+}
+
+/* 顶栏：品牌角标 + LOADING 指示 */
+.splash-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.splash-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.splash-brand svg {
+  width: 15px;
+  height: 15px;
+  fill: #ff2d55;
+}
+
+.splash-live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.splash-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff2d55;
+  box-shadow: 0 0 10px rgba(255, 45, 85, 0.9);
+  animation: splash-blink 1.1s ease-in-out infinite;
+}
+
+/* 主区：左下超大字标 + 曲目式状态行 */
+.splash-hero {
+  margin-top: auto;
+  padding-bottom: clamp(26px, 4vh, 44px);
+}
+
+.splash-title {
+  font-family: "SFPro-Semibold", "PingFangSC-Semibold", -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-size: clamp(52px, 8vw, 92px);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  line-height: 1.04;
+  color: #fff;
+  text-shadow: 0 0 90px rgba(255, 45, 85, 0.22);
+  animation: splash-tracking 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.splash-sub {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  animation: splash-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+}
+
+.splash-index {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: #ff5f7e;
+}
+
+.splash-rule {
+  width: 30px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.splash-status {
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.78);
+  animation: splash-breathe-text 2s ease-in-out 1s infinite;
+}
+
+/* ── 底部：全宽选段进度条 + 读数 ──────────────────────── */
+
+.splash-bottom {
+  animation: splash-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+}
+
+.splash-scrubber {
+  position: relative;
+  height: 14px; /* 扩大热区，视觉线只有 2px */
+  display: flex;
+  align-items: center;
+}
+
+.splash-scrubber::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.splash-progress-fill {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #ff2d55, #ff5f7e);
+  box-shadow: 0 0 16px rgba(255, 45, 85, 0.65);
+  transform-origin: left center;
+  transform: scaleX(var(--splash-progress, 0));
+}
+
+/* 进度头部的发光滑块 */
+.splash-thumb {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--splash-progress, 0) * 100%);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px rgba(255, 45, 85, 0.95), 0 0 3px rgba(255, 255, 255, 0.8);
+  transform: translate(-50%, -50%);
+}
+
+.splash-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.splash-percent {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 离场：整体轻轻上浮，随遮罩一起淡去 */
+.splash-chrome {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.splash-screen.splash-leaving .splash-chrome {
+  transform: translateY(-12px);
+}
+
+@keyframes splash-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splash-tracking {
+  from { opacity: 0; transform: translateY(20px); letter-spacing: 0.05em; }
+  to { opacity: 1; transform: translateY(0); letter-spacing: -0.028em; }
+}
+
+@keyframes splash-spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* 移动端唱片居中布局的旋转（transform 基准不同，需独立关键帧） */
+@keyframes splash-spin-mobile {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes splash-drift {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to { transform: translate3d(2%, 2%, 0) scale(1.06); }
+}
+
+@keyframes splash-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@keyframes splash-breathe-text {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.95; }
+}
+
+/* 小屏：唱片移入屏内至圆心约在右缘 87% 处，露出约六成盘面——
+   v4 的立体盘芯完整可见，作为字标上方留白区的主视觉锚点；
+   与桌面端的右侧布局形成呼应。圆心过贴边会让盘芯被切成"半个粉点"，
+   过远移出则只剩沟纹、失去品牌色焦点，87% 是两者之间的平衡点。
+   宽高双钳制：宽度跟视口、高度不超过视高约六成，避免矮屏（横屏小窗）时
+   唱片压到顶栏或字标区。 */
+@media (max-width: 720px) {
+  .splash-disc {
+    right: auto;
+    left: 87%;
+    top: 41%;
+    width: min(105vw, 58vh, 440px);
+    height: min(105vw, 58vh, 440px);
+    transform: translate(-50%, -50%);
+    animation-name: splash-spin-mobile;
+  }
+  .splash-title { font-size: clamp(44px, 13vw, 64px); }
+  .splash-sub { margin-top: 14px; }
+  .splash-live span { display: none; }
+  .splash-meta { letter-spacing: 0.18em; }
+}
+
+/* 无 JS 兜底由 main.html 中 <noscript> 处理；
+   减少动态效果：关闭装饰性动画，仅保留功能性进度与淡出 */
+@media (prefers-reduced-motion: reduce) {
+  .splash-bg { animation: none; }
+  .splash-disc { animation: none; }
+  .splash-live i { animation: none; }
+  .splash-status { animation: none; opacity: 0.75; }
+  .splash-title { animation: splash-rise 0.5s ease-out both; }
+  .splash-screen { transition-duration: 0.3s; }
+}
