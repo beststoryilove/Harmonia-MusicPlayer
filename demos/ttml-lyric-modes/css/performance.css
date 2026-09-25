@@ -1,0 +1,85 @@
+/* ────────────────────────────────────────────────────────────────────────
+ * 性能优先 —— P1 窗口化 / P2 零弹簧 / P3 零逐字
+ *
+ * 既有语汇（main.js:2477-2486、7335-7338）：0.18s 过渡、无 blur
+ * / 无 text-shadow / 无级联。
+ *
+ * 真正省下来的地方（由 renderers/performance.js 的引擎参数决定）：
+ *   P1 只驻留视口附近的组，离屏 dispose → 节点数
+ *   P2 关掉弹簧，仅行边界写 DOM           → 每帧写入次数
+ *   P3 关掉 WAAPI 逐字                   → 动画时间轴条数
+ * ──────────────────────────────────────────────────────────────────────── */
+
+.ds-performance .eng-group {
+  transition: transform 0.18s ease-out, opacity 0.18s linear;
+  /* 无阴影、无模糊 —— 这两个是合成成本最高的效果 */
+  text-shadow: none;
+  filter: none;
+  mix-blend-mode: normal;
+}
+
+.ds-performance .eng-main {
+  font-size: var(--eng-font-size, 34px);
+  text-shadow: none;
+}
+
+.ds-performance .eng-sub { opacity: 0.34; }
+
+/* ── P1 窗口化节点池 ────────────────────────────────────────────────── */
+
+/*
+ * 注意：**不能**用 contain: strict（含 size containment）。
+ * size containment 会让元素在计算自身尺寸时忽略子元素，于是 offsetHeight
+ * 退化为 padding（实测 13px，而真实组高 67~130px）。本引擎的滚动数学完全
+ * 依赖前缀和高度，测得越小 → 行距越小 → 所有组挤在一起（实测 60 组被压在
+ * 767px 内）且没有任何一组被判为离屏，窗口化彻底失效。
+ *
+ * 只用 layout + paint containment：同样能隔离重排/重绘，但不影响尺寸计算。
+ */
+.ds-p1 .eng-group { contain: layout paint; }
+
+.ds-p1 .eng-line.eng-bg .eng-main { font-size: 0.6em; opacity: 0.75; }
+
+.ds-p1 .eng-line.eng-duet {
+  padding-left: 8%;
+  border-left: 2px solid rgba(255, 107, 138, 0.5);
+}
+
+/* ── P2 零弹簧直写 ──────────────────────────────────────────────────── */
+
+/* 关掉弹簧后，位置变化靠 CSS 过渡承担，因此这里的过渡是「动画」而非「噪声」 */
+.ds-p2 .eng-group {
+  transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.24s linear;
+}
+
+.ds-p2 .eng-line.eng-bg .eng-main { font-size: 0.6em; opacity: 0.75; }
+
+.ds-p2 .eng-line.eng-duet {
+  padding-left: 8%;
+  border-left: 2px solid rgba(255, 107, 138, 0.5);
+}
+
+/* P2 的逐字由 CSS 承担（无 WAAPI）：用遮罩百分比过渡近似揭字 */
+.ds-p2 .eng-word {
+  transition: mask-position 0.3s linear;
+}
+
+/* ── P3 零逐字 ──────────────────────────────────────────────────────── */
+
+/* 同 P1：不能含 size containment，否则 offsetHeight 失真、滚动数学失准 */
+.ds-p3 .eng-group { contain: layout paint; }
+
+/* 无逐字动画时，活动行靠颜色区分即可 */
+.ds-p3 .eng-line:not(.is-active) .eng-main { color: rgba(255, 255, 255, 0.46); }
+.ds-p3 .eng-line.is-active .eng-main { color: rgba(255, 255, 255, 0.98); }
+
+.ds-p3 .eng-line.eng-bg .eng-main { font-size: 0.6em; opacity: 0.7; }
+.ds-p3 .eng-line.eng-bg.is-active .eng-main { color: rgba(111, 195, 255, 0.95); }
+
+.ds-p3 .eng-line.eng-duet {
+  padding-left: 8%;
+  border-left: 2px solid rgba(255, 107, 138, 0.5);
+}
+
+.ds-p3 .eng-line.eng-duet.is-active .eng-main { color: #ff90a6; }

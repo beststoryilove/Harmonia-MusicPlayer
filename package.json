@@ -1,0 +1,13 @@
+{
+  "name": "harmonia-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Harmonia 网页端纯函数测试",
+  "engines": {
+    "node": ">=21"
+  },
+  "scripts": {
+    "test": "npm run test:js",
+    "test:js": "node --test \"tests/js/*.test.js\""
+  }
+}

@@ -3,8 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <!-- H10: CSP 纵深防御（script 仅允许 self + AMLL 所需 CDN；inline script 为 PiP 模板必需；
-     img/media 放行 http 以兼容音乐源返回的 http 封面/音频；connect 放行 https 以支持自定义翻译端点） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://esm.sh https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; connect-src 'self' blob: https:; font-src 'self' data: https://cdnjs.cloudflare.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'"/>
+     【用户决策 2026-09-05】img/media/connect 全部放行 http：酷狗等音乐源返回 http 接口/音频/封面，
+     此前 connect 仅放行 https 会拦掉 http 音频与接口请求；script/style/font 仍限 https（均为本地/CDN 资源，无 http 需求）
+     【2026-09-18】connect-src 追加 ws: wss:：桌面歌词走 WebSocket（ws://localhost:8765）连本机服务端，
+     而 CSP 的 connect-src 不会因放行 http:/https: 而自动覆盖 ws:/wss:（两者是不同的 scheme），
+     缺失时浏览器会在发起连接前直接拦截，表现为「客户端报连接失败、服务端却收不到任何请求」。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://esm.sh https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; connect-src 'self' blob: https: http: ws: wss:; font-src 'self' data: https://cdnjs.cloudflare.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'"/>
 <meta name="description" content="Harmonia - 一个美观易用的在线音乐播放器"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0"/>
 <title>Harmonia - 音乐播放器</title>
@@ -25,7 +29,7 @@
 <link rel="stylesheet" href="css/search.css"/>
 <link rel="stylesheet" href="css/player.css"/>
 <link rel="stylesheet" href="css/settings.css"/>
-<link rel="stylesheet" href="css/lyrics.css"/>
+<link rel="stylesheet" href="css/lyrics.css?v=2"/>
 <link rel="stylesheet" href="css/share.css"/>
 <link rel="stylesheet" href="css/responsive.css"/>
 <link rel="stylesheet" href="css/discovery.css?v=2"/>
@@ -345,6 +349,16 @@
           </div>
 	        </div>
 
+        <div class="settings-group">
+          <div class="group-title">3D 丽音</div>
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">3D 丽音（哈斯展宽）</div>
+              <div class="item-desc">将右声道延时约 25ms 展宽立体声场（哈斯技巧），不改动音频内容、对音质无损；建议耳机聆听。<span id="spatial3dHint"></span></div>
+            </div>
+            <label class="switch"><input type="checkbox" id="spatial3dToggle" aria-label="3D 丽音空间音效"><span class="slider"></span></label>
+          </div>
+        </div>
 	      </div>
 
       
@@ -421,17 +435,9 @@
                 </div>
               </div>
             </div>
-            <div class="setting-item">
-              <div class="item-info">
-                <div class="item-label">每天首次打开时自动领取</div>
-                <div class="item-desc">开启后每天打开应用时自动领取一次当日 VIP 权益；失败也不会重复打扰你。</div>
-              </div>
-              <label class="switch"><input type="checkbox" id="kugouVipAutoToggle" aria-label="每天首次打开时自动领取 VIP 权益"><span class="slider"></span></label>
-            </div>
             <div class="setting-item vertical">
               <div class="vip-actions">
                 <button id="kugouVipRefreshBtn" class="ios-btn secondary" type="button"><i class="fas fa-sync-alt"></i> 刷新状态</button>
-                <button id="kugouVipAutoBtn" class="ios-btn primary" type="button"><i class="fas fa-bolt"></i> 领取并升级</button>
               </div>
               <div class="vip-tip" id="kugouVipProgressText">实际权益以酷狗返回为准；领取进度会实时显示在下方。</div>
             </div>
@@ -754,10 +760,11 @@
               <div class="about-open-hint">打开 QQ 群 <i class="fas fa-arrow-up-right-from-square"></i></div>
             </a>
 
-            <a class="about-link-card about-qq-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
-              <div class="about-qq-copy">
-                <div class="about-link-title">加入 QQ 群</div>
-                <div class="about-link-desc">点击卡片直接打开 QQ 群邀请链接。</div>
+            <a class="about-link-card about-qr-card" href="https://qm.qq.com/q/p4WYBXFGNO" target="_blank" rel="noopener noreferrer">
+              <img class="about-qr-img" src="qrcode_1779913195527.jpg" alt="Harmonia QQ 群二维码" loading="lazy">
+              <div class="about-qr-copy">
+                <div class="about-link-title">扫码加入 QQ 群</div>
+                <div class="about-link-desc">手机扫码直达群聊，也可以点击卡片打开邀请链接。</div>
                 <div class="about-open-hint">点击直接打开 <i class="fas fa-arrow-up-right-from-square"></i></div>
               </div>
             </a>
@@ -997,6 +1004,19 @@
           <!-- AMLL 歌词组件将按需加载并挂载到这里 -->
         </div>
       </div>
+      <!-- 歌词大小快捷调节：置于歌词壳外以避开 .lyricscontainer 渐隐遮罩；主界面与移动全屏共用
+           （样式见 css/lyrics.css 的 lyrics-size-*，逻辑见 js/main.js 的 setupLyricsSizeUI） -->
+      <div class="lyrics-size-ui" id="lyricsSizeUi">
+        <button type="button" class="lyrics-size-trigger" id="lyricsSizeTrigger" aria-label="调整歌词大小" title="调整歌词大小">Aa</button>
+        <div class="lyrics-size-popover" id="lyricsSizePopover" role="group" aria-label="歌词大小调节">
+          <div class="lyrics-size-head">
+            <span class="lyrics-size-title">歌词大小</span>
+            <span class="lyrics-size-value" id="lyricsSizeValue">100%</span>
+            <button type="button" class="lyrics-size-reset" id="lyricsSizeReset" title="恢复默认大小" aria-label="恢复默认大小"><i class="fas fa-rotate-left"></i></button>
+          </div>
+          <input type="range" class="lyrics-size-slider" id="lyricsSizeSlider" min="50" max="150" step="5" value="100" aria-label="歌词大小百分比"/>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1162,7 +1182,7 @@
 <script defer src="js/splash.js?v=1"></script>
 <script defer src="js/stFlacRepair.js?v=5"></script>
 <script defer src="js/titlebar.js?v=1"></script>
-<script src="js/lib/pure.js?v=1"></script>
+<script src="js/lib/pure.js?v=3"></script>
 <script defer src="js/main.js"></script>
 </body>
 </html>

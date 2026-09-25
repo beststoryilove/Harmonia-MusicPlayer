@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmonia 液态弹性开关 Demo</title>
+    <link rel="stylesheet" href="../../css/variables.css">
+    <link rel="stylesheet" href="demo.css">
+</head>
+<body>
+    <main class="demo-page">
+        <header>
+            <h1>Harmonia 液态弹性开关 Demo</h1>
+            <p>交互说明：点击开关切换状态；快速连续切换可触发弹性动画；长按体验液态形变；使用 Tab 聚焦后按 Space 切换。</p>
+        </header>
+
+        <div class="demo-grid">
+            <section class="demo-panel demo-panel--dark" aria-labelledby="dark-theme-heading">
+                <h2 id="dark-theme-heading">深色主题</h2>
+                <div class="setting-row">
+                    <div>
+                        <strong class="setting-label">启用逐字歌词</strong>
+                        <small class="setting-desc">逐字显示当前播放歌词</small>
+                    </div>
+                    <label class="liquid-switch">
+                        <input type="checkbox" checked aria-label="深色主题：启用逐字歌词">
+                        <span class="liquid-switch__track"></span>
+                        <span class="liquid-switch__thumb"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <strong class="setting-label">歌曲过渡动画</strong>
+                        <small class="setting-desc">切换歌曲时播放过渡效果</small>
+                    </div>
+                    <label class="liquid-switch">
+                        <input type="checkbox" aria-label="深色主题：歌曲过渡动画">
+                        <span class="liquid-switch__track"></span>
+                        <span class="liquid-switch__thumb"></span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="demo-panel demo-panel--light" aria-labelledby="light-theme-heading">
+                <h2 id="light-theme-heading">浅色主题</h2>
+                <div class="setting-row">
+                    <div>
+                        <strong class="setting-label">启用逐字歌词</strong>
+                        <small class="setting-desc">逐字显示当前播放歌词</small>
+                    </div>
+                    <label class="liquid-switch">
+                        <input type="checkbox" checked aria-label="浅色主题：启用逐字歌词">
+                        <span class="liquid-switch__track"></span>
+                        <span class="liquid-switch__thumb"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <strong class="setting-label">歌曲过渡动画</strong>
+                        <small class="setting-desc">切换歌曲时播放过渡效果</small>
+                    </div>
+                    <label class="liquid-switch">
+                        <input type="checkbox" aria-label="浅色主题：歌曲过渡动画">
+                        <span class="liquid-switch__track"></span>
+                        <span class="liquid-switch__thumb"></span>
+                    </label>
+                </div>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

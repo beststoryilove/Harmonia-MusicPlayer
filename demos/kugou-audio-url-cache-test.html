@@ -1,0 +1,289 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>酷狗音频 URL 时效性测试</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei',sans-serif;background:#141418;color:#fff;padding:20px;max-width:700px;margin:0 auto}
+h1{font-size:20px;margin-bottom:8px;color:#ff2d55}
+.desc{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:20px;line-height:1.5}
+.form-group{margin-bottom:14px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:rgba(255,255,255,0.7)}
+input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;outline:none}
+input:focus{border-color:#ff2d55}
+button{padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff2d55,#ff375f);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s}
+button:hover{opacity:.85}
+button:disabled{opacity:.4;cursor:not-allowed}
+#log{margin-top:20px;font-size:12px;font-family:monospace;white-space:pre-wrap;line-height:1.6;background:rgba(0,0,0,0.3);border-radius:8px;padding:14px;max-height:500px;overflow-y:auto;color:rgba(255,255,255,0.8)}
+.url-diff-same{color:#30d158;font-weight:700}
+.url-diff-diff{color:#ff453a;font-weight:700}
+.url-display{word-break:break-all;color:rgba(255,255,255,0.6);font-size:11px;margin:2px 0}
+.search-item{padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.05);margin-bottom:4px;cursor:pointer;transition:background .15s;border:1px solid rgba(255,255,255,0.06)}
+.search-item:hover{background:rgba(255,45,85,0.15);border-color:rgba(255,45,85,0.3)}
+.search-item .s-name{font-size:13px;font-weight:600;color:#fff}
+.search-item .s-artist{font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px}
+.search-item .s-hash{font-size:10px;color:rgba(255,255,255,0.25);font-family:monospace;margin-top:2px;word-break:break-all}
+.search-empty{color:rgba(255,255,255,0.4);font-size:12px;padding:10px;text-align:center}
+</style>
+</head>
+<body>
+<h1>🎵 酷狗音频 URL 时效性测试</h1>
+<div class="desc">
+测试两次请求同一首歌曲的酷狗音频 URL 是否相同。如果相同，说明可以安全地缓存音频 URL。<br>
+需要先登录酷狗获取 token（在设置中扫码登录后，从 localStorage 中提取 kugouToken 填入下方）。
+</div>
+<div class="form-group">
+<label>酷狗 Token</label>
+<input type="text" id="inputToken" placeholder="从 localStorage 获取 kugouToken（或在设置中登录后 F12 → localStorage → kugouToken）" />
+</div>
+<div class="form-group">
+<label>酷狗 Dfid（可选；留空则自动获取并缓存，此后复用不再请求）</label>
+<input type="text" id="inputDfid" placeholder="留空自动获取（首次获取后写入 localStorage 缓存）" />
+</div>
+<div class="form-group">
+<label>歌曲 Hash（或先搜索歌曲，点击结果自动填入）</label>
+<input type="text" id="inputHash" placeholder="酷狗歌曲 hash（如 A1B2C3D4E5F6G7H8）" />
+</div>
+<div class="form-group">
+<label>🔍 搜索歌曲（填关键词后点搜索，点结果行自动填入 hash）</label>
+<div style="display:flex;gap:8px;">
+  <input type="text" id="inputSearch" placeholder="输入歌名 / 歌手，如：周杰伦 晴天" />
+  <button id="btnSearch" style="white-space:nowrap;">搜索</button>
+</div>
+<div id="searchResults" style="margin-top:8px;"></div>
+</div>
+<button id="btnTest">🔍 测试缓存！连续请求 2 次</button>
+<div id="log">等待测试…</div>
+
+<script>
+const KUGOU_API_BASE = 'https://api-kugou.harmoniamusicplayer.dpdns.org';
+const logEl = document.getElementById('log');
+/* dfid 缓存 key：测试页自身持久化，避免每次测试重复请求 /register/dev（频繁请求可能触发账号风控） */
+const DFID_CACHE_KEY = 'kugouTestDfidCache';
+function log(msg, type = '') {
+  const t = new Date().toLocaleTimeString();
+  logEl.innerHTML += `[${t}] ${msg}\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog() { logEl.innerHTML = ''; }
+
+/* 页面加载时：1) 从测试页缓存恢复 dfid；2) 尝试从同源 Harmonia 读取已存凭据 */
+(function autoLoadCreds() {
+  try {
+    const cachedDfid = localStorage.getItem(DFID_CACHE_KEY);
+    if (cachedDfid) {
+      document.getElementById('inputDfid').value = cachedDfid;
+      log(`已从缓存恢复 dfid（不再请求 /register/dev）`);
+    }
+  } catch (_) {}
+  try {
+    // 同源时：从 Harmonia 的 localStorage/sessionStorage 读取 token/dfid（sessionStorage 按标签页隔离，仅同标签页可达）
+    const cred = JSON.parse(localStorage.getItem('kugouCredential') || 'null');
+    const tok = localStorage.getItem('kugouToken') || (cred && cred.token) || '';
+    const usr = localStorage.getItem('kugouUserId') || (cred && cred.userId) || '';
+    const dfid = sessionStorage.getItem('kugouDfid') || localStorage.getItem('kugouDfid') || (cred && cred.dfid) || '';
+    if (tok) document.getElementById('inputToken').value = tok;
+    if (dfid) document.getElementById('inputDfid').value = dfid;
+    if (tok || usr) log('已从同源 Harmonia 自动读取凭据');
+  } catch (_) {}
+})();
+
+async function fetchWithRetry(url, init, retries = 2, token = '') {
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const headers = { ...(init?.headers || {}) };
+      if (token) {
+        headers['Authorization'] = 'token=' + token;
+        headers['Accept'] = 'application/json';
+      }
+      const res = await fetch(url, { ...init, headers, credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (e) {
+      lastErr = e;
+      if (i < retries) await new Promise(r => setTimeout(r, 1000 * 2 ** i));
+    }
+  }
+  throw lastErr;
+}
+
+function pickKugouPlayableUrl(payload) {
+  if (!payload || typeof payload !== 'object') return '';
+  if (typeof payload.url === 'string' && payload.url.trim()) return payload.url.trim();
+  if (Array.isArray(payload.url) && payload.url.length > 0 && payload.url[0]) return String(payload.url[0]).trim();
+  if (Array.isArray(payload.backupUrl) && payload.backupUrl.length > 0 && payload.backupUrl[0]) return String(payload.backupUrl[0]).trim();
+  return '';
+}
+
+function isKugouNeedRefreshDfid(payload) {
+  const msg = `${payload?.error_msg || ''} ${payload?.msg || ''}`.toLowerCase();
+  return msg.includes('验证') || msg.includes('dfid') || msg.includes('verify');
+}
+
+function normalizeKugouQuality(value) {
+  const q = String(value || '320');
+  if (q === '128') return '128';
+  if (q === 'flac' || q === 'high') return 'high';
+  if (q === 'high+') return 'high+';
+  return '320';
+}
+
+async function fetchKugouSongUrlByHash(hash, dfid, quality, token) {
+  const normalizedQuality = normalizeKugouQuality(quality);
+  const timestamp = Date.now();
+  const url = `${KUGOU_API_BASE}/song/url?hash=${encodeURIComponent(hash)}&dfid=${encodeURIComponent(dfid)}&quality=${encodeURIComponent(normalizedQuality)}&timestamp=${timestamp}`;
+  const res = await fetchWithRetry(url, undefined, 2, token);
+  return await res.json();
+}
+
+async function getKugouAudioUrlByHash(hash, token, dfid) {
+  const MAX_DFID_RETRIES = 3;
+  let retryCount = 0;
+  let lastPayload = null;
+  let currentDfid = dfid || '';
+
+  // 若无 dfid，自动获取
+  if (!currentDfid) {
+    log('正在获取 dfid…');
+    const dfidRes = await fetchWithRetry(`${KUGOU_API_BASE}/register/dev`, { credentials: 'include' }, 2, token);
+    const dfidData = await dfidRes.json();
+    currentDfid = String(dfidData?.data?.dfid || '');
+    if (!currentDfid) throw new Error('获取 dfid 失败');
+    log(`dfid: ${currentDfid}`);
+    try { localStorage.setItem(DFID_CACHE_KEY, currentDfid); log('dfid 已缓存，后续测试不再请求'); } catch (_) {}
+  }
+
+  const requestedQuality = '320'; // 固定 320kbps 测试
+
+  while (retryCount <= MAX_DFID_RETRIES) {
+    try {
+      let payload = await fetchKugouSongUrlByHash(hash, currentDfid, requestedQuality, token);
+      lastPayload = payload;
+      let finalUrl = pickKugouPlayableUrl(payload);
+
+      if (finalUrl) {
+        return `${finalUrl}${finalUrl.includes('?') ? '&' : '?'}_=${Date.now()}`;
+      }
+
+      if (isKugouNeedRefreshDfid(payload) && retryCount < MAX_DFID_RETRIES) {
+        log(`dfid 可能失效，刷新重试 (${retryCount + 1}/${MAX_DFID_RETRIES})`);
+        const dfidRes = await fetchWithRetry(`${KUGOU_API_BASE}/register/dev`, { credentials: 'include' }, 2, token);
+        const dfidData = await dfidRes.json();
+        currentDfid = String(dfidData?.data?.dfid || '');
+        try { localStorage.setItem(DFID_CACHE_KEY, currentDfid); } catch (_) {}
+        retryCount++;
+        continue;
+      }
+
+      if (!finalUrl && requestedQuality !== '320') {
+        payload = await fetchKugouSongUrlByHash(hash, currentDfid, '320', token);
+        finalUrl = pickKugouPlayableUrl(payload);
+        if (finalUrl) return `${finalUrl}${finalUrl.includes('?') ? '&' : '?'}_=${Date.now()}`;
+      }
+
+      throw new Error(payload?.error_msg || payload?.msg || '未返回可播放链接');
+    } catch (err) {
+      if (retryCount >= MAX_DFID_RETRIES) throw err;
+      retryCount++;
+    }
+  }
+  throw new Error(lastPayload?.error_msg || lastPayload?.msg || '获取失败');
+}
+
+/* ── 搜索歌曲：输入关键词 → 酷狗搜索 → 点击结果填入 hash ── */
+document.getElementById('btnSearch').addEventListener('click', async () => {
+  const token = document.getElementById('inputToken').value.trim();
+  const keyword = document.getElementById('inputSearch').value.trim();
+  const resultsBox = document.getElementById('searchResults');
+  if (!token) { log('搜索前请先填写酷狗 Token', 'err'); return; }
+  if (!keyword) { log('请先输入搜索关键词', 'err'); return; }
+  resultsBox.innerHTML = '<div class="search-empty">搜索中…</div>';
+  try {
+    const timestamp = Date.now();
+    const url = `${KUGOU_API_BASE}/search?keywords=${encodeURIComponent(keyword)}&page=1&pagesize=20&timestamp=${timestamp}`;
+    const res = await fetchWithRetry(url, {}, 2, token);
+    const payload = await res.json();
+    const lists = payload?.data?.lists || [];
+    if (!lists.length) { resultsBox.innerHTML = '<div class="search-empty">未找到相关歌曲</div>'; return; }
+    resultsBox.innerHTML = '';
+    lists.forEach(song => {
+      const name = song.SongName || song.name || '未知歌曲';
+      const artist = song.SingerName || (Array.isArray(song.singerinfo) ? song.singerinfo.map(s => s.name).filter(Boolean).join(' / ') : '未知歌手');
+      const hash = song.FileHash || song.hash || '';
+      if (!hash) return;
+      const item = document.createElement('div');
+      item.className = 'search-item';
+      item.innerHTML = `<div class="s-name">🎵 ${escapeHtml(name)}</div><div class="s-artist">👤 ${escapeHtml(artist)}</div><div class="s-hash">hash: ${escapeHtml(hash)}</div>`;
+      item.addEventListener('click', () => {
+        document.getElementById('inputHash').value = hash;
+        resultsBox.innerHTML = `<div class="search-empty" style="color:var(--success-color,#30d158);">✅ 已填入 hash：${escapeHtml(hash)}</div>`;
+        log(`已选择：「${name}」 hash=${hash}`);
+      });
+      resultsBox.appendChild(item);
+    });
+  } catch (e) {
+    resultsBox.innerHTML = `<div class="search-empty">搜索失败: ${escapeHtml(e.message)}</div>`;
+  }
+});
+function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+document.getElementById('btnTest').addEventListener('click', async () => {
+  const token = document.getElementById('inputToken').value.trim();
+  const hash = document.getElementById('inputHash').value.trim();
+  const dfid = document.getElementById('inputDfid').value.trim();
+
+  if (!token) { log('请填写酷狗 Token', 'err'); return; }
+  if (!hash) { log('请填写歌曲 hash', 'err'); return; }
+
+  clearLog();
+  log(`开始测试：「${hash}」`);
+  log(`Token: ${token.slice(0,6)}…${token.slice(-4)}`);
+  log(`Dfid: ${dfid || '（自动获取）'}`);
+  log('='.repeat(50));
+  log('');
+
+  // 第 1 次请求
+  log('【第 1 次请求】');
+  const t1 = performance.now();
+  try {
+    const url1 = await getKugouAudioUrlByHash(hash, token, dfid);
+    const elapsed1 = (performance.now() - t1).toFixed(0);
+    log(`耗时: ${elapsed1}ms`);
+    log(`URL 1: ${url1}`);
+    log('');
+
+    // 第 2 次请求（立即）
+    log('【第 2 次请求】');
+    const t2 = performance.now();
+    const url2 = await getKugouAudioUrlByHash(hash, token, dfid);
+    const elapsed2 = (performance.now() - t2).toFixed(0);
+    log(`耗时: ${elapsed2}ms`);
+    log(`URL 2: ${url2}`);
+    log('');
+
+    // 对比（去除 _= 时间戳参数后比较）
+    const clean1 = url1.replace(/[?&]_=\d+/, '');
+    const clean2 = url2.replace(/[?&]_=\d+/, '');
+    const same = clean1 === clean2;
+
+    log('='.repeat(50));
+    if (same) {
+      log('✅ 结 论：两次 URL 一致（去除时间戳后相同）', 'same');
+      log('👉 音频 URL 可安全缓存（时效性至少 > 数秒）');
+    } else {
+      log('❌ 结 论：两次 URL 不同', 'diff');
+      log('👉 音频 URL 有变化，缓存可能无效');
+      log(`URL 1: ${clean1}`);
+      log(`URL 2: ${clean2}`);
+    }
+    log('='.repeat(50));
+  } catch (e) {
+    log(`❌ 失败: ${e.message}`, 'err');
+  }
+});
+</script>
+</body>
+</html>

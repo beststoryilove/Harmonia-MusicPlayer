@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  示例：背景人声（x-bg）+ 重叠时间轴
+  覆盖点：
+    - ttm:role="x-bg" 背景人声，拥有自己的逐字时序，与主行并行
+    - 背景人声早于 / 晚于主行结束（非包含关系）
+    - 背景人声自身的 x-translation
+    - <p> 之间时间轴重叠（社区歌词库真实存在；Apple 规范要求不重叠，
+      但渲染端必须容错并让重叠行共存）
+    - 三条行同时活跃（主行 + 对唱行 + 背景行）
+-->
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-internal"
+    xml:lang="ja"
+    itunes:timing="Word">
+  <head>
+    <metadata>
+      <ttm:title>Background &amp; Overlap Sample</ttm:title>
+      <ttm:agent type="person" xml:id="v1">
+        <ttm:name type="full">メイン</ttm:name>
+      </ttm:agent>
+      <ttm:agent type="person" xml:id="v2">
+        <ttm:name type="full">コーラス</ttm:name>
+      </ttm:agent>
+      <ttm:agent type="other" xml:id="v1000">
+        <ttm:name type="full">Background</ttm:name>
+      </ttm:agent>
+    </metadata>
+  </head>
+  <body>
+    <div itunes:song-part="Verse">
+      <!-- 主行 + 背景人声：背景人声早于主行结束 -->
+      <p begin="00:01.000" end="00:05.000" itunes:key="L1" ttm:agent="v1">
+        <span begin="00:01.000" end="00:01.800">夜が</span>
+        <span begin="00:01.800" end="00:02.600">明ける</span>
+        <span begin="00:02.600" end="00:05.000">前に</span>
+        <span ttm:role="x-bg" begin="00:03.000" end="00:04.200">
+          <span begin="00:03.000" end="00:03.600">(夜明け)</span>
+          <span ttm:role="x-translation" xml:lang="zh-Hans">(黎明)</span>
+        </span>
+      </p>
+
+      <!-- 重叠时间轴：L2 与 L3 时间区间互相重叠（真实歌词库中的容错场景） -->
+      <p begin="00:05.000" end="00:09.000" itunes:key="L2" ttm:agent="v1">
+        <span begin="00:05.000" end="00:06.000">君の</span>
+        <span begin="00:06.000" end="00:09.000">声がする</span>
+      </p>
+      <p begin="00:07.500" end="00:11.000" itunes:key="L3" ttm:agent="v2">
+        <span begin="00:07.500" end="00:08.500">遠く</span>
+        <span begin="00:08.500" end="00:11.000">から</span>
+        <!-- 背景人声跨越主行结尾，延伸至 11.5s（晚于主行结束） -->
+        <span ttm:role="x-bg" begin="00:09.500" end="00:11.500">
+          <span begin="00:09.500" end="00:10.400">(ひびく)</span>
+          <span begin="00:10.400" end="00:11.500">(よぶ)</span>
+        </span>
+      </p>
+
+      <!-- 三行同时活跃：主行 L4 与背景行 + 前一行尾部重叠 -->
+      <p begin="00:11.000" end="00:15.000" itunes:key="L4" ttm:agent="v1">
+        <span begin="00:11.000" end="00:12.000">そして</span>
+        <span begin="00:12.000" end="00:15.000">朝が来る</span>
+        <span ttm:role="x-bg" begin="00:11.800" end="00:14.000">
+          <span begin="00:11.800" end="00:13.000">(あさ)</span>
+          <span begin="00:13.000" end="00:14.000">(ひかり)</span>
+        </span>
+      </p>
+    </div>
+  </body>
+</tt>

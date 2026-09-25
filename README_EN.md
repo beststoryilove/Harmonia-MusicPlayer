@@ -68,9 +68,8 @@ The project is built with a pure front-end tech stack (HTML / CSS / Vanilla JS) 
 - A-Z sort, custom sort, source filter
 - Context menu "Add to Playlist" (with touch long-press support)
 
-### 🎨 Visual & Themes
+### 🎨 Visual Design
 
-- **Dark / Light** dual themes with one-tap switching
 - Album art **3D tilt** effect (mouse-follow parallax)
 - **Liquid Glass** frosted-glass UI aesthetic
 - Dynamic background color based on album cover palette
@@ -105,7 +104,6 @@ The project is built with a pure front-end tech stack (HTML / CSS / Vanilla JS) 
 | `← / →` | Previous / Next track |
 | `↑ / ↓` | Volume ±5% |
 | `L` | Toggle lyrics |
-| `T` | Toggle theme |
 | `S` | Focus search |
 | `M` | Open / Close sidebar |
 | `R` | Cycle play mode |
@@ -129,6 +127,7 @@ The project is built with a pure front-end tech stack (HTML / CSS / Vanilla JS) 
 ```
 Harmonia/
 ├── main.html              # Main page (all DOM & modals)
+├── favicon.ico            # Site icon
 ├── css/
 │   ├── variables.css      # CSS variables / font definitions
 │   ├── base.css           # Global styles / Dynamic Island / common components
@@ -139,9 +138,14 @@ Harmonia/
 │   ├── settings.css       # Settings panel
 │   ├── lyrics.css         # Lyrics enhancement animations
 │   ├── share.css          # Share card modal
-│   └── responsive.css     # Responsive adaptations
+│   ├── responsive.css     # Responsive adaptations
+│   └── fonts/             # Font assets (Apple PingFang / SF Pro)
+│       ├── PingFangSC-Regular.woff2
+│       ├── PingFangSC-Semibold.woff2
+│       ├── sf-pro-display_regular.woff2
+│       └── sf-pro-display_semibold.woff2
 ├── js/
-│   ├── main.js            # Main logic (~9300 lines)
+│   ├── main.js            # Main logic (~12800 lines)
 │   │   ├── Dynamic Island control
 │   │   ├── Play / pause / track switching
 │   │   ├── Search / pagination
@@ -151,14 +155,14 @@ Harmonia/
 │   │   ├── Equalizer (Web Audio)
 │   │   ├── PiP (Picture-in-Picture)
 │   │   ├── Share card generation
-│   │   ├── Theme / settings persistence
+│   │   ├── Settings persistence
 │   │   └── Keyboard shortcuts / initialization
+│   ├── stFlacRepair.js    # FLAC/WAV lossless tail repair (smart transition)
 │   └── MODULES.md         # Module documentation
-└── fonts/
-    ├── PingFangSC-Regular.woff2
-    ├── PingFangSC-Semibold.woff2
-    ├── sf-pro-display_regular.woff2
-    └── sf-pro-display_semibold.woff2
+├── demos/                 # Feature demos (liquid-elastic-switch)
+├── docs/                  # Design docs & plans (docs/superpowers/ specs)
+├── superpowers/           # Skills / workflows directory
+└── tests/                 # Zero-dependency node tests (flac-repair.test.mjs etc.)
 ```
 
 ### Tech Stack
@@ -200,7 +204,6 @@ We welcome all users to join our community, report issues, share playlists, or s
 |---------|------|
 | 🌐 **Official Blog** | [azalkmin.abrdns.com](https://azalkmin.abrdns.com) |
 | 💬 **QQ Group** | [Click to join](https://qm.qq.com/q/p4WYBXFGNO) |
-| 📱 **QR Code** | <img src="qrcode_1779913195527.jpg" width="120" alt="Harmonia QQ Group QR Code"> |
 
 ---
 
@@ -220,21 +223,13 @@ During the development of Harmonia, we received help from many open-source proje
 
 ---
 
-## 📖 Upcoming Plans
-
-In future development, we will update the project every 1–2 weeks.
-
-Below are our current upcoming plans.
-
-We are currently planning to package installers, with the initial release platforms set to Windows and Android. At that time, we will provide a migration entry on the web version, supporting the export of configuration files. This will allow you to quickly migrate your web-based data—such as playlists and preference settings—to the client.
-
-## Star History
+## ⭐ Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
  </picture>
 </a>
 
@@ -247,4 +242,3 @@ We are currently planning to package installers, with the initial release platfo
 <sub>Built with ❤️ and AI · Make music at your fingertips</sub>
 
 </div>
-

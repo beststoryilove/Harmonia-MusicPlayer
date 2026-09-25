@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  示例：多声部对唱（duet）+ 行内换声部
+  覆盖点：
+    - 两个 ttm:agent（A 主唱 v1 / B 对唱 v2）
+    - <p> 级 ttm:agent 指定整行归属
+    - 行内 ttm:agent（同一 <p> 内换声部，解析后按声部切分为独立行）
+    - 中英混排（拉丁词间空格 + CJK 无空格）
+    - itunes:key 供 sidecar 翻译关联
+-->
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-internal"
+    xmlns:amll="http://www.example.com/ns/amll"
+    xml:lang="zh-Hans"
+    itunes:timing="Word">
+  <head>
+    <metadata>
+      <ttm:title>Duet Sample</ttm:title>
+      <ttm:agent type="person" xml:id="v1">
+        <ttm:name type="full">歌手 A</ttm:name>
+      </ttm:agent>
+      <ttm:agent type="person" xml:id="v2">
+        <ttm:name type="full">歌手 B</ttm:name>
+      </ttm:agent>
+      <amll:meta key="musicName" value="多声部示例"/>
+      <amll:meta key="artists" value="歌手 A / 歌手 B"/>
+    </metadata>
+  </head>
+  <body>
+    <div itunes:song-part="Verse">
+      <p begin="00:01.000" end="00:04.000" itunes:key="L1" ttm:agent="v1">
+        <span begin="00:01.000" end="00:01.500">夜色</span>
+        <span begin="00:01.500" end="00:02.200">渐浓</span>
+        <span begin="00:02.200" end="00:04.000">风声在耳边</span>
+      </p>
+      <p begin="00:04.000" end="00:07.000" itunes:key="L2" ttm:agent="v2">
+        <span begin="00:04.000" end="00:04.600">我听见</span>
+        <span begin="00:04.600" end="00:07.000">你的呼吸</span>
+      </p>
+    </div>
+    <div itunes:song-part="Chorus">
+      <p begin="00:07.000" end="00:11.000" itunes:key="L3">
+        <span begin="00:07.000" end="00:07.800" ttm:agent="v1">一起</span>
+        <span begin="00:07.800" end="00:09.000" ttm:agent="v1">走过</span>
+        <span begin="00:09.000" end="00:09.600" ttm:agent="v2">哪怕</span>
+        <span begin="00:09.600" end="00:11.000" ttm:agent="v2">风雨兼程</span>
+      </p>
+      <p begin="00:11.000" end="00:15.000" itunes:key="L4" ttm:agent="v1">
+        <span begin="00:11.000" end="00:11.700">Hold</span>
+        <span begin="00:11.700" end="00:12.300"> on</span>
+        <span begin="00:12.300" end="00:13.000"> to</span>
+        <span begin="00:13.000" end="00:15.000"> me</span>
+      </p>
+    </div>
+  </body>
+</tt>

@@ -1,4 +1,4 @@
-/* ========== 分享卡片模态框 - 专辑图+模糊背景 ========== */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-modal-overlay{
   position:fixed;inset:0;
   background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -17,7 +17,7 @@
   visibility:visible;
 }
 
-/* 专辑图模糊背景层 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-modal-bg{
   position:absolute;
   inset:0;
@@ -29,8 +29,7 @@
   pointer-events:none;
 }
 
-
-/* 背景叠加层（增强可读性） */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-modal-bg::after{
   content:'';
   position:absolute;
@@ -44,8 +43,7 @@
   );
 }
 
-
-/* 模态框内容容器 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-modal-content{
   position:relative;
   width:420px;
@@ -66,8 +64,7 @@
   transform:scale(1) translateY(0);
 }
 
-
-/* 玻璃高光层 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-modal-content::before{
   content:'';
   position:absolute;
@@ -80,8 +77,7 @@
   opacity:0.6;
 }
 
-
-/* 头部 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-modal-header{
   position:relative;
   z-index:2;
@@ -92,8 +88,7 @@
   color:var(--text-dark);
 }
 
-
-/* 关闭按钮 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-modal-close{
   position:relative;
   z-index:2;
@@ -115,9 +110,7 @@
   transform:scale(1.05);
 }
 
-
-
-/* 预览容器 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-preview-container{
   position:relative;
   z-index:2;
@@ -131,8 +124,7 @@
   border-radius:16px;
 }
 
-
-/* 操作按钮 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-actions{
   position:relative;
   z-index:2;
@@ -141,7 +133,7 @@
   justify-content:center;
 }
 
-/* 底部 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 .poster-footer{
   position:relative;
   z-index:2;
@@ -155,22 +147,19 @@
   border-radius:1px;
   margin:0 auto 10px;
 }
-
 .poster-footer-text{
   font-size:12px;
   font-weight:600;
   color:rgba(255,255,255,0.5);
   letter-spacing:0.5px;
 }
-
 .poster-footer-hint{
   font-size:11px;
   color:rgba(255,255,255,0.3);
   margin-top:3px;
 }
 
-
-/* 加载动画 */
+ if ($args[0].Value -match '[^\x00-\x7F]') { '/* UTF-8 encoding fix */' } else { $args[0].Value } 
 #kugouAvatar.loading{
   animation:kugouAvatarPulse 1.2s ease-in-out infinite;
   background:linear-gradient(90deg,rgba(255,255,255,0.1) 25%,rgba(255,255,255,0.2) 50%,rgba(255,255,255,0.1) 75%);

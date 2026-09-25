@@ -2,310 +2,267 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Harmonia 音乐播放器隐私政策与用户条款：本地存储说明、第三方接口调用范围、许可与免责声明。">
   <title>Harmonia · 隐私政策与用户条款</title>
-  <!-- Font Awesome 6 (与播放器完全一致) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* ===== 完全复用播放器的 Apple 深色风格变量 & 毛玻璃 ===== */
-    @font-face {
-      src: url(fonts/PingFangSC-Regular.woff2);
-      font-family: "PingFangSC-Regular";
-    }
-    @font-face {
-      src: url(fonts/sf-pro-display_regular.woff2);
-      font-family: "SFPro-Regular";
-    }
-    @font-face {
-      src: url(fonts/PingFangSC-Semibold.woff2);
-      font-family: "PingFangSC-Semibold";
-    }
-    @font-face {
-      src: url(fonts/sf-pro-display_semibold.woff2);
-      font-family: "SFPro-Semibold";
+    /* 字体与播放器一致；font-display:swap 避免文字闪白 */
+    @font-face{src:url(fonts/PingFangSC-Regular.woff2);font-family:"PingFangSC-Regular";font-display:swap}
+    @font-face{src:url(fonts/sf-pro-display_regular.woff2);font-family:"SFPro-Regular";font-display:swap}
+    @font-face{src:url(fonts/PingFangSC-Semibold.woff2);font-family:"PingFangSC-Semibold";font-display:swap}
+    @font-face{src:url(fonts/sf-pro-display_semibold.woff2);font-family:"SFPro-Semibold";font-display:swap}
+
+    :root{
+      --bg:#000;
+      --ink:#f5f5f7;
+      --ink-2:rgba(255,255,255,.72);
+      --ink-3:rgba(255,255,255,.48);
+      --hairline:rgba(255,255,255,.09);
+      --accent:#ff2d55;
+      --accent-soft:rgba(255,45,85,.12);
+      --font-body:"SFPro-Regular","PingFangSC-Regular",-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+      --font-head:"SFPro-Semibold","PingFangSC-Semibold",-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
     }
 
-    :root {
-      --bg-dark: #000;
-      --text-dark: #fff;
-      --text-secondary-dark: #8e8e93;
-      --primary-color: #ff2d55;
-      --primary-gradient: linear-gradient(135deg, #ff2d55, #ff375f);
-      --card-bg-dark: rgba(28, 28, 30, 0.9);
-      --border-dark: rgba(255, 255, 255, 0.1);
-      --shadow-dark: 0 8px 30px rgba(0, 0, 0, 0.6);
-      --ios-glass-dark: rgba(20, 20, 20, 0.65);
-      --ios-border-dark: rgba(255, 255, 255, 0.08);
-      --border-radius-lg: 20px;
-      --border-radius-md: 12px;
-      --transition-speed: 0.3s;
+    *{margin:0;padding:0;box-sizing:border-box}
+
+    html{-webkit-text-size-adjust:100%}
+
+    body{
+      font-family:var(--font-body);
+      color:var(--ink);
+      line-height:1.85;
+      background:
+        radial-gradient(1100px 620px at 82% -10%, rgba(255,45,85,.09), transparent 62%),
+        radial-gradient(900px 560px at -12% 108%, rgba(88,86,214,.08), transparent 60%),
+        var(--bg);
+      background-attachment:fixed;
+      min-height:100vh;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:geometricPrecision;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    ::selection{background:rgba(255,45,85,.38);color:#fff}
+
+    .page{max-width:720px;margin:0 auto;padding:56px 28px 72px}
+
+    /* ── 页眉 ── */
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:44px}
+    .brand-mark{
+      width:34px;height:34px;border-radius:10px;flex-shrink:0;
+      background:linear-gradient(135deg,#ff2d55,#b8345f);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 6px 18px rgba(255,45,85,.22);
+    }
+    .brand-mark svg{width:17px;height:17px;fill:#fff}
+    .brand-name{font-family:var(--font-head);font-size:15px;font-weight:600;letter-spacing:.3px;color:var(--ink-2)}
+
+    h1{
+      font-family:var(--font-head);
+      font-size:34px;line-height:1.3;font-weight:700;
+      letter-spacing:.3px;color:var(--ink);
+      margin-bottom:14px;
+    }
+    .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .meta span{
+      font-size:12px;color:var(--ink-3);
+      border:1px solid var(--hairline);border-radius:999px;
+      padding:3px 11px;letter-spacing:.4px;
+    }
+    .meta span b{color:var(--ink-2);font-weight:600}
+
+    /* ── 正文 ── */
+    section{margin-top:52px}
+    .sec-index{
+      display:flex;align-items:baseline;gap:10px;
+      padding-bottom:14px;margin-bottom:20px;
+      border-bottom:1px solid var(--hairline);
+    }
+    .sec-index i{font-style:normal;font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--accent);letter-spacing:1px}
+    h2{font-family:var(--font-head);font-size:22px;font-weight:700;letter-spacing:.2px}
+
+    h3{
+      font-family:var(--font-head);
+      font-size:15.5px;font-weight:600;color:var(--ink);
+      margin:26px 0 10px;
+    }
+    p{font-size:14.5px;color:var(--ink-2);margin-bottom:12px}
+    ul{list-style:none;margin:4px 0 14px}
+    li{
+      font-size:14.5px;color:var(--ink-2);
+      padding-left:18px;position:relative;margin-bottom:7px;
+    }
+    li::before{
+      content:"";position:absolute;left:2px;top:.92em;
+      width:5px;height:5px;border-radius:50%;
+      background:var(--accent);opacity:.75;
+    }
+    strong{color:var(--ink);font-weight:600}
+    code{
+      font-family:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+      font-size:.88em;color:var(--ink);
+      background:rgba(255,255,255,.07);
+      border:1px solid var(--hairline);
+      border-radius:6px;padding:1px 6px;
+    }
+    a{color:#ff7d97;text-decoration:none;border-bottom:1px solid rgba(255,125,151,.35);transition:color .18s ease,border-color .18s ease}
+    a:hover{color:#ffa5b5;border-bottom-color:currentColor}
+
+    /* ── 致用户 ── */
+    .note{
+      margin-top:52px;padding:20px 22px;
+      background:var(--accent-soft);
+      border:1px solid rgba(255,45,85,.18);
+      border-radius:16px;
+    }
+    .note-label{
+      font-family:var(--font-head);font-size:12px;font-weight:700;
+      color:var(--accent);letter-spacing:3px;margin-bottom:6px;
+    }
+    .note p{margin:0;font-size:14px;color:rgba(255,255,255,.82)}
+
+    /* ── 页脚 ── */
+    footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--hairline)}
+    .foot-meta{font-size:12px;color:var(--ink-3);text-align:center;margin-bottom:22px}
+    .foot-actions{display:flex;flex-direction:column;align-items:center;gap:14px}
+    .back{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:11px 26px;border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.13);
+      color:var(--ink);font-size:14px;font-weight:600;
+      text-decoration:none;
+      transition:background .18s ease,border-color .18s ease,transform .18s ease;
+    }
+    .back .arrow{transition:transform .18s ease}
+    .back:hover{background:rgba(255,45,85,.14);border-color:rgba(255,45,85,.4)}
+    .back:hover .arrow{transform:translateX(-3px)}
+    .foot-repo{font-size:12.5px;color:var(--ink-3)}
+    .foot-repo a{color:var(--ink-2);border-bottom:none}
+    .foot-repo a:hover{color:var(--ink)}
+
+    /* ── 响应式 ── */
+    @media (max-width:640px){
+      .page{padding:36px 20px 56px}
+      h1{font-size:27px}
+      h2{font-size:19px}
+      p,li{font-size:14px}
+      .brand{margin-bottom:32px}
+      section,.note{margin-top:42px}
     }
 
-    body {
-      font-family: "SFPro-Regular", "PingFangSC-Regular", -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-      background: var(--bg-dark);
-      color: var(--text-dark);
-      line-height: 1.7;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 24px;
-      -webkit-font-smoothing: antialiased;
-      position: relative;
-    }
-
-    /* 标志性模糊背景 (与主播放器一致) */
-    .am-background {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -2;
-      background: radial-gradient(circle at 20% 30%, #1a1a1e, #000000);
-      background-size: cover;
-      filter: blur(28px) brightness(0.6);
-      transform: scale(1.1);
-    }
-    .am-background::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(2px);
-    }
-
-    /* 主卡片 —— iOS 玻璃态 */
-    .card {
-      background: var(--ios-glass-dark);
-      backdrop-filter: blur(22px) saturate(180%);
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-      border: 1px solid var(--ios-border-dark);
-      border-radius: var(--border-radius-lg);
-      max-width: 900px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 40px;
-      box-shadow: var(--shadow-dark);
-      transition: all var(--transition-speed) ease;
-      position: relative;
-      z-index: 10;
-    }
-
-    h1 {
-      margin: 0 0 16px;
-      color: var(--primary-color);
-      font-size: 32px;
-      font-weight: 700;
-      font-family: "SFPro-Semibold", "PingFangSC-Semibold", sans-serif;
-      letter-spacing: 0.5px;
-      text-align: center;
-      position: relative;
-      padding-bottom: 16px;
-    }
-    h1::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
-      border-radius: 3px;
-    }
-
-    h2 {
-      margin: 32px 0 16px;
-      color: var(--primary-color);
-      font-size: 24px;
-      font-weight: 600;
-      border-left: 5px solid var(--primary-color);
-      padding-left: 15px;
-    }
-
-    p {
-      margin-bottom: 16px;
-      color: rgba(255, 255, 255, 0.85);
-    }
-
-    ul, ol {
-      margin: 16px 0 20px 25px;
-      color: rgba(255, 255, 255, 0.8);
-    }
-    li {
-      margin-bottom: 8px;
-    }
-
-    a {
-      color: #5ac8fa;
-      text-decoration: none;
-      transition: color var(--transition-speed) ease;
-      border-bottom: 1px solid rgba(90, 200, 250, 0.3);
-    }
-    a:hover {
-      color: #ff2d55;
-      border-bottom-color: var(--primary-color);
-    }
-
-    .update-time {
-      font-size: 13px;
-      color: var(--text-secondary-dark);
-      text-align: right;
-      margin-top: 30px;
-      margin-bottom: 25px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      padding-top: 20px;
-    }
-
-    /* 返回按钮 —— 与播放器控件风格一致 */
-    .back {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 30px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 999px;
-      color: rgba(255,255,255,0.9);
-      font-weight: 600;
-      font-size: 15px;
-      text-decoration: none;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.45);
-      transition: all 0.22s ease;
-      gap: 8px;
-    }
-    .back i {
-      font-size: 14px;
-    }
-    .back:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateY(-2px);
-      border-color: rgba(255,45,85,0.3);
-      color: white;
-      text-decoration: none;
-    }
-
-    /* 响应式优化 */
-    @media (max-width: 768px) {
-      body { padding: 16px; }
-      .card { padding: 25px; }
-      h1 { font-size: 28px; }
-      h2 { font-size: 20px; }
-      .back {
-        width: 100%;
-        justify-content: center;
-      }
-      .update-time { text-align: center; }
-    }
-
-    /* 高亮关键词 */
-    strong, .highlight {
-      color: #ff2d55;
-      font-weight: 600;
+    @media print{
+      body{background:#fff;color:#000}
+      .brand-mark{box-shadow:none}
+      .back,.meta span{display:none}
+      p,li,.foot-meta,.foot-repo{color:#333}
+      strong,h1,h2,h3,.note-label{color:#000}
+      code{background:#f2f2f2;border-color:#ddd}
+      a{color:#c4003a;border-bottom-color:#c4003a}
+      .note{background:#fdf2f4;border-color:#f3c3cd}
+      footer{border-color:#ddd}
     }
   </style>
 </head>
 <body>
-  <div class="am-background"></div>
-  <div class="card">
-    <h1>隐私政策 & 用户条款</h1>
-    <p style="text-align: center; color: rgba(255,255,255,0.6); margin-bottom: 25px;">最后更新：2026年2月20日</p>
+  <main class="page">
 
-    <!-- 隐私政策部分 -->
-    <h2>🔒 隐私政策</h2>
-    <p><strong>Harmonia 音乐播放器</strong>（以下简称“本项目”）非常重视您的隐私。本隐私政策旨在透明地说明我们如何处理信息。</p>
-    
-    <h3>1. 本地存储数据</h3>
-    <p>本项目<strong>不会收集或上传任何个人信息</strong>。所有用户数据仅存储在您设备的浏览器本地（通过 <code>localStorage</code>），包括：</p>
-    <ul>
-      <li>您的播放列表、收藏歌曲、播放历史；</li>
-      <li>播放设置（音量、播放模式、主题偏好）；</li>
-      <li>歌词翻译设置及您自行填入的 API 令牌（仅存本地，用于请求翻译服务）；</li>
-      <li>自定义歌单排序（拖拽顺序）。</li>
-    </ul>
-    <p>上述数据由您完全控制，清除浏览器缓存或使用隐私模式将导致数据丢失。本项目无法访问、存储或共享这些数据。</p>
+    <header class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      </div>
+      <span class="brand-name">Harmonia</span>
+    </header>
 
-    <h3>2. 第三方接口调用</h3>
-    <p>为提供音乐、歌词、专辑封面等功能，本项目会向以下第三方服务发起请求：</p>
-    <ul>
-      <li><strong>音乐元数据接口</strong>（如 <code>music-api.gdstudio.xyz</code>、网易云音乐API）</li>
-      <li><strong>歌词翻译接口</strong>（智谱 GLM-4-Flashx —— 需您自行提供API密钥）</li>
-      <li><strong>CORS代理</strong>（仅用于解决逐字歌词跨域问题，由开发者提供）</li>
-    </ul>
-    <p>所有请求均<strong>由您的浏览器直接发起</strong>，本项目本身无后端服务器，不代理、不中转、不记录您的任何请求内容。第三方服务的数据收集行为请参阅其自身隐私政策。</p>
-
-    <h3>3. 桌面歌词功能</h3>
-    <p>若您使用“桌面歌词”功能，本项目将通过 WebSocket 连接您本地运行的歌词客户端（如 <code>HarmoniaLyrics.exe</code>）。通信仅限于发送当前歌曲信息、歌词文本及播放进度，<strong>不传输任何身份信息</strong>。此连接仅在本地进行，不经过互联网。</p>
-
-    <h3>4. 个人隐私</h3>
-    <p>本项目<strong>不会收集您的个人信息</strong>（包括但不限于：您访问本项目的IP地址、您当前所在国家、您的设备信息、您的系统信息等）。<br>
-    （*“本项目”仅指Harmonia音乐播放器，不包括API提供商、项目托管平台。）</p>
-
-    <!-- 用户条款部分 -->
-    <h2 style="margin-top: 48px;">📜 用户条款</h2>
-    <p>使用 Harmonia 即表示您同意以下条款：</p>
-    
-    <h3>1. 许可与用途</h3>
-    <ul>
-      <li>本项目为<strong>个人学习、研究、非商业用途</strong>开源项目，遵循 MIT 许可证。您可以在遵守协议的前提下自由修改、分发。</li>
-      <li><strong class="highlight">严禁任何形式的倒卖、商业化使用或将其嵌入付费服务。</strong></li>
-    </ul>
-
-    <h3>2. 内容版权与责任</h3>
-    <ul>
-      <li>本项目本身<strong>不存储任何受版权保护的音乐文件、歌词或图片</strong>，所有内容均来自第三方公开接口。</li>
-      <li>音乐版权归原作者/唱片公司所有。本项目仅作为技术演示，<strong>请支持正版音乐</strong>，下载后请于24小时内删除。</li>
-      <li>因使用第三方接口可能导致的内容可用性、准确性、版权合规性问题，本项目不承担法律责任。</li>
-    </ul>
-
-    <h3>3. 用户行为</h3>
-    <ul>
-      <li>您不得利用本项目传播违法信息、侵犯他人知识产权或进行任何形式的网络攻击。</li>
-      <li>若您在自主二改时更改了翻译所使用的模型，则您可能需要自行承担使用第三方API时产生的费用。</li>
-    </ul>
-
-    <h3>4. 免责声明</h3>
-    <ul>
-      <li>本项目按“现状”提供，不保证服务永不中断、无错误或不受攻击。</li>
-      <li>因第三方接口失效、政策变更或网络问题导致的功能不可用，本项目不承担责任。</li>
-      <li>任何由于使用本项目造成的直接或间接损失，开发者不承担责任。</li>
-    </ul>
-
-    <h3>5. 条款修改</h3>
-    <p>我们保留根据需要更新本条款的权利。重大变更将在页面显著位置公示。继续使用即视为接受更新后的条款。</p>
-
-    <p style="margin-top: 30px; padding: 18px; background: rgba(255,45,85,0.08); border-radius: 12px; border-left: 4px solid var(--primary-color);">
-      <i class="fas fa-heart" style="color: #ff2d55; margin-right: 8px;"></i>
-      <strong>致用户：</strong> Harmonia 始终将您的数据自主权放在首位。我们坚信每个人的音乐体验不应以隐私为代价。
-    </p>
-
-    <div class="update-time">
-      <i class="far fa-clock"></i> 本政策与条款最后修订：2026年2月20日 · 版本 v2.3
+    <h1>隐私政策与用户条款</h1>
+    <div class="meta">
+      <span>最后更新 <b>2026-02-20</b></span>
+      <span>版本 <b>v2.3</b></span>
+      <span>MIT License</span>
     </div>
 
-    <!-- 返回主播放器按钮，链接指向线上地址 -->
-    <div style="display: flex; justify-content: center;">
-      <a class="back" href="https://harmoniamusicplayer.dpdns.org/" target="_blank" rel="noopener noreferrer">
-        <i class="fas fa-arrow-left"></i> 返回 Harmonia 播放器
-      </a>
-    </div>
-    <p style="font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; margin-top: 20px;">
-      开源仓库 · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" style="color: rgba(255,255,255,0.5);">GitHub</a>
-    </p>
-  </div>
-  <!-- 无额外脚本，干净透明 -->
+    <section>
+      <div class="sec-index"><i>01</i><h2>隐私政策</h2></div>
+      <p><strong>Harmonia 音乐播放器</strong>（以下简称“本项目”）非常重视您的隐私。本隐私政策旨在透明地说明我们如何处理信息。</p>
+
+      <h3>1. 本地存储数据</h3>
+      <p>本项目<strong>不会收集或上传任何个人信息</strong>。所有用户数据仅存储在您设备的浏览器本地（通过 <code>localStorage</code>），包括：</p>
+      <ul>
+        <li>您的播放列表、收藏歌曲、播放历史；</li>
+        <li>播放设置（音量、播放模式、主题偏好）；</li>
+        <li>歌词翻译设置及您自行填入的 API 令牌（仅存本地，用于请求翻译服务）；</li>
+        <li>自定义歌单排序（拖拽顺序）。</li>
+      </ul>
+      <p>上述数据由您完全控制，清除浏览器缓存或使用隐私模式将导致数据丢失。本项目无法访问、存储或共享这些数据。</p>
+
+      <h3>2. 第三方接口调用</h3>
+      <p>为提供音乐、歌词、专辑封面等功能，本项目会向以下第三方服务发起请求：</p>
+      <ul>
+        <li><strong>音乐元数据接口</strong>（如 <code>music-api.gdstudio.xyz</code>、网易云音乐API）</li>
+        <li><strong>歌词翻译接口</strong>（智谱 GLM-4-Flashx —— 需您自行提供API密钥）</li>
+        <li><strong>CORS代理</strong>（仅用于解决逐字歌词跨域问题，由开发者提供）</li>
+      </ul>
+      <p>所有请求均<strong>由您的浏览器直接发起</strong>，本项目本身无后端服务器，不代理、不中转、不记录您的任何请求内容。第三方服务的数据收集行为请参阅其自身隐私政策。</p>
+
+      <h3>3. 桌面歌词功能</h3>
+      <p>若您使用“桌面歌词”功能，本项目将通过 WebSocket 连接您本地运行的歌词客户端（如 <code>HarmoniaLyrics.exe</code>）。通信仅限于发送当前歌曲信息、歌词文本及播放进度，<strong>不传输任何身份信息</strong>。此连接仅在本地进行，不经过互联网。</p>
+
+      <h3>4. 个人隐私</h3>
+      <p>本项目<strong>不会收集您的个人信息</strong>（包括但不限于：您访问本项目的IP地址、您当前所在国家、您的设备信息、您的系统信息等）。<br>
+      （*“本项目”仅指Harmonia音乐播放器，不包括API提供商、项目托管平台。）</p>
+    </section>
+
+    <section>
+      <div class="sec-index"><i>02</i><h2>用户条款</h2></div>
+      <p>使用 Harmonia 即表示您同意以下条款：</p>
+
+      <h3>1. 许可与用途</h3>
+      <ul>
+        <li>本项目为<strong>个人学习、研究、非商业用途</strong>开源项目，遵循 MIT 许可证。您可以在遵守协议的前提下自由修改、分发。</li>
+        <li><strong>严禁任何形式的倒卖、商业化使用或将其嵌入付费服务。</strong></li>
+      </ul>
+
+      <h3>2. 内容版权与责任</h3>
+      <ul>
+        <li>本项目本身<strong>不存储任何受版权保护的音乐文件、歌词或图片</strong>，所有内容均来自第三方公开接口。</li>
+        <li>音乐版权归原作者/唱片公司所有。本项目仅作为技术演示，<strong>请支持正版音乐</strong>，下载后请于24小时内删除。</li>
+        <li>因使用第三方接口可能导致的内容可用性、准确性、版权合规性问题，本项目不承担法律责任。</li>
+      </ul>
+
+      <h3>3. 用户行为</h3>
+      <ul>
+        <li>您不得利用本项目传播违法信息、侵犯他人知识产权或进行任何形式的网络攻击。</li>
+        <li>若您在自主二改时更改了翻译所使用的模型，则您可能需要自行承担使用第三方API时产生的费用。</li>
+      </ul>
+
+      <h3>4. 免责声明</h3>
+      <ul>
+        <li>本项目按“现状”提供，不保证服务永不中断、无错误或不受攻击。</li>
+        <li>因第三方接口失效、政策变更或网络问题导致的功能不可用，本项目不承担责任。</li>
+        <li>任何由于使用本项目造成的直接或间接损失，开发者不承担责任。</li>
+      </ul>
+
+      <h3>5. 条款修改</h3>
+      <p>我们保留根据需要更新本条款的权利。重大变更将在页面显著位置公示。继续使用即视为接受更新后的条款。</p>
+    </section>
+
+    <aside class="note">
+      <div class="note-label">致用户</div>
+      <p>Harmonia 始终将您的数据自主权放在首位。我们坚信每个人的音乐体验不应以隐私为代价。</p>
+    </aside>
+
+    <footer>
+      <div class="foot-meta">本政策与条款最后修订：2026年2月20日 · 版本 v2.3</div>
+      <div class="foot-actions">
+        <a class="back" href="https://harmoniamusicplayer.dpdns.org/" target="_blank" rel="noopener noreferrer">
+          <span class="arrow">←</span> 返回 Harmonia 播放器
+        </a>
+        <span class="foot-repo">开源仓库 · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+      </div>
+    </footer>
+
+  </main>
 </body>
 </html>

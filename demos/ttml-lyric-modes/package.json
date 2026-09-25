@@ -1,0 +1,21 @@
+{
+  "name": "harmonia-ttml-lyric-modes-demo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TTML 歌词三模式（视觉优先 / 性能优先 / 预览模式）各 3 个改进方案的独立对比 demo",
+  "type": "module",
+  "engines": {
+    "node": ">=21"
+  },
+  "scripts": {
+    "start": "node serve.mjs",
+    "test": "node --test --experimental-test-isolation=none \"tests/*.test.js\"",
+    "test:isolated": "node --test \"tests/*.test.js\"",
+    "test:files": "node scripts/test-user-files.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "shots": "node scripts/screenshots.mjs",
+    "shots:files": "node scripts/shots-user-files.mjs",
+    "bench": "node scripts/bench.mjs",
+    "fixtures": "node scripts/make-test-audio.mjs 30"
+  }
+}

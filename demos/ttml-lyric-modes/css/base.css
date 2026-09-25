@@ -1,0 +1,554 @@
+/* ────────────────────────────────────────────────────────────────────────
+ * 设计令牌 + 应用外壳（顶栏 / 控制面板 / 舞台 / 走带 / 诊断面板）
+ *
+ * 行与词的基础样式在 lines.css，三个模式的差异在 visual/performance/preview.css。
+ * ──────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #0b0b0f;
+  --bg-soft: #14141a;
+  --bg-panel: rgba(255, 255, 255, 0.045);
+  --bg-panel-strong: rgba(255, 255, 255, 0.075);
+  --line: rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --fg: #ffffff;
+  --fg-dim: rgba(255, 255, 255, 0.62);
+  --fg-faint: rgba(255, 255, 255, 0.34);
+
+  /* 角色色：主行中性，对唱暖色，背景冷色 */
+  --role-main: rgba(255, 255, 255, 0.97);
+  --role-duet: #ff6b8a;
+  --role-bg: #6fc3ff;
+
+  --accent: #ff2d55;
+  --ok: #30d158;
+  --warn: #ffd60a;
+  --bad: #ff453a;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC',
+    'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+button, input, select { font: inherit; color: inherit; }
+
+/* ── 顶栏 ─────────────────────────────────────────────────────────────── */
+
+.ds-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent);
+}
+
+.ds-brand {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.ds-brand small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-faint);
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+
+.ds-topbar-spacer { flex: 1; }
+
+.ds-badge-pill {
+  font-size: 11px;
+  font-weight: 650;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel);
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.ds-badge-pill.ok { color: var(--ok); border-color: rgba(48, 209, 88, 0.4); }
+.ds-badge-pill.bad { color: var(--bad); border-color: rgba(255, 69, 58, 0.45); }
+
+/* ── 主布局 ───────────────────────────────────────────────────────────── */
+
+.ds-layout {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  min-height: 0;
+}
+
+.ds-panel {
+  border-right: 1px solid var(--line);
+  background: var(--bg-soft);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ds-panel::-webkit-scrollbar { width: 8px; }
+.ds-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}
+
+.ds-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--fg-faint);
+  margin-bottom: 9px;
+}
+
+/* ── 分段控件（模式选择） ─────────────────────────────────────────────── */
+
+.ds-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+}
+
+.ds-seg button {
+  padding: 9px 4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ds-seg button:hover { color: var(--fg); background: rgba(255, 255, 255, 0.06); }
+
+.ds-seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(255, 45, 85, 0.32);
+}
+
+.ds-mode-desc {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--fg-faint);
+}
+
+/* ── 方案卡片 ─────────────────────────────────────────────────────────── */
+
+.ds-variant-list { display: flex; flex-direction: column; gap: 8px; }
+
+.ds-variant {
+  text-align: left;
+  padding: 11px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.ds-variant:hover { background: var(--bg-panel-strong); transform: translateX(2px); }
+
+.ds-variant[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: rgba(255, 45, 85, 0.10);
+}
+
+.ds-variant-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ds-variant-name { font-size: 13px; font-weight: 700; }
+
+.ds-variant-cost {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 650;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  color: var(--fg-faint);
+}
+
+.ds-variant-cost.low { color: var(--ok); border-color: rgba(48, 209, 88, 0.35); }
+.ds-variant-cost.high { color: var(--warn); border-color: rgba(255, 214, 10, 0.35); }
+
+.ds-variant-tagline {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--fg-dim);
+}
+
+.ds-variant-fixes {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ds-variant-fixes li {
+  list-style: none;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--fg-faint);
+  padding-left: 12px;
+  position: relative;
+}
+
+.ds-variant-fixes li::before {
+  content: '›';
+  position: absolute;
+  left: 2px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── 下拉与开关 ───────────────────────────────────────────────────────── */
+
+.ds-select {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ds-select option { background: #1c1c22; }
+
+.ds-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.ds-toggle-row input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+.ds-sample-note {
+  margin-top: 7px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--fg-faint);
+}
+
+/* ── 文件输入与滑块 ───────────────────────────────────────────────────── */
+
+.ds-file {
+  width: 100%;
+  font-size: 11px;
+  color: var(--fg-dim);
+  cursor: pointer;
+}
+
+.ds-file::file-selector-button {
+  margin-right: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel);
+  color: var(--fg);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.ds-file::file-selector-button:hover { background: var(--bg-panel-strong); }
+
+.ds-file-info {
+  margin-top: 5px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--fg-faint);
+  word-break: break-all;
+}
+
+.ds-file-info.ok { color: var(--ok); }
+.ds-file-info.bad { color: var(--bad); }
+
+.ds-field { margin-top: 10px; }
+
+.ds-field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  margin-bottom: 5px;
+}
+
+.ds-field-label .ds-diag-value { margin-left: auto; }
+
+.ds-field-hint {
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--fg-faint);
+}
+
+.ds-range {
+  width: 100%;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+/* 拖放载入：整个页面接收文件，用描边提示可投放 */
+body.ds-dragging::after {
+  content: '松开以载入 TTML 或音频文件';
+  position: fixed;
+  inset: 10px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 45, 85, 0.08);
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+/* ── 诊断面板 ─────────────────────────────────────────────────────────── */
+
+.ds-diag { display: flex; flex-direction: column; gap: 7px; }
+
+.ds-diag-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.ds-diag-label { color: var(--fg-faint); }
+
+.ds-diag-value {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.ds-diag-value.ok { color: var(--ok); }
+.ds-diag-value.warn { color: var(--warn); }
+.ds-diag-value.bad { color: var(--bad); }
+
+.ds-diag-sep { height: 1px; background: var(--line); margin: 3px 0; }
+
+.ds-diag-hint {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--fg-faint);
+}
+
+/* ── 舞台区 ───────────────────────────────────────────────────────────── */
+
+.ds-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ds-stages {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--line);
+}
+
+.ds-stages.compare { grid-template-columns: repeat(3, 1fr); }
+
+.ds-stage-cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: radial-gradient(120% 90% at 50% 0%, #1a1a24 0%, #0b0b0f 70%);
+  overflow: hidden;
+}
+
+.ds-stage-label {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  z-index: 40;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg-faint);
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.ds-stage-label b { color: var(--fg); }
+
+.ds-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* 舞台上下渐隐：与主项目 .lyricscontainer 的 mask 语汇一致 */
+.ds-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  background: linear-gradient(
+    180deg,
+    var(--bg) 0%,
+    transparent 16%,
+    transparent 84%,
+    var(--bg) 100%
+  );
+}
+
+/* ── 走带（播放控制） ─────────────────────────────────────────────────── */
+
+.ds-transport {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 38px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.12s ease;
+}
+
+.ds-btn:hover { background: var(--bg-panel-strong); }
+.ds-btn:active { transform: scale(0.95); }
+
+.ds-btn.primary {
+  background: var(--accent);
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(255, 45, 85, 0.35);
+}
+
+.ds-scrub {
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  position: relative;
+}
+
+.ds-scrub-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.ds-time {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.ds-rate {
+  height: 34px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ── 自检报告 ─────────────────────────────────────────────────────────── */
+
+.ds-report {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--fg-dim);
+}
+
+.ds-report .pass { color: var(--ok); }
+.ds-report .fail { color: var(--bad); }
+
+/* ── 窄屏兜底（demo 定位桌面端，仅保证不破版） ─────────────────────────── */
+
+@media (max-width: 1080px) {
+  .ds-layout { grid-template-columns: 280px 1fr; }
+  .ds-stages.compare { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,12 @@
+# 脚本生成的素材与产物 —— 不应进入版本库
+#
+# - fixtures/：测试音频与测试 TTML，由 scripts/make-test-audio.mjs 与
+#   test-user-files.mjs 就地生成（测试音频每整秒一声报时，可随时重建）。
+# - out/：截图产物，由 scripts/screenshots.mjs 等生成。
+#
+# 重建方式：
+#   npm run fixtures     # 生成测试音频
+#   npm run test:files   # 会自动生成夹具并跑端到端测试
+#   npm run shots        # 重新截图到 out/
+fixtures/
+out/

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TTML 歌词三模式渲染 Demo · Harmonia</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/base.css" />
+<!-- 引擎层：行 / 行组 / 嵌套背景行 / 逐字的基础结构 -->
+<link rel="stylesheet" href="css/engine.css" />
+<link rel="stylesheet" href="css/visual.css" />
+<link rel="stylesheet" href="css/performance.css" />
+<link rel="stylesheet" href="css/preview.css" />
+</head>
+<body>
+
+<header class="ds-topbar">
+  <div class="ds-brand">
+    TTML 歌词三模式渲染 Demo
+    <small>视觉优先 / 性能优先 / 预览模式 · 各 3 个候选方案</small>
+  </div>
+  <div class="ds-topbar-spacer"></div>
+  <span class="ds-badge-pill" id="dataPill">—</span>
+  <span class="ds-badge-pill" id="statusPill">初始化</span>
+</header>
+
+<div class="ds-layout">
+
+  <aside class="ds-panel">
+    <section>
+      <div class="ds-group-title">歌词模式</div>
+      <div class="ds-seg" id="modeSeg" role="group" aria-label="歌词模式"></div>
+      <div class="ds-mode-desc" id="modeDesc"></div>
+    </section>
+
+    <section>
+      <div class="ds-group-title">改进方案</div>
+      <div class="ds-variant-list" id="variantList"></div>
+      <label class="ds-toggle-row" style="margin-top: 10px;">
+        <input type="checkbox" id="compareToggle" />
+        <span>对比模式（并排渲染本模式 3 个方案）</span>
+      </label>
+    </section>
+
+    <section>
+      <div class="ds-group-title">TTML 样本</div>
+      <select class="ds-select" id="sampleSelect" aria-label="TTML 样本"></select>
+      <div class="ds-sample-note" id="sampleNote"></div>
+    </section>
+
+    <section>
+      <div class="ds-group-title">载入自己的文件</div>
+
+      <label class="ds-toggle-row" style="margin-bottom: 8px;">
+        <input type="checkbox" id="useOwnLyrics" />
+        <span>使用我自己的 TTML</span>
+      </label>
+      <input type="file" class="ds-file" id="ttmlFile" accept=".ttml,.xml,application/xml,text/xml" />
+      <div class="ds-file-info" id="ttmlFileInfo">未选择文件</div>
+
+      <div class="ds-group-title" style="margin-top: 14px;">音频（可选）</div>
+      <input type="file" class="ds-file" id="audioFile" accept="audio/*,video/*" />
+      <div class="ds-file-info" id="audioFileInfo">未选择文件 · 无音频时使用内置时钟</div>
+
+      <div class="ds-toggle-row" style="margin-top: 8px;">
+        <input type="checkbox" id="autoplayOnLoad" checked />
+        <span>载入后自动播放</span>
+      </div>
+
+      <div class="ds-field">
+        <label class="ds-field-label" for="offsetRange">
+          歌词偏移 <span class="ds-diag-value" id="offsetValue">0 ms</span>
+        </label>
+        <input type="range" class="ds-range" id="offsetRange" min="-3000" max="3000" step="50" value="0" />
+        <div class="ds-field-hint">正数 = 歌词延后。用方向键可 ±50ms 微调。</div>
+      </div>
+
+      <div class="ds-field">
+        <label class="ds-field-label" for="audioVolume">
+          音量 <span class="ds-diag-value" id="volumeValue">80%</span>
+        </label>
+        <input type="range" class="ds-range" id="audioVolume" min="0" max="1" step="0.01" value="0.8" />
+      </div>
+
+      <button class="ds-btn" id="clearFilesBtn" type="button" style="width: 100%; margin-top: 4px;">清空已载入的文件</button>
+    </section>
+
+    <section>
+      <div class="ds-group-title">诊断（当前帧窗口）</div>
+      <div class="ds-diag" id="diag"></div>
+      <div class="ds-diag-hint" style="margin-top: 10px;">
+        对比口径：所有方案共用同一时钟，因此「rAF 回调 / 帧」与「强制布局读取 / 帧」
+        可直接横向比较。P2 的卖点是播放期写入恒为 0。
+      </div>
+    </section>
+
+    <section>
+      <div class="ds-group-title">自检报告</div>
+      <div class="ds-report" id="report">在 URL 追加 <code>?selftest=1</code> 运行自检。</div>
+    </section>
+  </aside>
+
+  <main class="ds-main">
+    <div class="ds-stages" id="stages"></div>
+
+    <div class="ds-transport">
+      <button class="ds-btn" id="prevBtn" type="button" title="上一个歌词行（←）">⏮</button>
+      <button class="ds-btn primary" id="playBtn" type="button" title="播放 / 暂停（空格）">▶ 播放</button>
+      <button class="ds-btn" id="nextBtn" type="button" title="下一个歌词行（→）">⏭</button>
+      <div class="ds-scrub" id="scrub" role="slider" aria-label="进度" tabindex="0">
+        <div class="ds-scrub-fill" id="scrubFill"></div>
+      </div>
+      <span class="ds-time" id="timeLabel">0:00.0 / 0:00.0</span>
+      <select class="ds-rate" id="rateSelect" aria-label="播放倍速">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+      </select>
+    </div>
+  </main>
+
+</div>
+
+<!-- 音频由用户文件驱动；无文件时该元素不被 attachMedia，时钟回退到内置推进 -->
+<audio id="audioEl" preload="metadata"></audio>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

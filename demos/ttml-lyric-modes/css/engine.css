@@ -1,0 +1,194 @@
+/* ────────────────────────────────────────────────────────────────────────
+ * 引擎层样式 —— 行 / 行组 / 嵌套背景行 / 逐字。
+ *
+ * 结构（由 js/engine/line.js 生成）：
+ *   .eng-group            滚动位移由此元素承担（一条 Y 弹簧）
+ *     .eng-bg-wrap        背景行包裹（仅在 bgFirst 时插在主行之前）
+ *       .eng-line.eng-bg
+ *     .eng-line.eng-main  主行
+ *       .eng-main         正文（内含 .eng-word）
+ *       .eng-sub.eng-trans
+ *       .eng-sub.eng-roman
+ *     .eng-bg-wrap        否则在主行之后
+ *
+ * 关键点：背景行**嵌在 group 里**，与主行共享同一个滚动位置 ——
+ * 因此它天然与主行同屏，不需要额外泳道，也不需要争抢滚动位置。
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/* ── 行组：滚动单位 ─────────────────────────────────────────────────── */
+
+.eng-group {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4em var(--eng-padding-x, 1em);
+  border-radius: 0.25em;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3em;
+  /* will-change 只在此处（滚动元素），不在每行每字上 —— 避免合成层爆炸 */
+  will-change: transform;
+  transition: opacity 0.4s ease, filter 0.4s ease, background-color 0.25s ease;
+}
+
+/* 视口外：整组移出绘制树（比 opacity:0 更彻底） */
+.eng-group[data-offscreen='1'] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ── 行本体 ─────────────────────────────────────────────────────────── */
+
+.eng-line {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: fit-content;
+  padding: 0.2em;
+  margin: -0.2em;
+  transform-origin: left;
+  /* 渲染隔离：让每行的重绘不波及兄弟节点 */
+  contain: layout style paint;
+  backface-visibility: hidden;
+}
+
+/*
+ * content-visibility 只在**离屏**时启用。
+ *
+ * 为什么不能常开：它会用 contain-intrinsic-size 的占位值（40px）代替真实
+ * 高度参与布局，导致 offsetHeight 读出的是 40 而非实际高度（实测 44px 字体
+ * 的卡片被读成 46px，真实约 130px）。而本引擎的滚动数学完全依赖
+ * 前缀和高度，测得越小 → 行距越小 → 卡片互相压叠。
+ *
+ * 离屏时才启用则无此问题：离屏行的位置不参与视觉，且能省掉其绘制。
+ */
+.eng-group[data-offscreen='1'] .eng-line {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40px;
+}
+
+.eng-main {
+  font-size: var(--eng-font-size, 34px);
+  line-height: 1.24;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--eng-color, rgba(255, 255, 255, 0.97));
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.eng-sub {
+  opacity: 0.3;
+  font-size: max(0.5em, 10px);
+  line-height: 1.5em;
+  font-weight: 500;
+  transition: opacity 0.2s 0.25s;
+}
+
+.eng-trans { font-size: max(0.55em, 12px); opacity: 0.34; }
+
+/* ── 逐字 ───────────────────────────────────────────────────────────── */
+
+.eng-word {
+  display: inline-block;
+  /* 负 margin + 正 padding：扩大点击/绘制区域但不影响排版宽度。
+     这是 mask 拖尾能覆盖到字缘之外的前提。 */
+  margin: -1em;
+  padding: 1em;
+  white-space: pre-wrap;
+  vertical-align: bottom;
+  contain: layout style;
+  backface-visibility: hidden;
+}
+
+.eng-word.eng-emphasize {
+  /* 强调字由 WAAPI 驱动 transform 与 textShadow，这里只标记 */
+  will-change: transform, text-shadow;
+}
+
+/* 非活动行：字保持暗色，揭字动画尚未扫过时呈现「未唱」的观感 */
+.eng-line:not(.is-active) .eng-word {
+  /* mask 动画会停在起始位置（字整体被遮住），因此这里不需要额外处理，
+     但未激活的行要保证可见 —— 用 filter 略微压暗而非透明 */
+  filter: brightness(0.72);
+}
+
+.eng-line.is-active .eng-word {
+  filter: none;
+}
+
+/* ── 嵌套背景行 ─────────────────────────────────────────────────────── */
+
+.eng-bg-wrap {
+  position: absolute;
+  top: 100%;
+  left: var(--eng-padding-x, 1em);
+  z-index: -1;
+  width: calc(100% - var(--eng-padding-x, 1em) * 2);
+  display: flex;
+  flex-direction: column;
+  align-items: inherit;
+  opacity: 0;
+  transform-origin: left top;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* bgFirst：背景行在主行**上方**展开 */
+.eng-bg-wrap-top {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  left: 0;
+  width: 100%;
+  margin-top: -999px;
+  transform-origin: left bottom;
+}
+
+/* 已展开（活动行）：回到文档流内，参与 group 高度计算 */
+.eng-bg-wrap.is-shown {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  left: 0;
+  width: 100%;
+  opacity: 1;
+}
+
+/* 背景行本体：更小字号 + 更暗，与主行拉开层次 */
+.eng-line.eng-bg .eng-main {
+  font-size: var(--eng-bg-font-size, 0.62em);
+  font-weight: 600;
+  color: var(--eng-bg-color, rgba(111, 195, 255, 0.92));
+  opacity: 0.78;
+}
+
+.eng-line.eng-bg .eng-sub { font-size: max(0.4em, 10px); opacity: 0.5; }
+
+/* ── 对唱 ───────────────────────────────────────────────────────────── */
+
+.eng-line.eng-duet {
+  text-align: right;
+  transform-origin: right;
+}
+
+.eng-line.eng-duet .eng-main { color: var(--eng-duet-color, #ff8fa6); }
+
+/* 含对唱的组：主行让出右侧空间，对唱行让出左侧 —— 形成左右对话 */
+.eng-group-duet .eng-line:not(.eng-duet) { padding-right: 15%; }
+.eng-group-duet .eng-line.eng-duet { padding-left: 15%; }
+
+.eng-group-duet {
+  align-items: flex-end;
+}
+
+.eng-group-duet .eng-bg-wrap {
+  transform-origin: right top;
+}
+
+.eng-group-duet .eng-bg-wrap-top {
+  transform-origin: right bottom;
+}

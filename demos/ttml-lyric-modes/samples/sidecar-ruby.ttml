@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  示例：Apple 风格 sidecar 翻译 / 音译 + Ruby 注音 + 时间格式全集
+  覆盖点：
+    - <iTunesMetadata> sidecar：<translation>/<transliteration> 用 for="L1" 关联 itunes:key
+    - 内联 x-translation 与 sidecar 翻译同时存在（同一语言，按优先级去重取一）
+    - tts:ruby 注音（假名标注汉字）
+    - 三种时间写法混用：HH:MM:SS.mmm / MM:SS / 12.3s
+    - itunes:timing="Line"（无逐字时序，整行一个词）
+-->
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-internal"
+    xml:lang="ja"
+    itunes:timing="Word">
+  <head>
+    <metadata>
+      <ttm:title>Sidecar / Ruby Sample</ttm:title>
+      <ttm:agent type="person" xml:id="v1">
+        <ttm:name type="full">ボーカル</ttm:name>
+      </ttm:agent>
+    </metadata>
+  </head>
+  <body>
+    <div itunes:song-part="Verse">
+      <!-- 时钟格式 + 内联翻译 + 内联音译 + ruby -->
+      <p begin="00:00:10.000" end="00:00:14.000" itunes:key="L1" ttm:agent="v1">
+        <span tts:ruby="container">
+          <span tts:ruby="base" begin="00:00:10.000" end="00:00:10.800">所詮</span>
+          <span tts:ruby="textContainer">
+            <span tts:ruby="text" begin="00:00:10.000" end="00:00:10.400">しょ</span>
+            <span tts:ruby="text" begin="00:00:10.400" end="00:00:10.800">せん</span>
+          </span>
+        </span>
+        <span begin="00:00:10.800" end="00:00:12.000">夢</span>
+        <span begin="00:00:12.000" end="00:00:14.000">の中</span>
+        <span ttm:role="x-translation" xml:lang="zh-Hans">终究是在梦中</span>
+        <span ttm:role="x-roman" xml:lang="ja-Latn">shosen yume no naka</span>
+      </p>
+
+      <!-- MM:SS 部分时钟格式（无毫秒） -->
+      <p begin="00:14" end="00:18" itunes:key="L2" ttm:agent="v1">
+        <span begin="00:14" end="00:15.5">きっと</span>
+        <span begin="00:15.5" end="00:18">また会える</span>
+      </p>
+
+      <!-- 秒+单位格式（offset-time） -->
+      <p begin="18.5s" end="22s" itunes:key="L3" ttm:agent="v1">
+        <span begin="18.5s" end="19.8s">その日</span>
+        <span begin="19.8s" end="22s">まで</span>
+      </p>
+
+      <!-- Line 模式：整行一个词，无逐字 span -->
+      <p begin="00:00:22.000" end="00:00:26.000" itunes:key="L4" ttm:agent="v1">さようなら、またね</p>
+    </div>
+  </body>
+  <iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">
+    <translations>
+      <translation xml:lang="zh-Hans-CN" type="subtitle">
+        <text for="L1">终究只是一场梦</text>
+        <text for="L2">一定会再见</text>
+        <text for="L3">直到那一天</text>
+        <text for="L4">再见，再会</text>
+      </translation>
+    </translations>
+    <transliterations>
+      <transliteration xml:lang="ja-Latn">
+        <text for="L2">kitto mata aeru</text>
+        <text for="L3">sono hi made</text>
+      </transliteration>
+    </transliterations>
+  </iTunesMetadata>
+</tt>

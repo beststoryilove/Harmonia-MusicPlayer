@@ -1,0 +1,72 @@
+/* ────────────────────────────────────────────────────────────────────────
+ * 视觉优先 —— V1 弹簧滚动 / V2 焦点钉住 / V3 视差长尾
+ *
+ * 既有语汇（main.js:2477-2486、7325-7399）：0.7s 缓动 + 按行距递增 blur
+ * + scale + 级联入场。差异现在落在**弹簧参数与对齐位置**上（见 renderers/visual.js），
+ * 而不再是「动画参数」这种表面差异。
+ *
+ * 注意：blur 由引擎按行距计算后写入 .eng-group 的 filter，这里不再重复声明，
+ * 否则会与内联样式冲突。缩放也交给引擎/弹簧，这里只定义静态外观。
+ * ──────────────────────────────────────────────────────────────────────── */
+
+.ds-visual .eng-group {
+  transition: opacity 0.5s ease-in-out, filter 0.5s ease-in-out,
+    background-color 0.3s ease;
+}
+
+.ds-visual .eng-main {
+  font-size: var(--eng-font-size, 36px);
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.14), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.ds-visual .eng-group.is-active .eng-main {
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.26), 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* ── V1 弹簧滚动 + 景深 ─────────────────────────────────────────────── */
+
+.ds-v1 .eng-main { font-size: 36px; }
+
+.ds-v1 .eng-line.eng-bg .eng-main { font-size: 0.62em; }
+
+/* 对唱行：右缩进 + 声部色左边框 */
+.ds-v1 .eng-line.eng-duet {
+  padding-right: 8%;
+  border-right: 2px solid rgba(255, 107, 138, 0.5);
+}
+
+/* ── V2 焦点钉住 + 背景浮层 ─────────────────────────────────────────── */
+
+/* 焦点行获得实体感（轻背景 + 内描边），钉在中心时是视觉锚点 */
+.ds-v2 .eng-group.is-active {
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.ds-v2 .eng-group.is-active .eng-main {
+  font-size: 38px;
+  text-shadow: 0 0 34px rgba(255, 255, 255, 0.3), 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.ds-v2 .eng-letter-spacing { letter-spacing: 0.6px; }
+
+.ds-v2 .eng-line.eng-bg .eng-main { font-size: 0.66em; font-style: italic; }
+
+.ds-v2 .eng-line.eng-duet {
+  border-left: 3px solid rgba(255, 107, 138, 0.7);
+  padding-left: 12px;
+}
+
+/* ── V3 视差长尾 ────────────────────────────────────────────────────── */
+
+.ds-v3 .eng-main { font-size: 35px; }
+
+.ds-v3 .eng-line.eng-bg .eng-main { font-size: 0.64em; opacity: 0.85; }
+
+.ds-v3 .eng-line.eng-duet {
+  padding-right: 6%;
+  border-right: 2px solid rgba(255, 107, 138, 0.45);
+}
+
+/* 长尾行（已唱过但仍相邻）：保留一点存在感而非直接消失 */
+.ds-v3 .eng-group[data-passed='1'] { opacity: 0.4; }

@@ -68,9 +68,17 @@
 - 支持 A-Z 排序、自定义排序、音源筛选
 - 右键菜单「加入歌单」（含长按触屏支持）
 
-### 🎨 视觉与主题
+### 📻 发现音乐（酷狗）
 
-- **深色 / 浅色** 双主题一键切换
+- **排行榜**：55 个酷狗官方榜单浏览（TOP500/飙升榜/网络热歌榜…），支持分页、单曲播放、全部加入
+- **私人 FM / 每日推荐**：一键生成电台会话队列并自动播放——**不改动你的播放列表**，侧栏顶部显示会话头，可随时「返回原列表」；私人 FM 支持「换一批」
+- **听相似**：基于当前歌曲的 AI 相似推荐（播放器「更多 → 听相似」）
+- **歌曲评论**：浏览当前酷狗歌曲的评论区，支持**楼中楼**展开评论下的回复（分页加载；播放器「更多 → 歌曲评论」）
+- **热搜词**：灵动岛搜索空态展示酷狗热搜榜，点击热词即搜
+- 榜单/电台列表浏览无需登录；播放需在 设置 → 账户 登录酷狗账号
+
+### 🎨 视觉设计
+
 - 专辑封面 **3D 倾斜** 效果（鼠标悬停随动）
 - **Liquid Glass**（液态玻璃）毛玻璃质感 UI
 - 背景随专辑封面主色调动态变化
@@ -105,7 +113,6 @@
 | `← / →` | 上一曲 / 下一曲 |
 | `↑ / ↓` | 音量 ±5% |
 | `L` | 切换歌词 |
-| `T` | 切换主题 |
 | `S` | 聚焦搜索 |
 | `M` | 打开/关闭侧栏 |
 | `R` | 切换播放模式 |
@@ -129,6 +136,7 @@
 ```
 Harmonia/
 ├── main.html              # 主页面（含所有 DOM 结构与模态框）
+├── favicon.ico            # 站点图标
 ├── css/
 │   ├── variables.css      # CSS 变量 / 字体定义
 │   ├── base.css           # 全局样式 / 动态岛 / 通用组件
@@ -139,9 +147,14 @@ Harmonia/
 │   ├── settings.css       # 设置面板
 │   ├── lyrics.css         # 歌词增强动画
 │   ├── share.css          # 分享卡片模态框
-│   └── responsive.css     # 响应式适配
+│   ├── responsive.css     # 响应式适配
+│   └── fonts/             # 字体资源（Apple PingFang / SF Pro）
+│       ├── PingFangSC-Regular.woff2
+│       ├── PingFangSC-Semibold.woff2
+│       ├── sf-pro-display_regular.woff2
+│       └── sf-pro-display_semibold.woff2
 ├── js/
-│   ├── main.js            # 主逻辑 (~9300 行)
+│   ├── main.js            # 主逻辑 (~12800 行)
 │   │   ├── 灵动岛控制
 │   │   ├── 播放 / 暂停 / 切歌
 │   │   ├── 搜索 / 分页
@@ -151,15 +164,14 @@ Harmonia/
 │   │   ├── 均衡器 (Web Audio)
 │   │   ├── PiP 画中画
 │   │   ├── 分享卡片生成
-│   │   ├── 主题 / 设置持久化
+│   │   ├── 设置持久化
 │   │   └── 快捷键 / 初始化
-│   |
+│   ├── stFlacRepair.js    # FLAC/WAV 无损音源尾部修复（智能过渡）
 │   └── MODULES.md         # 模块文档
-└── fonts/
-    ├── PingFangSC-Regular.woff2
-    ├── PingFangSC-Semibold.woff2
-    ├── sf-pro-display_regular.woff2
-    └── sf-pro-display_semibold.woff2
+├── demos/                 # 功能演示（liquid-elastic-switch 弹性开关）
+├── docs/                  # 设计文档与实施计划（docs/superpowers/ 规格）
+├── superpowers/           # 技能 / 工作流目录
+└── tests/                 # 零依赖 node 测试（flac-repair.test.mjs 等）
 ```
 
 ### 技术栈
@@ -201,7 +213,6 @@ Harmonia/
 |------|------|
 | 🌐 **官方博客** | [azalkmin.abrdns.com](https://azalkmin.abrdns.com) |
 | 💬 **QQ 群** | [点击加入](https://qm.qq.com/q/p4WYBXFGNO) |
-| 📱 **扫码入群** | <img src="qrcode_1779913195527.jpg" width="120" alt="Harmonia QQ 群二维码"> |
 
 ---
 
@@ -221,21 +232,13 @@ Harmonia/
 
 ---
 
-## 📖 近期计划
-
-在未来的开发中，我们会以1-2周的频率对项目进行更新。
-
-下方为目前我们的近期计划。
-
-目前我们正在计划封装安装包，发布平台暂定为WIndows与Android。届时，我们将在网页端提供迁移入口，支持导出配置文件。你可以快速将网页端的播放列表/设置偏好等相关数据迁移至客户端。
-
-## Star History
+## ⭐ Star History
 
 <a href="https://www.star-history.com/?repos=beststoryilove%2FHarmonia-MusicPlayer&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=Z-FADy6CBKLhFfn4bqCt3NCY-4rkjaWi_OgYDpRrE0vTODPxxSBrt7Xx5Eun2dH86OHh3bs86B4uhwij3X7qHHrz-I98WaFp0JO2wciXWKAnc35HhYPyIH-dVqKyKEFp4LnGvPL4CzG9kl5E7LTvGIbaPs1EpofWYpr3MSqt3NG-tuXrmIDdt1A5khTf" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&theme=dark&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=beststoryilove/Harmonia-MusicPlayer&type=date&legend=top-left&sealed_token=C2sXo2xteHl-YGu_ze9nxubSyAu0-y2tU29lSfrLFAyajp6-wGQeipMCqY_5mGkAIDqdBploZ0Ojp2q_UAqHjGkcw1oTty3ygXHbX8X6ZBY1gobDkexPo0hdpHZ8ZbODv4ylrPTZjaNrMj6zbKm3GhvbKP-MBo6wW48L-Q3CnedV1TWSsxaxytxOxLDP" />
  </picture>
 </a>
 
@@ -248,4 +251,3 @@ Harmonia/
 <sub>Built with ❤️ and AI · 让音乐触手可即</sub>
 
 </div>
-
