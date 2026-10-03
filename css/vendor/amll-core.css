@@ -29,16 +29,40 @@
     --amll-lp-line-padding-x: 0;
   }
 }
+@property --bright-mask-alpha {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+@property --dark-mask-alpha {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: .2;
+}
+
 .FmKaba_lyricLineWrapper {
-  will-change: transform, opacity, filter;
+  box-sizing: border-box;
+  width: 100%;
+  padding: .4em var(--lyric-line-padding-x);
+  will-change: transform;
+  border-radius: .25em;
   flex-direction: column;
   align-items: flex-start;
-  width: 100%;
-  transition: opacity .4s, filter .4s;
+  gap: .3em;
+  transition: opacity .4s, filter .4s, background-color .25s;
   display: flex;
   position: absolute;
   top: 0;
   left: 0;
+
+  &:not(.FmKaba_bottomLineWrapper):hover {
+    background-color: var(--amll-lp-hover-bg-color, #fff1);
+  }
+
+  &:not(.FmKaba_bottomLineWrapper):active {
+    background-color: var(--amll-lp-hover-bg-color, #ffffff05);
+  }
 }
 
 .FmKaba_lyricLine {
@@ -46,32 +70,26 @@
   width: var(--amll-lp-width, 100%);
   min-width: var(--amll-lp-width, 100%);
   max-width: var(--amll-lp-width, 100%);
-  contain: content;
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40px;
   backface-visibility: hidden;
   transform-origin: 0;
-  will-change: transform;
-  border-radius: .25em;
+  --mask-alpha-duration: .45s;
+  --bright-mask-alpha: .2;
+  --dark-mask-alpha: .2;
   height: fit-content;
-  padding: .5em 1em;
-  transition: background-color .25s, box-shadow .25s;
+  transition: box-shadow .25s,
+		--bright-mask-alpha var(--mask-alpha-duration) ease-out,
+		--dark-mask-alpha var(--mask-alpha-duration) ease-out;
+  margin: -.2em;
+  padding: .2em;
   position: relative;
 
-  @media screen and (width <= 500px) {
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  &.FmKaba_dirty {
-    opacity: 0;
-    visibility: hidden;
-  }
-
-  &:has( > *):hover {
-    background-color: var(--amll-lp-hover-bg-color, #fff1);
-  }
-
-  &:has( > *):active {
-    background-color: var(--amll-lp-hover-bg-color, #ffffff05);
+  &.FmKaba_gradientMask {
+    --mask-alpha-duration: .3s;
+    --bright-mask-alpha: 1;
+    --dark-mask-alpha: .4;
   }
 }
 
@@ -81,6 +99,7 @@
 }
 
 .FmKaba_lyricMainLine {
+  contain: layout style;
   margin: -1em;
   padding: 1em;
   transition: opacity .3s .1s;
@@ -115,25 +134,33 @@
 
   & .FmKaba_wordBody {
     flex-direction: column;
-    align-items: center;
     display: flex;
+  }
+
+  & .FmKaba_rubyBaseWord {
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    justify-content: center;
+    display: inline-flex;
   }
 
   & > span, & span.FmKaba_emphasizeWrapper {
     white-space: pre-wrap;
     vertical-align: bottom;
-    will-change: transform;
+    contain: layout style;
     margin: -1em;
     padding: 1em;
     display: inline-block;
 
-    &.FmKaba_emphasize, & span.FmKaba_emphasize {
-      backface-visibility: hidden;
+    & > span {
       margin: -1em;
       padding: 1em;
+    }
+
+    &.FmKaba_emphasize, & span.FmKaba_emphasize {
+      backface-visibility: hidden;
 
       & > span {
-        will-change: transform;
         backface-visibility: hidden;
         margin: -1em;
         padding: 1em;
@@ -144,10 +171,11 @@
 
 .FmKaba_lyricBgLine {
   opacity: .4;
-  padding: 1vh
-		calc(var(--amll-lp-line-padding-x, 1em) / var(--amll-lp-bg-line-scale, .7));
   font-size: max(calc(1em * var(--amll-lp-bg-line-scale, .7)), 10px);
-  transition: background-color .25s, box-shadow .25s;
+  transition: background-color .25s,
+		box-shadow .25s,
+		--bright-mask-alpha var(--mask-alpha-duration) ease-out,
+		--dark-mask-alpha var(--mask-alpha-duration) ease-out;
 
   & .FmKaba_lyricMainLine {
     padding: 1.2em 1em;
@@ -155,7 +183,10 @@
 
   &.FmKaba_active {
     opacity: .4;
-    transition: background-color .25s, box-shadow .25s;
+    transition: background-color .25s,
+			box-shadow .25s,
+			--bright-mask-alpha var(--mask-alpha-duration) ease-out,
+			--dark-mask-alpha var(--mask-alpha-duration) ease-out;
   }
 }
 
@@ -171,10 +202,17 @@
 }
 
 .FmKaba_bottomLine {
+  font-size: var(--amll-lp-bottom-line-font-size, max(.7em, 10px));
   cursor: default;
+  opacity: .2;
   padding-top: 0;
   padding-bottom: 0;
   line-height: 1.8em;
+  transition: opacity .4s;
+
+  &.FmKaba_gradientMask {
+    opacity: .85;
+  }
 
   &:empty {
     height: 0;
@@ -185,34 +223,37 @@
 }
 
 .FmKaba_bgWrapper {
+  top: 100%;
+  left: var(--lyric-line-padding-x);
   z-index: -1;
   align-items: inherit;
+  width: calc(100% - var(--lyric-line-padding-x) * 2);
   visibility: visible;
   pointer-events: auto;
   opacity: 0;
-  width: 100%;
-  transform-origin: var(--lyric-line-padding-x) top;
+  transform-origin: 0 0;
   flex-direction: column;
   transition: opacity .3s;
   display: flex;
   position: absolute;
-  top: 100%;
-  left: 0;
 }
 
 .FmKaba_bgWrapperTop {
-  transform-origin: var(--lyric-line-padding-x) bottom;
-  margin-top: -999px;
+  transform-origin: 0 100%;
+  width: 100%;
   position: relative;
   top: auto;
   bottom: auto;
+  left: 0;
 }
 
 .FmKaba_bgWrapperActive {
   opacity: 1;
+  width: 100%;
   position: relative;
   top: auto;
   bottom: auto;
+  left: 0;
 }
 
 .FmKaba_bgWrapperHidden {
@@ -221,34 +262,23 @@
 }
 
 .FmKaba_interludeDots {
-  opacity: 0;
-  transform-origin: center;
-  gap: .25em;
   width: fit-content;
   height: clamp(.5em, 1vh, 3em);
-  padding: 2.5% .75em;
-  transition: opacity .25s;
+  padding: .4em var(--lyric-line-padding-x);
+  transform-origin: center;
+  align-items: center;
+  gap: .18em;
   display: flex;
   position: absolute;
   left: 0;
-
-  &.FmKaba_enabled {
-    opacity: 1;
-  }
 
   & > * {
     background-color: var(--amll-lp-color, white);
     aspect-ratio: 1;
     border-radius: 50%;
-    width: clamp(.5em, 1vh, 3em);
-    height: clamp(.5em, 1vh, 3em);
-    margin-right: 4px;
+    width: .3em;
+    height: .3em;
     display: inline-block;
-  }
-
-  &.FmKaba_duet {
-    transform-origin: center;
-    right: 0;
   }
 }
 
@@ -262,6 +292,7 @@
 
 .amll-lyric-player {
   --lyric-line-padding-x: 1em;
+  touch-action: pan-x;
 
   @media screen and (width <= 500px) {
     --lyric-line-padding-x: 20px;
@@ -269,6 +300,15 @@
 
   &:hover .FmKaba_lyricLine, &:hover .FmKaba_lyricLineWrapper {
     filter: unset !important;
+  }
+
+  &:not(.FmKaba_playing) .FmKaba_bgWrapper {
+    opacity: 1;
+    width: 100%;
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: 0;
   }
 
   &.FmKaba_hasDuetLine {
@@ -280,23 +320,16 @@
       padding-left: 15%;
     }
 
-    & .FmKaba_lyricLineWrapper:has(.FmKaba_lyricDuetLine) {
+    & .FmKaba_isDuetWrapper {
       align-items: flex-end;
 
       & .FmKaba_bgWrapper {
-        transform-origin: calc(100% - var(--lyric-line-padding-x)) top;
+        transform-origin: 100% 0;
       }
 
       & .FmKaba_bgWrapperTop {
-        transform-origin: calc(100% - var(--lyric-line-padding-x)) bottom;
+        transform-origin: 100% 100%;
       }
     }
-  }
-
-  &:not(.FmKaba_playing) .FmKaba_bgWrapper {
-    opacity: 1;
-    position: relative;
-    top: auto;
-    bottom: auto;
   }
 }

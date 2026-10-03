@@ -2,12 +2,13 @@
   "name": "harmonia-web",
   "private": true,
   "version": "1.0.0",
-  "description": "Harmonia 网页端纯函数测试",
+  "description": "Harmonia 网页端测试（纯函数 + AMLL 歌词解析）",
   "engines": {
     "node": ">=21"
   },
   "scripts": {
     "test": "npm run test:js",
-    "test:js": "node --test \"tests/js/*.test.js\""
+    "test:js": "node --test --experimental-test-isolation=none \"tests/js/*.test.js\"",
+    "test:isolated": "node --test \"tests/js/*.test.js\""
   }
 }

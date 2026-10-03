@@ -1,0 +1,77 @@
+/* AMLL 动态背景宿主样式（客户端源与网页版源字节一致，勿单独修改其中一份）。
+   契约见 docs/superpowers/specs/2026-09-27-harmonia-amll-dynamic-background-design.md */
+
+/* 背景容器：动态背景开启时替代 .am-background 作为最底层底板，两者互斥显示。
+   z-index 必须为 0（而不是 -1）：body 的 background 是 --bg-dark(#000) 且 html 背景
+   透明 → 按规范 body 背景会传播到根画布，绘制在所有内容之下；负 z-index 元素虽然也在
+   内容之下，但实测被该传播背景盖住而完全不可见。
+   实测证据：容器 z-index:-1 时截图纯黑（背景点采样色值全 0）；仅把它改成 z-index:9999
+   后画面立刻出现背景（红色采样占比 3.1% → 25.8%），证明是层叠位置而非渲染失败。
+   z-index:0 + position:fixed 会建立层叠上下文，容器内 canvas 的内联 z-index:-1
+   因此被约束在容器内部，不会跑到内容层之上；容器在 DOM 中早于各内容层，
+   同层级(z-index:0/auto)下按文档顺序靠后绘制，故内容仍在其上方。 */
+#amllBgContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  display: none;
+}
+
+#amllBgContainer.active {
+  display: block;
+}
+
+/* 背景 canvas 必须显式给定尺寸 —— 官方文档：「背景的 canvas 尺寸由 CSS 决定」，
+   检查清单亦要求「宿主容器有明确宽高」。
+   只给容器尺寸是不够的：AMLL 用 document.createElement('canvas') 创建 canvas 且不设
+   任何 CSS 尺寸，同时给它内联 contain:strict（含 contain:size）—— contain:size 会让
+   元素的固有尺寸按 0 处理，而 canvas 又是 display:inline 的替换元素，于是 clientWidth/
+   clientHeight 全为 0 → AMLL 的 ResizeObserver 读到 0 → 绘制缓冲永远停在默认 300x150、
+   从不初始化 → 全屏纯黑。
+   实测证据：修复前 canvas clientW/H = 0x0、CSS width/height = 0px、attrW/H = 300x150。
+   注意 contain:strict 与显式 width/height 并不冲突：显式尺寸优先，元素按 CSS 尺寸布局。 */
+#amllBgContainer > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 动态背景开启时隐藏原有的专辑图模糊背景，避免两层背景互相干扰 */
+#amllBgContainer.active ~ .am-background,
+body.dynamic-bg-on .am-background {
+  display: none !important;
+}
+
+/* 注意：此处刻意不改 .lyricscontainer 的 z-index。
+   player.css 已给它 z-index:2，本就高于背景容器（z-index:0），无需干预；
+   先前版本在这里写 z-index:0 反而把它从 2 降到 0，属于错误改动。 */
+
+/* 速度滑块（复用歌词大小滑块的视觉，仅补宽度约束）；
+   开关关闭时禁用并降低不透明度，让「速度不可调」在视觉上可预期。 */
+#dynamicBgSpeedSlider {
+  width: 100%;
+  height: 22px;
+  cursor: pointer;
+  accent-color: var(--accent-color, #007aff);
+}
+
+#dynamicBgSpeedItem.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+#dynamicBgSpeedSlider:disabled {
+  cursor: not-allowed;
+}
+
+/* 速度数值徽标 */
+#dynamicBgSpeedValue {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}

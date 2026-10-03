@@ -19,17 +19,29 @@
 <!-- 非关键第三方样式异步加载（Font Awesome 6.4.0 带 SRI 完整性校验） -->
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" crossorigin="anonymous" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" onload="this.onload=null;this.rel=&quot;stylesheet&quot;"/>
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="/></noscript>
-<link rel="stylesheet" href="https://unpkg.com/@applemusic-like-lyrics/core@0.5.1/dist/style.css" media="print" onload="this.media=&quot;all&quot;"/>
+<!-- AMLL 核心样式：必须与 js/vendor/amll-core.bundle.mjs（core 0.6.0）同版本。
+     原为 https://unpkg.com/@applemusic-like-lyrics/core@0.5.1/dist/style.css —— 引擎升到
+     0.6.0 后样式仍是 0.5.1，二者不兼容：0.6.0 改用 mask-image 渐变实现逐字高亮，
+     依赖 CSS 变量 --bright-mask-alpha / --dark-mask-alpha 与 .FmKaba_gradientMask 类
+     （这两者都只在 0.6.0 样式里存在）。样式缺失时 JS 的兜底值取 1，导致渐变两侧
+     完全同色 —— 表现为所有歌词不分已唱/未唱一律全白，失去逐字高亮。
+     改为引用随 bundle 一起产出的本地样式（tools/amll-build 构建），同时去掉对 CDN 的依赖。
+     异步加载方式保留：非关键路径，不阻塞首屏（media=print → onload 切 all）。 -->
+<link rel="stylesheet" href="css/vendor/amll-core.css" media="print" onload="this.media=&quot;all&quot;"/>
 <!-- 应用样式（独立外部文件） -->
 <link rel="stylesheet" href="css/variables.css"/>
 <link rel="stylesheet" href="css/titlebar.css?v=2"/>
 <link rel="stylesheet" href="css/base.css"/>
+<!-- 新液态玻璃材质层（仅在 <html data-glass-style="refraction"> 时生效） -->
+<link rel="stylesheet" href="css/liquid-glass-v2.css?v=1"/>
 <link rel="stylesheet" href="css/layout.css"/>
 <link rel="stylesheet" href="css/sidebar.css"/>
 <link rel="stylesheet" href="css/search.css"/>
 <link rel="stylesheet" href="css/player.css"/>
 <link rel="stylesheet" href="css/settings.css"/>
 <link rel="stylesheet" href="css/lyrics.css?v=2"/>
+<!-- AMLL 动态背景宿主样式（背景容器 + 速度滑块；仅开关开启时生效） -->
+<link rel="stylesheet" href="css/dynamic-bg.css?v=1"/>
 <link rel="stylesheet" href="css/share.css"/>
 <link rel="stylesheet" href="css/responsive.css"/>
 <link rel="stylesheet" href="css/discovery.css?v=2"/>
@@ -98,6 +110,14 @@
   </header>
 
   <div class="am-background"></div>
+
+  <!-- AMLL 动态背景宿主：与 .am-background 同层（z-index:-1），两者互斥显示。
+       注意不能把 AMLL 的 canvas 挂进 .lyricscontainer —— 那个壳有 mask-image，
+       会创建蒙版上下文，把 canvas 的 z-index:-1 画到歌词之上；也不能挂进 #amLyrics，
+       因为 ensureAMLLPlayer() 会对其执行 innerHTML=''，会误删背景。
+       容器自身不建立层叠上下文，canvas 的 -1 才能正常沉底（样式见 css/dynamic-bg.css）。
+       内容由 js/dynamic-bg.js 按需创建与释放。 -->
+  <div id="amllBgContainer" aria-hidden="true"></div>
 
   <!-- 灵动岛 -->
   <div class="dynamic-island" id="dynamicIsland">
@@ -299,6 +319,29 @@
               <div class="item-desc">切歌时显示 Apple Music 风格的封面与标题过渡动画</div>
             </div>
             <label class="switch"><input type="checkbox" id="trackTransitionToggle" aria-label="歌曲过渡动画"><span class="slider"></span></label>
+          </div>
+          <div class="setting-item vertical">
+            <div class="item-label">液态玻璃样式</div>
+            <div class="segmented-control" id="liquidGlassStyleControl">
+              <label><input type="radio" name="liquidGlassStyle" value="classic" checked><span>旧液态玻璃</span></label>
+              <label><input type="radio" name="liquidGlassStyle" value="refraction"><span>新液态玻璃</span></label>
+            </div>
+            <div class="item-desc" style="margin-top: 6px;">新液态玻璃在桌面端 Chromium 上启用 SVG 边缘折射（参数已固化为 160/15/60），其余环境自动降级为磨砂高光；切换后立即生效。</div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="group-title">动态背景</div>
+          <div class="setting-item">
+            <div class="item-info">
+              <div class="item-label">动态背景</div>
+              <div class="item-desc">由 AMLL 依据专辑封面取色渲染 Apple Music 风格流体动态背景（WebGL）。开启后会隐藏原有的专辑图模糊背景，关闭后自动恢复；性能较弱的设备建议降低流动速度。</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="dynamicBgToggle" aria-label="动态背景"><span class="slider"></span></label>
+          </div>
+          <div class="setting-item vertical" id="dynamicBgSpeedItem">
+            <div class="item-label">流动速度 <span id="dynamicBgSpeedValue">1.0×</span></div>
+            <input type="range" class="lyrics-size-slider" id="dynamicBgSpeedSlider" min="0.2" max="3" step="0.1" value="1" aria-label="动态背景流动速度"/>
+            <div class="item-desc" style="margin-top:4px;">0.2× 最缓慢，1.0× 为标准速度，3.0× 最快；拖动即时生效。</div>
           </div>
         </div>
         <div class="settings-group">
@@ -1183,6 +1226,10 @@
 <script defer src="js/stFlacRepair.js?v=5"></script>
 <script defer src="js/titlebar.js?v=1"></script>
 <script src="js/lib/pure.js?v=3"></script>
+<!-- 新液态玻璃折射引擎（仅桌面 Chromium 启用；须早于 main.js 以便初始化时读取） -->
+<script defer src="js/liquid-glass-v2.js?v=1"></script>
+<!-- AMLL 动态背景（须早于 main.js：main.js 启动时会调用其 bootstrap） -->
+<script defer src="js/dynamic-bg.js?v=1"></script>
 <script defer src="js/main.js"></script>
 </body>
 </html>

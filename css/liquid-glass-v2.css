@@ -1,0 +1,187 @@
+/* ============================================================
+   Harmonia · 新液态玻璃（Liquid Glass v2）材质层
+   ============================================================
+   来源：预览版「琉璃音乐 · Liquid Glass（已固化你的调参 160_15_60）.html」
+   的 .glass 材质，适配到本项目的暗色主题与既有玻璃元素上。
+
+   分工：
+   - 本文件负责**材质**（tint / 渐变描边环 rim light / 顶部环境高光 / 内阴影），
+     纯 CSS，任何浏览器都生效——这也是非 Chromium 的降级表现；
+   - js/liquid-glass-v2.js 负责**折射**（SVG feDisplacementMap），仅桌面 Chromium 启用。
+
+   启用条件：<html data-glass-style="refraction">（由设置页「液态玻璃样式」切换）。
+   默认不带该属性 → 完全沿用原有 --liquid-* 变量驱动的旧玻璃，视觉零变化。
+
+   固化参数：折射强度 160 / 毛玻璃模糊 15 / 高光亮度 60（见 js/liquid-glass-v2.js）。
+   ============================================================ */
+
+/* 新材质的可调变量：仅高光亮度对外固化，其余为材质常量。
+   注意：项目已整体移除白色模式，并有防回归测试校验 CSS 中不得再出现
+   浅色主题的 --*-light 变量定义，故此处一律不使用该后缀命名。 */
+[data-glass-style="refraction"] {
+  --lgv2-tint: rgba(24, 22, 34, 0.46);
+  --lgv2-shadow: 0 14px 44px -8px rgba(8, 4, 24, 0.42);
+  --lgv2-spec: 0.6;                    /* 高光亮度 60% */
+  --lgv2-rim: linear-gradient(140deg,
+      rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.34) 30%,
+      rgba(255, 255, 255, 0.08) 52%, rgba(255, 255, 255, 0.10) 68%,
+      rgba(255, 255, 255, 0.44) 84%, rgba(255, 255, 255, 0.8));
+  /* 顶部环境高光。亮度已按 --lgv2-spec 折算进色标（0.42*0.6=0.252，0.1*0.6=0.06），
+     因为它直接作为元素自身 background 的一层使用，而不是叠在 ::after 上——
+     伪元素排在内容之后，必然画在文字之上（详见下方「顶部环境高光」说明）。 */
+  --lgv2-glow: radial-gradient(150% 100% at 16% -10%,
+      rgba(255, 255, 255, 0.252), rgba(255, 255, 255, 0.06) 42%, transparent 62%);
+  /* 内容密集的面板用更收窄的高光，同样已折算 --lgv2-spec（0.3*0.6=0.18，0.06*0.6=0.036） */
+  --lgv2-glow-narrow: radial-gradient(120% 60% at 14% -6%,
+      rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.036) 45%, transparent 68%);
+}
+
+/* ---------- 通用新材质 ----------
+   .liquid-glass 与各扩展目标共用同一套基底。背景/边框/阴影在原文件中
+   多处带 !important，故此处也需 !important + 更高特异性才能覆盖。
+
+   背景为两层：顶部环境高光 + tint。高光必须作为 background 的一层，
+   不能用 ::after 叠加（伪元素会画在内容之上，详见下方说明）。 */
+/* 注意：这里**不能**统一下 position: relative。
+   该选择器特异性为 (0,2,0)，高于 .sidebar / .dynamic-island 自身的 (0,1,0)，
+   一旦写入就会把两者的 position:fixed 静默改写为 relative：
+   - .sidebar 由全高抽屉（320x805 @ y=0）塌缩成文档流内 320x397 的短盒子（@ y=40），
+     内容被拦腰截断、遮罩层错位；
+   - .dynamic-island 失去 fixed 定位语义（本例恰好未位移，属侥幸）。
+   描边环 ::before 只需要「某个已定位祖先」即可，而 .sidebar / .dynamic-island
+   本身就是 position:fixed，.liquid-glass 在 base.css 里已是 position:relative，
+   故只有 .player-controls（全项目唯一没有 position 声明的目标）需要在下方单列补上。 */
+[data-glass-style="refraction"] .liquid-glass,
+[data-glass-style="refraction"] .dynamic-island,
+[data-glass-style="refraction"] .sidebar,
+[data-glass-style="refraction"] .player-controls {
+  background: var(--lgv2-glow), var(--lgv2-tint) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    inset 1px 0 0 rgba(255, 255, 255, 0.22),
+    inset -1px 0 0 rgba(255, 255, 255, 0.22),
+    var(--lgv2-shadow) !important;
+  /* 非 Chromium / 未启用折射时的降级毛玻璃；启用折射后由 JS 以内联
+     !important 覆盖为 url(#lgv2fN)，内联优先级高于样式表。 */
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+}
+
+/* ---------- 渐变描边环（rim light） ----------
+   用 mask 只保留 1.2px 描边区域，形成玻璃边缘的镜面反光。
+
+   background 必须带 !important：base.css 的 .liquid-glass::before 声明了
+   `background: var(--glass-highlight) !important`，而该选择器与这里特异性相同、
+   又同属样式表，普通声明会输给它——结果是 .settings-container / .discovery-modal /
+   .poster-modal-content 的描边环静默沿用旧的 --glass-highlight 渐变，
+   只有 .sidebar / .dynamic-island（无 .liquid-glass 类）用上了 --lgv2-rim。
+   「样式表 important」之间按特异性决胜，故这里补 !important 即可一致。 */
+[data-glass-style="refraction"] .liquid-glass::before,
+[data-glass-style="refraction"] .dynamic-island::before,
+[data-glass-style="refraction"] .sidebar::before,
+[data-glass-style="refraction"] .player-controls::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: auto;
+  border-radius: inherit;
+  padding: 1.2px;
+  background: var(--lgv2-rim) !important;
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: var(--lgv2-spec);
+  /* 复位旧玻璃的 mix-blend-mode，避免描边被软光混合吃掉 */
+  mix-blend-mode: normal;
+}
+
+/* ---------- 顶部环境高光 ----------
+   高光**折进元素自身的 background-image**（见上方通用新材质规则），而不是用
+   ::after 叠加。原因：伪元素在绘制顺序上排在元素内容之后，无论 z-index 是否为
+   auto，都会盖在文字之上——实测设置面板 1173 个白色文字像素 100% 被高光染色
+   （最大降幅 153/255）；给 ::after 加 z-index:-1 虽能消除染色，但元素自身不是
+   层叠上下文，高光会退到自身 tint 背景之后，亮度只剩 57.8%。
+   折进 background 则从根上不可能覆盖内容，且高光强度完整保留。
+
+   故这里把 ::after 显式关闭：refraction 模式下它已无任何作用，
+   关闭可避免它继续以 z-index:auto 盖住内容（layout.css 的
+   .dynamic-island::after 等旧高光同样在此模式下由本文件接管）。 */
+[data-glass-style="refraction"] .liquid-glass::after,
+[data-glass-style="refraction"] .dynamic-island::after,
+[data-glass-style="refraction"] .sidebar::after,
+[data-glass-style="refraction"] .player-controls::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* ---------- 逐元素微调 ---------- */
+
+/* 设置面板 / 发现弹窗：内容较多，顶部高光收窄，避免影响可读性 */
+[data-glass-style="refraction"] .settings-container,
+[data-glass-style="refraction"] .discovery-modal {
+  background: var(--lgv2-glow-narrow), var(--lgv2-tint) !important;
+}
+
+/* 侧边栏：右缘为分界线，描边环只保留右侧与上下，避免左缘出现亮边。
+   左缘亮线有两个独立来源，必须同时处理（实测逐层归因，x=0 列均值亮度）：
+     1) 描边环 ::before 的 1.2px padding 区画满一圈 → padding-left 置 0（贡献约 42.7）；
+     2) 通用材质 box-shadow 里的 `inset 1px 0 0 rgba(255,255,255,0.22)` 左内高光
+        → 需在本条覆盖 box-shadow 去掉它（贡献约 50.3，是主因）。
+   只做其一时 x=0 仍比 classic 亮 50+，两条都做才回到 classic 水平。 */
+[data-glass-style="refraction"] .sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-left: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    inset -1px 0 0 rgba(255, 255, 255, 0.22),
+    var(--lgv2-shadow) !important;
+}
+
+[data-glass-style="refraction"] .sidebar::before {
+  padding-left: 0 !important;
+}
+
+/* 播放控制条：只在上缘显示描边，贴合其「底部面板」的形态。
+   它是四个目标中唯一自身没有 position 声明的（responsive.css 只给了
+   backdrop-filter / background / border / padding），描边环 ::before 需要已定位祖先，
+   故在此单独补 position: relative。此处无需 !important：该元素本无 position 声明，
+   不存在需要压制的竞争声明。 */
+[data-glass-style="refraction"] .player-controls {
+  position: relative;
+  border: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+
+/* 灵动岛：圆形/胶囊形态，描边环与高光跟随其自身圆角 */
+[data-glass-style="refraction"] .dynamic-island {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    var(--lgv2-shadow) !important;
+}
+
+/* 分享海报：原有 ::before 是 soft-light 渐变，新材质已用描边环替代，此处不额外叠加。
+   背景需带上高光层，否则会覆盖掉通用规则里的高光（本条特异性更高）。 */
+[data-glass-style="refraction"] .poster-modal-content {
+  background: var(--lgv2-glow), var(--lgv2-tint) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+
+/* ---------- 窄屏性能降级 ----------
+   responsive.css 在 max-width:768px 下对所有玻璃元素强制
+   backdrop-filter:none（移动端性能取舍）。JS 侧同样以该断点判定不支持折射，
+   此处再补一层，确保即使 JS 未及时响应也不会在窄屏留下重滤镜。 */
+@media (max-width: 768px) {
+  [data-glass-style="refraction"] .liquid-glass,
+  [data-glass-style="refraction"] .dynamic-island,
+  [data-glass-style="refraction"] .sidebar,
+  [data-glass-style="refraction"] .player-controls {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

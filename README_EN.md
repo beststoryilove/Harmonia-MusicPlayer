@@ -46,9 +46,12 @@ The project is built with a pure front-end tech stack (HTML / CSS / Vanilla JS) 
 
 ### 🎤 Word-by-Word Lyrics (AML)
 
-- **AMLL (Apple Music-like Lyrics)** engine with word-by-word filling animation
+- **AMLL (Apple Music-like Lyrics)** engine (core 0.6.0 + lyric 1.1.0, bundled locally) with word-by-word filling animation
 - Translation / Romanization toggle
-- **TTML** advanced lyrics format support (duets, background vocals)
+- **TTML** advanced lyrics format support: duets (`ttm:agent`), background vocals (`x-bg`),
+  **Apple-style Head Sidecar translations/transliterations** (`iTunesMetadata`), **Ruby annotations** (`tts:ruby`)
+- Lyrics parsing prefers AMLL's official parsers (`parseLrcLike` / `parseYrc` / `parseQrc` / `parseTTML`),
+  covering the LRC family (LRC / LRC A2 / SPL / ESLyric) and per-platform word-level formats
 - Freely switch between Classic and AMLL modes
 - Multiple animation modes: **Visual Priority / Performance Priority / Preview**
 
@@ -172,7 +175,7 @@ Harmonia/
 | **Markup** | HTML5 |
 | **Styles** | CSS3 (Liquid Glass, Flexbox, Grid, Animation, Backdrop Filter) |
 | **Script** | Vanilla JavaScript (ES6+) / Zero dependencies |
-| **Lyrics Engine** | [@applemusic-like-lyrics/core](https://github.com/amll-dev/applemusic-like-lyrics) (ESM) |
+| **Lyrics Engine** | [@applemusic-like-lyrics/core](https://github.com/amll-dev/applemusic-like-lyrics) 0.6.0 + [lyric](https://github.com/amll-dev/applemusic-like-lyrics) 1.1.0 (bundled locally; build setup in `tools/amll-build/`) |
 | **Audio Processing** | Web Audio API (10-band EQ) |
 | **Desktop Extension** | Picture-in-Picture API / WebSocket |
 | **Icons** | [Font Awesome 6.4](https://fontawesome.com/) |

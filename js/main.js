@@ -132,8 +132,18 @@ const amBackground = document.querySelector('.am-background');
 const amLyrics = document.getElementById('amLyrics');
 const amllStatus = document.getElementById('amllStatus');
 const lyricsRendererModeRadios = document.querySelectorAll('input[name="lyricsRendererMode"]');
-const AMLL_CORE_ESM_URL = 'https://esm.sh/@applemusic-like-lyrics/core@0.5.1?bundle';
-const AMLL_LYRIC_ESM_URL = 'https://esm.sh/@applemusic-like-lyrics/lyric@1.0.1?bundle';
+/* AMLL 引擎：优先使用仓库内 vendor bundle（tools/amll-build 构建，自包含、无外部依赖）。
+   CDN 仅作兜底——实测 jsdelivr 在部分网络下不可达，故兜底列表以 esm.sh 为主。
+   版本必须与 tools/amll-build/package.json 保持一致：core 0.6.0 / lyric 1.1.0。
+   ★ 路径必须以 ./ 开头：动态 import 的说明符若不以 ./ / ../ / 协议开头，
+     会被当作裸模块说明符交给模块解析器（浏览器无 import map 时直接抛
+     "Failed to resolve module specifier"，从而静默落入 CDN 兜底）。
+   ★ core 0.5.1 → 0.6.0 为破坏性升级：calcLayout 由 (force, immediate) 两个布尔参数
+     改为单个 LayoutReason 值。相关调用点见 amllSetLyricLinesNoBurst / attemptLoad。 */
+const AMLL_VENDOR_CORE_URL = './js/vendor/amll-core.bundle.mjs';
+const AMLL_VENDOR_LYRIC_URL = './js/vendor/amll-lyric.bundle.mjs';
+const AMLL_CORE_ESM_URL = 'https://esm.sh/@applemusic-like-lyrics/core@0.6.0?bundle';
+const AMLL_LYRIC_ESM_URL = 'https://esm.sh/@applemusic-like-lyrics/lyric@1.1.0?bundle';
 const AMLL_TTML_DB_MIRROR = 'https://amlldb.bikonoo.com/ncm-lyrics/';
 const AMLL_TTML_DB_GITHUB = 'https://raw.githubusercontent.com/amll-dev/amll-ttml-db/main/ncm-lyrics/';
 const AMLL_TTML_SOURCE_KEY = 'amllTtmlSource';
@@ -290,10 +300,16 @@ if (!obj || typeof obj !== 'object') return null;
 const out = { v: 1, token: '', userId: '', dfid: '', nickname: '', pic: '' };
 for (const key of ['token', 'userId', 'dfid', 'nickname', 'pic']) {
 const val = obj[key];
-out[key] = (typeof val === 'string' && val !== 'undefined' && val !== 'null') ? val : '';
+/* 酷狗 JSON 里 userid/dfid 可能是数字（实测 data.userid=2385660761）。必须强制成字符串，
+   否则会被合并过滤器丢弃 → VIP 识别与 token 续期全部失效（实机复现：20010 request params invalid） */
+out[key] = (typeof val === 'string' && val !== 'undefined' && val !== 'null')
+? val
+: (typeof val === 'number' && Number.isFinite(val) ? String(val) : '');
 }
 if (typeof obj.issuedAt === 'number' && Number.isFinite(obj.issuedAt)) out.issuedAt = obj.issuedAt;
 if (typeof obj.lastValidAt === 'number' && Number.isFinite(obj.lastValidAt)) out.lastValidAt = obj.lastValidAt;
+if (typeof obj.tExpireTime === 'number' && Number.isFinite(obj.tExpireTime)) out.tExpireTime = obj.tExpireTime;
+if (typeof obj.lastRefreshAt === 'number' && Number.isFinite(obj.lastRefreshAt)) out.lastRefreshAt = obj.lastRefreshAt;
 return out;
 }
 function kugouCredentialMerge(prev, patch) {
@@ -304,9 +320,12 @@ const p = patch || {};
 for (const key of ['token', 'userId', 'dfid', 'nickname', 'pic']) {
 const v = p[key];
 if (typeof v === 'string' && v !== 'undefined' && v !== 'null') cleanPatch[key] = v;
+else if (typeof v === 'number' && Number.isFinite(v)) cleanPatch[key] = String(v); // 数字型 userid（酷狗原样返回）
 }
 if (typeof p.issuedAt === 'number' && Number.isFinite(p.issuedAt)) cleanPatch.issuedAt = p.issuedAt;
 if (typeof p.lastValidAt === 'number' && Number.isFinite(p.lastValidAt)) cleanPatch.lastValidAt = p.lastValidAt;
+if (typeof p.tExpireTime === 'number' && Number.isFinite(p.tExpireTime)) cleanPatch.tExpireTime = p.tExpireTime;
+if (typeof p.lastRefreshAt === 'number' && Number.isFinite(p.lastRefreshAt)) cleanPatch.lastRefreshAt = p.lastRefreshAt;
 const next = Object.assign({}, base, cleanPatch);
 return kugouCredentialNormalize(next) || next;
 }
@@ -381,7 +400,21 @@ const kugouCredentialStore = {
 read() {
 try {
 const parsed = kugouCredentialNormalize(localStorage.getItem(KUGOU_CREDENTIAL_KEY));
-if (parsed && (parsed.token || parsed.userId || parsed.dfid)) return parsed;
+if (parsed && (parsed.token || parsed.userId || parsed.dfid)) {
+/* 旧记录可能缺 userId/dfid（历史登录只写了旧键，或用户 id 是数字被丢弃）：从旧键补齐并回写 */
+if (!parsed.userId || !parsed.dfid) {
+const repaired = kugouCredentialMigrate(
+(key) => { try { return localStorage.getItem(key); } catch (e) { return null; } },
+(key) => { try { return sessionStorage.getItem(key); } catch (e) { return null; } },
+parsed
+);
+if (repaired && (repaired.userId !== parsed.userId || repaired.dfid !== parsed.dfid)) {
+try { this.write(repaired); } catch (e) { }
+return kugouCredentialNormalize(repaired) || repaired;
+}
+}
+return parsed;
+}
 } catch (e) { }
 const migrated = kugouCredentialMigrate(
 (key) => { try { return localStorage.getItem(key); } catch (e) { return null; } },
@@ -409,7 +442,11 @@ const legacyMap = {
 'kugouNickname': next.nickname || '',
 'kugouPic': next.pic || '',
 };
-for (const [k, v] of Object.entries(legacyMap)) { try { localStorage.setItem(k, v); } catch (e) { } }
+for (const [k, v] of Object.entries(legacyMap)) {
+/* 空值不覆盖旧键：历史上 write() 曾用 '' 覆盖 kugouUserId，导致重启后 userid 丢失（VIP/续期全废） */
+if (!v && localStorage.getItem(k)) continue;
+try { localStorage.setItem(k, v); } catch (e) { }
+}
 if (next.issuedAt) { try { localStorage.setItem(KUGOU_TOKEN_CACHE_KEY, String(next.issuedAt)); } catch (e) { } }
 if (next.lastValidAt) { try { localStorage.setItem('kugouTokenLastValidAt', String(next.lastValidAt)); } catch (e) { } }
 try { sessionStorage.setItem('kugouToken', next.token || ''); } catch (e) { }
@@ -471,6 +508,13 @@ const TRACK_TRANSITION_KEY = 'trackTransitionEnabled';
 const CROSSFADE_ENABLED_KEY = 'crossfadeEnabled';
 const SMART_TRANSITION_KEY = 'smartTransitionEnabled';
 const SMART_TRANSITION_MIX_KEY = 'stMixDuration';
+/* AMLL 动态背景（视觉设置）：开关 + 流动速度（0.2×–3.0×）。
+   实际渲染由 js/dynamic-bg.js 承担，本文件只负责持久化与事件桥接。 */
+const DYNAMIC_BG_ENABLED_KEY = 'dynamicBgEnabled';
+const DYNAMIC_BG_SPEED_KEY = 'dynamicBgSpeed';
+const DYNAMIC_BG_SPEED_MIN = 0.2;
+const DYNAMIC_BG_SPEED_MAX = 3;
+const DYNAMIC_BG_SPEED_DEFAULT = 1;
 /* 智能过渡参数常量：声明于顶部，避免文件后部的 st 模块 const 在设置加载阶段处于 TDZ */
 const ST_MIX_MIN = 1;             // overlap 时长下限（秒，同 Apple Music）
 const ST_MIX_MAX = 12;            // overlap 时长上限
@@ -685,7 +729,7 @@ transition:opacity 0.3s ease,visibility 0.3s ease;
 			        </div>
 			        <script>
                 // single-line desktop lyric state
-        var _words=[],_baseTime=0,_currText="",_wordWidths=[],_totalWidth=0,_wrapW=0,_isPlaying=false,_prevLineText="",_ct=0,_lastFrameTs=0,_frameAccum=0,_frameCount=0,_frameMax=0,_perfLast=Date.now(),_bgSlots=[null,null],_bgBaseTime=0;
+        var _words=[],_baseTime=0,_currText="",_wordWidths=[],_totalWidth=0,_wrapW=0,_isPlaying=false,_prevLineText="",_ct=0,_lastFrameTs=0,_frameMax=0,_perfLast=Date.now(),_bgSlots=[null,null],_bgBaseTime=0;
         var dlp=function(id){return document.getElementById(id);};
         document.getElementById("dlpPlayBtn").onclick=function(){if(window.opener&&window.opener.playButton)window.opener.playButton.click();};
         function layoutLines(noTransition){
@@ -1029,11 +1073,14 @@ transition:opacity 0.3s ease,visibility 0.3s ease;
                 }
               }
               var dt=performance.now()-t0;
-              _frameAccum+=dt;_frameCount++;_frameMax=Math.max(_frameMax,dt);
+              /* _frameMax 仅服务下一帧的节流决策（见上方 interval=(_frameMax>20)?45:33），
+                 故必须保留其「1s 窗口内取最大值」的语义：删掉重置会让一次卡顿永久锁死 45ms 节流。
+                 原先同窗口内的 _frameAccum/_frameCount 与跨窗口 postMessage({type:'__pipFrameStats'})
+                 只用于喂给一个全仓库无消费者的诊断通道（已 grep 确认无 message 监听方），一并删除。 */
+              _frameMax=Math.max(_frameMax,dt);
               var tnow=Date.now();
               if(tnow-_perfLast>=1000){
-                try{window.opener&&window.opener.postMessage({type:'__pipFrameStats',avg:(_frameAccum/_frameCount).toFixed(2),max:_frameMax.toFixed(2),count:_frameCount},'*');}catch(e){}
-                _frameAccum=0;_frameCount=0;_frameMax=0;_perfLast=tnow;
+                _frameMax=0;_perfLast=tnow;
               }
             }
           }
@@ -1068,6 +1115,10 @@ function openDesktopLyricsPip() {
 
 			        win.addEventListener('pagehide', () => {
 			          desktopLyricsPipWindow = null;
+			          /* 停止 rAF 同步链：此前只把窗口置 null，_pipSyncTick 仍以 60Hz 空转，
+			             且每次关闭→重开都会再叠一条（闭包重入）→ 泄漏。置停止位 + 取消句柄。 */
+			          _pipSyncStopped = true;
+			          if (_pipRaf) { cancelAnimationFrame(_pipRaf); _pipRaf = 0; }
 			          if (desktopLyricsPipInterval) {
 			            clearInterval(desktopLyricsPipInterval);
 			            desktopLyricsPipInterval = null;
@@ -1079,6 +1130,7 @@ function openDesktopLyricsPip() {
         syncDesktopLyricsPip();
         let _pipNextSync = 0;
         let _pipSyncStopped = false;
+        let _pipRaf = 0;   /* rAF 句柄：关闭时必须取消，否则整条链永远空转（60Hz） */
         function _pipSyncTick(){
           try {
             if (desktopLyricsPipWindow && !desktopLyricsPipWindow.closed && !_pipSyncStopped) {
@@ -1091,10 +1143,12 @@ function openDesktopLyricsPip() {
               }
             }
           } catch(_e) { /* tick swallowed */ }
-          requestAnimationFrame(_pipSyncTick);
+          // 窗口已关闭/已置停止位则不再续帧：否则关闭后仍 60Hz 空转并逐次叠加。
+          if (_pipSyncStopped || !desktopLyricsPipWindow || desktopLyricsPipWindow.closed) { _pipRaf = 0; return; }
+          _pipRaf = requestAnimationFrame(_pipSyncTick);
         }
         window.__pipLastTick = Date.now();
-        requestAnimationFrame(_pipSyncTick);
+        _pipRaf = requestAnimationFrame(_pipSyncTick);
 
         // 后备：若哨兵卡死，用 setInterval 兜底（仅在哨兵 2s 未触发时介入）
         var _pipFallback = setInterval(function(){
@@ -1386,6 +1440,56 @@ return Date.now() - issuedAt > KUGOU_TOKEN_TTL_MS;
 function markKugouTokenIssued() {
 try { localStorage.setItem(KUGOU_TOKEN_CACHE_KEY, String(Date.now())); } catch (e) { console.warn('[storage] setItem failed:', e?.message); }
 }
+/* ── 酷狗鉴权错误分级（网页版移植自客户端 HarmoniaApp/网页源码/js/main.js，双源同步）──
+   背景：旧实现把任何 status/code=152 或 msg 含「未登录」都当成「凭证失效」，
+   直接调用 triggerKugouReLogin() 删除 token —— 服务端瞬时异常/设备标识不匹配都会误清登录态。
+   现在只做分类并抛出携带 kind/payload 的错误，本地凭证一律不动；
+   重登仅由用户主动触发，或由 ensureKugouAuthOnBoot() 在确证失效且非「会话未恢复」时提示。 */
+function classifyKugouAuthError(payload) {
+const p = payload && typeof payload === 'object' ? payload : {};
+const status = Number(p.status ?? p.code ?? p.error_code ?? 0);
+const text = String(p.error_msg || p.msg || p.message || '').toLowerCase();
+const is152 = status === 152 || text.includes('152') || text.includes('未登录') || text.includes('未获服务端认可');
+const looksDfid = status === 1902 || text.includes('dfid') || text.includes('设备') || text.includes('device');
+const looksExpired = status === 1901 || status === 401 || status === 403 || text.includes('失效') || text.includes('过期') || text.includes('expired') || text.includes('invalid') || text.includes('unauthorized');
+// dfid 提示优先：设备/会话绑定错误与“过期”文案并存时按设备问题处理（如 'device changed, dfid invalid'）
+if (looksDfid) return KUGOU_AUTH_KIND_DFID_MISMATCH;
+if (looksExpired) return KUGOU_AUTH_KIND_EXPIRED;
+if (is152) return KUGOU_AUTH_KIND_TEMP;
+return KUGOU_AUTH_KIND_UNKNOWN;
+}
+function classifyKugouRequestError(error, payload) {
+if (error && error.isKugouAuthError && error.kind) return error.kind;
+if (isNetworkError(error)) return KUGOU_AUTH_KIND_NETWORK;
+return classifyKugouAuthError(payload);
+}
+function kugouAuthErrorMessage(kind) {
+switch (kind) {
+case KUGOU_AUTH_KIND_TEMP: return '酷狗凭证未获服务端认可（可能为服务端临时异常，已保留本地登录状态）';
+case KUGOU_AUTH_KIND_EXPIRED: return '酷狗凭证已失效，请重新登录';
+case KUGOU_AUTH_KIND_DFID_MISMATCH: return '酷狗登录设备标识（dfid）不匹配，正在重新校验';
+case KUGOU_AUTH_KIND_NETWORK: return '网络请求失败（网络或服务端无响应），请检查网络后重试';
+default: return '酷狗服务异常，请稍后重试';
+}
+}
+function makeKugouAuthError(kind, message, payload) {
+const err = new Error(message || kugouAuthErrorMessage(kind));
+err.kind = kind;
+err.isKugouAuthError = true;
+if (payload) err.payload = payload;
+return err;
+}
+/* 当日自动领取额度是否该被「烧掉」：只有确证「今天已领/次数用完」才算，
+   瞬时鉴权/网络/服务端异常一律不记，留给补偿重试（见 runKugouVipClaimAndUpgrade 的 catch）。 */
+function shouldMarkKugouVipDayAttempted(error, payload) {
+if (!error) return true;
+if (error && error.isKugouAuthError) return error.kind === KUGOU_AUTH_KIND_UNKNOWN;
+const kind = classifyKugouRequestError(error, payload);
+if (kind !== KUGOU_AUTH_KIND_UNKNOWN) return false;
+const text = String((payload && (payload.error_msg || payload.msg)) || error.message || '').toLowerCase();
+if ((text.includes('次数') || text.includes('领完')) && (text.includes('用完') || text.includes('已领') || text.includes('明天') || text.includes('领完'))) return true;
+return false;
+}
 async function wrappedFetchWithRetry(input, init, retries = 2) {
 let lastError;
 for (let i = 0; i <= retries; i++) {
@@ -1526,7 +1630,25 @@ btn.disabled = !!loading;
 });
 if (kugouVipRefreshBtn) kugouVipRefreshBtn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> 处理中...' : '<i class="fas fa-sync-alt"></i> 刷新状态';
 }
-const KUGOU_API_BASE = 'https://api-kugou.harmoniamusicplayer.dpdns.org';
+/* 临时调试开关：把客户端指向本地 KuGouMusicApi（默认行为不变，永远走线上）。
+   DevTools 执行 localStorage.setItem('KUGOU_API_BASE_OVERRIDE', 'http://127.0.0.1:3000') 即切到本地；
+   localStorage.removeItem('KUGOU_API_BASE_OVERRIDE') 即恢复线上。 */
+const KUGOU_API_BASE = (() => {
+try {
+const override = localStorage.getItem('KUGOU_API_BASE_OVERRIDE');
+return override ? String(override).replace(/\/+$/, '') : 'https://api-kugou.harmoniamusicplayer.dpdns.org';
+} catch (e) {
+return 'https://api-kugou.harmoniamusicplayer.dpdns.org';
+}
+})();
+/* 是否为本项目的酷狗 API 请求：线上域名含 api-kugou；本地调试把 base 覆盖成 127.0.0.1 时，
+   需按 base 前缀判断，否则 Authorization 注入 / 鉴权分类 / 滑动续期都会被整段跳过（实测表现为 20017）。 */
+function isKugouApiUrl(url) {
+const u = String(url || '');
+if (!u) return false;
+if (u.includes('api-kugou')) return true;
+return !!(typeof KUGOU_API_BASE === 'string' && KUGOU_API_BASE && u.startsWith(KUGOU_API_BASE));
+}
 function buildKugouApiUrl(path, params = {}, includeToken = true, skipTimestamp = true) {
 const url = new URL(`${KUGOU_API_BASE}${path}`);
 Object.entries(params).forEach(([key, value]) => {
@@ -1662,6 +1784,8 @@ return payload;
 }
 let kugouVipAutoLoopTimer = null;
 let kugouVipAutoLoopActive = false;
+/* VIP 当日领取的补偿重试计数：每轮 start 清零，上限 3 次（见 runKugouVipClaimAndUpgrade 的 catch） */
+let kugouVipTempRetryCount = 0;
 async function runKugouVipClaimAndUpgrade({ manual = false, isAutoLoop = false } = {}) {
 if (kugouVipOperationInProgress) {
 if (manual) showError('VIP 流程正在执行，请勿重复点击', 2200);
@@ -1716,13 +1840,186 @@ showError('已完成操作，但暂未看到 SVIP 生效，过一会儿再点“
 return analysis;
 }
 } catch (error) {
+/* 只有确证「今天已领/次数用完」才烧掉当天额度；瞬时鉴权/网络/服务端异常保留额度并补偿重试 */
+const _markDay = shouldMarkKugouVipDayAttempted(error, error && error.payload);
+if (_markDay) {
 localStorage.setItem(KUGOU_VIP_LAST_AUTO_DATE_KEY, getLocalDateKey());
+}
 pushProgress(`出错了：${error.message}`);
 if (manual) showError(`VIP 操作失败：${error.message}`, 4200);
+/* 认证/网络/服务端临时失败不烧当天额度；后台失败安排一次 30s 补偿重试（上限 3 次） */
+if (!_markDay && !manual && kugouVipTempRetryCount < 3) {
+kugouVipTempRetryCount += 1;
+if (kugouVipAutoLoopTimer) clearTimeout(kugouVipAutoLoopTimer);
+kugouVipAutoLoopTimer = setTimeout(() => {
+kugouVipAutoLoopTimer = null;
+runKugouVipClaimAndUpgrade({ manual: false, isAutoLoop: true });
+}, 30 * 1000);
+}
 return null;
 } finally {
 kugouVipOperationInProgress = false;
 setKugouVipControlsLoading(false);
+}
+}
+/* 非破坏性重登提示：只弹提示并切到设置-账户页，绝不删除本地凭证。
+   旧实现走 triggerKugouReLogin()（会清 token/userId/昵称/头像），这是「误清登录态」的主因。 */
+function promptKugouRelogin(message) {
+const _msg = message || '请先在设置-账户中登录酷狗账号';
+showError(_msg, 3200);
+try {
+settingsModalOverlay.classList.add('active');
+document.body.classList.add('settings-modal-open');
+} catch (_) { }
+const accountTab = document.querySelector('.settings-tab[data-tab="account"]') || document.querySelector('.nav-item[data-tab="account"]');
+if (accountTab) accountTab.click();
+try { updateTimeDisplayPreview(); } catch (_) { }
+updateKugouAccountUI();
+}
+/* 启动静默校验：有 token 时探一次服务端，按分类决定「保留并重试」还是「提示重登」。
+   关键规则（与客户端一致）：
+   1) 校验失败一律不清凭证；
+   2) 判定为「失效」但凭证最近 24h 内签发/校验过 → 视为服务端会话未恢复，降级为保留 + 30s 重试，
+      不提示重登（服务端未下发持久 Cookie 时，重开浏览器后「失效」是常态而非真失效）；
+   3) 其余失败（网络/服务端异常/临时 152/设备不匹配）同样保留 + 30s 重试。 */
+/* ── 酷狗 token 续期（滑动 30 天）──────────────────────────────────────
+   实测依据（.tmp-kugou-refresh-spike.md）：
+   - GET {KUGOU_API_BASE}/login/token + 头 Authorization: token=…;userid=… → 200 / status:1；
+   - 不需要客户端保存登录时的 t1（服务端设备标识固定，t1 自造）；
+   - 返回的 token 与输入**完全相同**，酷狗只把 t_expire_time 重算为「当下 + 30 天」；
+   - userid 硬性必填，缺失时酷狗返回 error_code 20018。
+   本函数只负责「发请求 + 校验 + 写回」；何时调用由调用点决定（见 maybeRefreshKugouToken）。 */
+const KUGOU_REFRESH_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000;        // 6h 防抖
+const KUGOU_REFRESH_EXPIRE_MARGIN_MS = 10 * 24 * 60 * 60 * 1000;  // 剩余 <10 天就续
+const KUGOU_REFRESH_LEGACY_AGE_MS = 20 * 24 * 60 * 60 * 1000;     // 无权威到期时间时的回退阈值
+let kugouRefreshInFlight = null;
+let kugouRefreshLastAttemptAt = 0;
+let kugouRefreshBackoffMs = KUGOU_REFRESH_MIN_INTERVAL_MS;
+
+/* 纯函数：是否值得续期。cred.tExpireTime 单位为秒（酷狗原样返回） */
+function kugouRefreshNeededFrom(cred, now) {
+const c = cred || {};
+if (!c.token || !c.userId) return false;            // 缺 userid 必然 20018，不发请求
+if (typeof c.tExpireTime === 'number' && c.tExpireTime > 0) {
+return c.tExpireTime * 1000 - now < KUGOU_REFRESH_EXPIRE_MARGIN_MS;
+}
+const anchor = Number(c.lastRefreshAt || c.issuedAt || 0);   // 旧记录没有权威到期时间
+return anchor > 0 && now - anchor > KUGOU_REFRESH_LEGACY_AGE_MS;
+}
+
+function kugouRefreshNeeded() {
+return kugouRefreshNeededFrom(kugouCredentialStore.read(), Date.now());
+}
+
+async function refreshKugouToken() {
+if (kugouRefreshInFlight) return kugouRefreshInFlight;          // 单飞
+const cred = kugouCredentialStore.read();
+if (!cred.token || !cred.userId) return { ok: false, kind: 'no_credential' };
+const now = Date.now();
+if (now - kugouRefreshLastAttemptAt < kugouRefreshBackoffMs) return { ok: false, kind: 'throttled' };
+kugouRefreshLastAttemptAt = now;
+kugouRefreshInFlight = (async () => {
+try {
+/* _kugouRefreshRetried 必须带：防止 wrappedFetch 鉴权分支对续期请求本身再次触发续期 */
+const res = await wrappedFetch(`${KUGOU_API_BASE}/login/token?_t=${Date.now()}`, {
+skipIslandStatus: true,
+_kugouRefreshRetried: true,
+});
+const payload = await res.json().catch(() => null);
+if (!payload || Number(payload.status) !== 1) {
+const kind = classifyKugouAuthError(payload);
+kugouRefreshBackoffMs = Math.min(kugouRefreshBackoffMs * 2, 24 * 60 * 60 * 1000);
+try { console.warn('[kugou-refresh] failed:', kind, payload && payload.error_code); } catch (_) { }
+return { ok: false, kind, payload };
+}
+const data = payload.data || {};
+const nextToken = typeof data.token === 'string' && data.token ? data.token : cred.token;
+const nextUserId = String(data.userid || cred.userId);
+const nextExpire = Number(data.t_expire_time || 0);
+kugouCredentialStore.write(Object.assign(
+{ token: nextToken, userId: nextUserId, lastRefreshAt: Date.now() },
+nextExpire > 0 ? { tExpireTime: nextExpire } : {}
+));
+kugouToken = nextToken;                       // 同步内存态（wrappedFetch 用它拼 Authorization）
+kugouUserId = nextUserId;
+kugouRefreshBackoffMs = KUGOU_REFRESH_MIN_INTERVAL_MS;
+try { console.info('[kugou-refresh] ok:', JSON.stringify({ exp: nextExpire, days: nextExpire ? (nextExpire * 1000 - Date.now()) / 86400000 : null })); } catch (_) { }
+try { if (typeof refreshKugouVipStatus === 'function') refreshKugouVipStatus({ silent: true }); } catch (_) { }
+return { ok: true, tExpireTime: nextExpire };
+} catch (error) {
+const kind = classifyKugouRequestError(error, error && error.payload);
+kugouRefreshBackoffMs = Math.min(kugouRefreshBackoffMs * 2, 24 * 60 * 60 * 1000);
+try { console.warn('[kugou-refresh] error:', kind, error && error.message); } catch (_) { }
+return { ok: false, kind, error };
+} finally {
+kugouRefreshInFlight = null;
+}
+})();
+return kugouRefreshInFlight;
+}
+
+/* 续期的唯一调用入口：先判断值不值得续，再发请求；任何失败都不抛异常、不动凭证 */
+async function maybeRefreshKugouToken(reason) {
+try {
+if (!kugouRefreshNeeded()) return false;
+const r = await refreshKugouToken();
+if (r && r.ok) { try { console.info('[kugou-refresh] triggered by', reason); } catch (_) { } }
+return !!(r && r.ok);
+} catch (_) {
+return false;
+}
+}
+
+async function ensureKugouAuthOnBoot() {
+if (!kugouToken) return false;
+/* 启动时先看要不要续期：临近到期（<10 天）就静默续一次，再走既有 VIP 校验 */
+await maybeRefreshKugouToken('boot');
+try {
+try { console.info('[kugou-auth] boot:', JSON.stringify({ t: !!kugouToken, d: !!kugouDfid, u: !!kugouUserId, sessT: !!sessionStorage.getItem('kugouToken'), lsT: !!localStorage.getItem('kugouToken'), lastValidAt: Number(localStorage.getItem('kugouTokenLastValidAt') || 0) })); } catch (_) { }
+try {
+const detail = await fetchKugouVipDetail();
+const analysis = analyzeKugouVipDetail(detail);
+setKugouVipStatusUI(analysis, 'VIP 状态已同步：' + new Date().toLocaleString() + '。');
+if (kugouAuthBootRetryTimer) { clearTimeout(kugouAuthBootRetryTimer); kugouAuthBootRetryTimer = null; }
+scheduleKugouVipAutoRun(false);
+kugouAuthLastValidAt = Date.now();
+try { localStorage.setItem('kugouTokenLastValidAt', String(kugouAuthLastValidAt)); } catch (_) { }
+return true;
+} catch (error) {
+const kind = classifyKugouRequestError(error, error && error.payload);
+const cached = restoreKugouVipStatusFromCache('实时校验失败：' + error.message + '。已保留上次识别结果。');
+if (kind === KUGOU_AUTH_KIND_EXPIRED) {
+let lastGood = Number(kugouAuthLastValidAt || 0);
+const issuedAt = Number(localStorage.getItem(KUGOU_TOKEN_CACHE_KEY) || 0);
+if (issuedAt > lastGood) lastGood = issuedAt;
+const freshSessionArtifact = lastGood > 0 && (Date.now() - lastGood) < 24 * 60 * 60 * 1000;
+if (freshSessionArtifact) {
+setKugouVipStatusUI(cached, '服务端会话未恢复（可能因重启丢失登录会话），已保留登录状态，稍后自动重试。');
+if (!kugouAuthBootRetryTimer) {
+kugouAuthBootRetryTimer = setTimeout(() => {
+kugouAuthBootRetryTimer = null;
+ensureKugouAuthOnBoot();
+}, 30 * 1000);
+}
+} else {
+setKugouVipStatusUI(cached, '酷狗凭证已失效，请在设置-账户重新登录。');
+promptKugouRelogin('酷狗凭证已失效，请重新登录');
+}
+} else {
+setKugouVipStatusUI(cached, '服务端暂不可用：' + error.message + '。已保留登录状态，稍后自动重试。');
+if (!kugouAuthBootRetryTimer) {
+kugouAuthBootRetryTimer = setTimeout(() => {
+kugouAuthBootRetryTimer = null;
+ensureKugouAuthOnBoot();
+}, 30 * 1000);
+}
+}
+return false;
+}
+} catch (e) {
+/* 启动路径不 await 调用，这里兜底避免未处理的 Promise 拒绝 */
+console.warn('[kugou-auth] boot check failed:', e && e.message);
+return false;
 }
 }
 function initKugouQualityAndVipSettings() {
@@ -1738,7 +2035,8 @@ kugouVipRefreshBtn.addEventListener('click', () => refreshKugouVipStatus());
 }
 if (kugouToken) {
 restoreKugouVipStatusFromCache('已读取本地 VIP 识别结果，正在同步最新状态...');
-refreshKugouVipStatus({ silent: true });
+/* 走分级校验：失败不清凭证，临时失败/会话未恢复会自动 30s 重试 */
+ensureKugouAuthOnBoot();
 } else {
 setKugouVipStatusUI(null, '请先登录酷狗账号。');
 }
@@ -1763,6 +2061,7 @@ clearTimeout(kugouVipAutoLoopTimer);
 kugouVipAutoLoopTimer = null;
 }
 kugouVipAutoLoopActive = false;
+kugouVipTempRetryCount = 0;
 }
 let currentPage = 1;
 let currentSearchResults = [];
@@ -1801,6 +2100,12 @@ let playlistOrder = [];       // 播放列表的当前顺序（ID数组）
 let playlistSelected = new Set(); // 播放列表中勾选的歌曲ID集合
 let isPlaylistDeleteMode = false; // 是否处于播放列表批量删除模式
 let isMobileLyricsFullscreen = false;
+/* ── 无歌词/纯音乐时播放卡片平滑居中（设计：docs/superpowers/specs/2026-09-30-no-lyrics-player-centering-design.md）── */
+let lyricsAvailable = true;                 // 当前歌曲是否有有效歌词行（由 renderAMLLLines 漏斗写入）
+let emptyLyricsPanelRequestedFor = null;    // 在哪首「无歌词」歌曲上手动点开过面板；存歌曲 id，换歌自动失效
+let lyricsPanelVisible = !isMobile();       // 面板「逻辑上」是否可见，由 syncLyricsPanel 唯一写入
+let _lyricsPanelHideTimer = 0;
+const LYRICS_PANEL_HIDE_DELAY = 220;        // 与 css/player.css 的 .rightcontent 淡出时长对齐
 const PLAYLISTS_KEY = 'harmoniaPlaylists';
 let playlists = loadPlaylists();
 let activePlaylistId = null;            // 当前打开的歌单 ID
@@ -1808,6 +2113,10 @@ let sidebarItemMenuTarget = null;       // "加入歌单"菜单指向的歌曲
 let activeSession = null;  // { name, source, tracks } | null
 const TIME_DISPLAY_MODE_KEY = 'timeDisplayMode';
 let timeDisplayMode = localStorage.getItem(TIME_DISPLAY_MODE_KEY) || 'remaining';
+/* 液态玻璃样式：classic = 原有 --liquid-* 变量驱动的旧玻璃（默认，升级后视觉不变）；
+   refraction = 新液态玻璃（SVG 边缘折射 + 新材质，参数固化 160/15/60）。 */
+const LIQUID_GLASS_STYLE_KEY = 'liquidGlassStyle';
+let liquidGlassStyle = localStorage.getItem(LIQUID_GLASS_STYLE_KEY) === 'refraction' ? 'refraction' : 'classic';
 function playPlaylistAsSession(sessionName, sessionTracks, source, startIndex) {
 if (!sessionTracks || sessionTracks.length === 0) return;
 const normSource = (source === 'kugou') ? 'kugou' : 'netease';
@@ -1969,6 +2278,11 @@ let playerControlsLayout = 'classic';
 let kugouToken = sessionStorage.getItem('kugouToken') || localStorage.getItem('kugouToken') || '';
 let kugouUserId = sessionStorage.getItem('kugouUserId') || localStorage.getItem('kugouUserId') || '';
 let kugouDfid = sessionStorage.getItem('kugouDfid') || '';
+/* ── 酷狗登录态分级（双源同步：HarmoniaApp/网页源码/js/main.js）──
+   滑动续期时间戳：鉴权请求成功即刷新（10 分钟节流），代替旧的「30 天硬 TTL 直接判死并清凭证」。
+   kugouAuthBootRetryTimer：启动静默校验失败后的 30s 重试句柄。 */
+let kugouAuthLastValidAt = Number(localStorage.getItem('kugouTokenLastValidAt') || 0);
+let kugouAuthBootRetryTimer = null;
 let collapsedTextAnimationQueue = Promise.resolve();
 let currentCollapsedTextAnimationTimer = null;
 let sidebarIndexCache = { playlist: new Map(), favorites: new Map(), history: new Map() };
@@ -2523,6 +2837,31 @@ rebuildLyricsMetrics(amLyricsData);
 refreshCurrentLyricsAnimation();
 });
 }
+/* 液态玻璃样式切换：classic ↔ refraction
+   - 通过 <html data-glass-style> 让 css/liquid-glass-v2.css 生效（材质层）；
+   - 折射层由 js/liquid-glass-v2.js 的引擎按需注册/拆除；
+   - 引擎缺失（脚本未加载）时仅切换材质，不报错。 */
+function applyLiquidGlassStyle(style = 'classic', persist = true) {
+liquidGlassStyle = style === 'refraction' ? 'refraction' : 'classic';
+const engine = window.HarmoniaLiquidGlassV2;
+if (liquidGlassStyle === 'refraction') {
+document.documentElement.setAttribute('data-glass-style', 'refraction');
+if (engine) engine.enable();
+} else {
+document.documentElement.removeAttribute('data-glass-style');
+if (engine) engine.disable();
+}
+document.querySelectorAll('input[name="liquidGlassStyle"]').forEach(radio => {
+radio.checked = radio.value === liquidGlassStyle;
+});
+if (persist) {
+localStorage.setItem(LIQUID_GLASS_STYLE_KEY, liquidGlassStyle);
+}
+/* 设置面板本身是玻璃元素且切换时正显示：等一帧让其尺寸稳定后补建位移图 */
+if (liquidGlassStyle === 'refraction' && engine) {
+requestAnimationFrame(() => engine.flush());
+}
+}
 function getCollapsedIslandBaseWidth() {
 return window.innerWidth <= 768 ? 160 : 180;
 }
@@ -2724,7 +3063,7 @@ const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 finalInit.signal = finalInit.signal
 ? combineSignals(finalInit.signal, controller.signal)
 : controller.signal;
-if (urlStr.includes('api-kugou')) {
+if (isKugouApiUrl(urlStr)) {
 finalInit.credentials = 'include';
 finalInit.mode = 'cors';
 finalInit.cache = 'no-store';
@@ -2737,12 +3076,8 @@ finalInit.headers = {
 'Authorization': 'token=' + kugouToken + (kugouUserId ? ';userid=' + kugouUserId : '')
 } : {})
 };
-if (kugouToken && isKugouTokenExpired()) {
-clearTimeout(timeoutId);
-triggerKugouReLogin();
-islandEnd(false);
-throw new Error('酷狗凭证已过期，请重新登录');
-}
+/* 不再用 30 天硬 TTL 判死：本地时间戳无法证明服务端已失效，且服务端不下发持久 Cookie 时
+   「重启后失效」多为会话未恢复。真伪交给下一次 api-kugou 请求回答（见下方分类 + 滑动续期）。 */
 }
 let response;
 try {
@@ -2757,15 +3092,29 @@ throw new Error(`网络请求失败（${reason}），请检查网络后重试`);
 }
 throw error;
 }
-if (urlStr.includes('api-kugou')) {
+if (isKugouApiUrl(urlStr)) {
+// 读取小响应体做鉴权错误分类；大响应（搜索/歌词等）不整体解析，避免双解析开销
 const _klen = parseInt(response.headers.get('content-length') || '0', 10);
-if (!_klen || _klen < 51200) {
+if (!_klen || _klen < 64 * 1024) {
 const cloned = response.clone();
 const data = await cloned.json().catch(() => null);
-if (data && (data.status === 152 || data.code === 152 || (data.msg && data.msg.includes('未登录')))) {
-triggerKugouReLogin();
+if (data) {
+const kind = classifyKugouAuthError(data);
+if (kind === KUGOU_AUTH_KIND_TEMP || kind === KUGOU_AUTH_KIND_EXPIRED || kind === KUGOU_AUTH_KIND_DFID_MISMATCH) {
+/* 分类后只抛携带 kind/payload 的鉴权错误，一律不清本地凭证（重登仅由用户主动触发） */
 islandEnd(false);
-throw new Error('酷狗凭证已失效，请重新登录');
+/* 反应式续期：凭证报错先试续一次，成功就用（同值的）新 token 重放原请求一次。
+   _kugouRefreshRetried 保证每请求只重放一次，且续期请求自身不会再触发续期。
+   islandStart/islandEnd 已在本层配平，重放走内层 wrappedFetch 自行计数。 */
+if ((kind === KUGOU_AUTH_KIND_TEMP || kind === KUGOU_AUTH_KIND_EXPIRED) && !(init && init._kugouRefreshRetried)) {
+const refreshResult = await refreshKugouToken().catch(() => null);
+if (refreshResult && refreshResult.ok) {
+return wrappedFetch(input, Object.assign({}, init, { _kugouRefreshRetried: true }));
+}
+}
+try { console.warn('[kugou-auth] classify:', kind, String(urlStr).slice(0, 80)); } catch (_) { }
+throw makeKugouAuthError(kind, kugouAuthErrorMessage(kind), data);
+}
 }
 }
 }
@@ -2773,6 +3122,14 @@ if (!response.ok) {
 islandEnd(false);
 } else {
 islandEnd(true);
+// 滑动续期：鉴权请求成功即记住最近有效时间（10 分钟节流），不再用 30 天硬 TTL 判死
+if (isKugouApiUrl(urlStr) && kugouToken) {
+const _now = Date.now();
+if (_now - (kugouAuthLastValidAt || 0) > 10 * 60 * 1000) {
+kugouAuthLastValidAt = _now;
+try { localStorage.setItem('kugouTokenLastValidAt', String(_now)); } catch (e) { console.warn('[storage] setItem failed:', e?.message); }
+}
+}
 }
 return response;
 }
@@ -2782,6 +3139,126 @@ const c = new AbortController();
 s1.addEventListener('abort', () => c.abort(s1.reason), { once: true });
 s2.addEventListener('abort', () => c.abort(s2.reason), { once: true });
 return c.signal;
+}
+/* ── 无歌词/纯音乐时播放卡片平滑居中 ────────────────────────────────
+   设计：docs/superpowers/specs/2026-09-30-no-lyrics-player-centering-design.md
+   规则：歌词面板不可见 ⟺ 播放卡片居中（仅宽屏非移动端）。
+   动画只动 transform + opacity（见 css/player.css），不动几何属性。 */
+
+/* 居中布局是否生效：与 responsive.css 的 768px 断点、isMobile() 的 UA 判定同时对齐 */
+function isPlayerCardCenterSupported() {
+return !isMobile() && window.innerWidth > 768;
+}
+function prefersReducedMotion() {
+try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; }
+}
+/* 占位文本（去空白后整行完全相等；逗号全半角统一） */
+const LYRICS_PLACEHOLDER_TEXTS = new Set([
+'纯音乐', '纯音乐,请欣赏', '纯音乐请欣赏', '请欣赏',
+'暂无歌词', '暂无逐字歌词', '无歌词', '没有歌词',
+'此歌曲为没有填词的纯音乐', '此歌曲为没有填词的纯音乐,请您欣赏',
+'该歌曲为纯音乐', '本歌曲为纯音乐', '这首歌是纯音乐'
+]);
+/* 取一行的探测文本：去所有空白（含全角空格）并把全角逗号归一为半角 */
+function lyricProbeText(line) {
+let text = '';
+try { text = lineTextFromAMLL(line) || ''; } catch (_) { text = ''; }
+return String(text).replace(/[\s\u3000]+/g, '').replace(/，/g, ',');
+}
+/* 是否存在「有效歌词行」：空数组 / 全空白 / 纯占位文本 → 无歌词。
+   刻意不做「行数阈值」启发式——单行歌词是合法作品。
+   刻意不用「包含子串」匹配——正文里出现「纯音乐」三个字不应被判为占位。 */
+function hasEffectiveLyricLines(lines) {
+if (!Array.isArray(lines) || lines.length === 0) return false;
+for (let i = 0; i < lines.length; i++) {
+const t = lyricProbeText(lines[i]);
+if (!t) continue;
+if (/^instrumental/i.test(t)) continue;
+if (LYRICS_PLACEHOLDER_TEXTS.has(t)) continue;
+return true;
+}
+return false;
+}
+/* 状态派生（纯函数，零 DOM，供测试直接覆盖） */
+function decideLyricsPanelState(input) {
+const supported = !!input.supported;
+/* 窄桌面窗口（!supported）保持既有行为：面板显隐只看用户意图，
+   仍会显示「暂无歌词」，避免在非居中布局下引入无谓的面板自动隐藏 */
+const panelVisible = supported
+? (!!input.lyricsVisible && (!!input.lyricsAvailable || !!input.emptyPanelRequested))
+: !!input.lyricsVisible;
+return { panelVisible, centered: supported && !panelVisible };
+}
+/* 实测位移量并写入 CSS 变量。
+   注意：transform 不影响 offsetLeft/offsetWidth，因此动画任何时刻测量都稳定。
+   + clientLeft 把边框宽度算进中线（≥769px 下 .main-player 的 padding 为 0）。 */
+function measureCardCenterShift() {
+const mainPlayer = qs('.main-player');
+if (!mainPlayer) return 0;
+const card = mainPlayer.querySelector('.player-card');
+if (!card) return 0;
+const shift = Math.round(
+mainPlayer.clientLeft + mainPlayer.clientWidth / 2 - (card.offsetLeft + card.offsetWidth / 2)
+);
+mainPlayer.style.setProperty('--card-center-shift', shift + 'px');
+return shift;
+}
+/* 面板显隐 + 居中态的唯一出口。
+   options.immediate: 跳过过渡（首帧/初始化用） */
+function syncLyricsPanel(options = {}) {
+if (!rightcontent) return;
+const { immediate = false } = options;
+/* 移动端：完全维持既有行为，一个 class 都不碰 */
+if (isMobile()) { lyricsPanelVisible = !!lyricsVisible; return; }
+
+const supported = isPlayerCardCenterSupported();
+const emptyPanelRequested = emptyLyricsPanelRequestedFor !== null
+&& emptyLyricsPanelRequestedFor === currentPlayingId;
+const { panelVisible, centered } = decideLyricsPanelState({
+supported, lyricsVisible, lyricsAvailable, emptyPanelRequested
+});
+const wasPanelVisible = lyricsPanelVisible;
+lyricsPanelVisible = panelVisible;
+
+const mainPlayer = qs('.main-player');
+clearTimeout(_lyricsPanelHideTimer);
+
+if (panelVisible) {
+const wasHidden = rightcontent.classList.contains('hidden');
+rightcontent.classList.remove('hidden');
+/* 先摘 .hidden，再强制一次重排，最后才摘居中态 —— 否则没有可过渡的起点 */
+if (wasHidden) void rightcontent.offsetWidth;
+document.body.classList.remove('player-card-centered');
+if (mainPlayer) mainPlayer.style.setProperty('--card-center-shift', '0px');
+if (!wasPanelVisible) {
+setLyricsBtnIcon(true);
+LYRICS_OFFSET = calculateLyricsOffset();
+resizeAMLLPlayer();
+}
+return;
+}
+
+/* 面板不可见 */
+if (centered && mainPlayer) {
+measureCardCenterShift();
+document.body.classList.add('player-card-centered');
+} else {
+document.body.classList.remove('player-card-centered');
+if (mainPlayer) mainPlayer.style.setProperty('--card-center-shift', '0px');
+}
+if (wasPanelVisible) {
+setLyricsBtnIcon(false);
+lyricsToggleBtn.style.background = '';
+lyricsToggleBtn.style.color = '';
+}
+const delay = (immediate || prefersReducedMotion()) ? 0 : LYRICS_PANEL_HIDE_DELAY;
+if (delay === 0) rightcontent.classList.add('hidden');
+else _lyricsPanelHideTimer = setTimeout(() => rightcontent.classList.add('hidden'), delay);
+}
+/* 歌词渲染漏斗的统一挂钩 */
+function updateLyricsAvailability(lines) {
+lyricsAvailable = hasEffectiveLyricLines(lines);
+syncLyricsPanel();
 }
 function toggleLyrics() {
 if (isMobile()) {
@@ -2793,21 +3270,17 @@ rightcontent.classList.add('hidden');
 toggleMobileLyricsFullscreen();
 }
 } else {
-lyricsVisible = !lyricsVisible;
-if (lyricsVisible) {
-rightcontent.classList.remove('hidden');
-setLyricsBtnIcon(true);
-LYRICS_OFFSET = calculateLyricsOffset();
-if (amLyricsData.length > 0 && lastLyric >= 0) {
-UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
-}
-resizeAMLLPlayer();
+/* 判定依据必须是「面板实际是否可见」（lyricsPanelVisible），
+   不能读 lyricsVisible —— 无歌词时面板自动隐藏但 lyricsVisible 仍为 true，会翻转错 */
+if (lyricsPanelVisible) {
+lyricsVisible = false;
+emptyLyricsPanelRequestedFor = null;
 } else {
-rightcontent.classList.add('hidden');
-setLyricsBtnIcon(false);
-lyricsToggleBtn.style.background = '';
-lyricsToggleBtn.style.color = '';
+lyricsVisible = true;
+/* 无歌词时手动点开：面板带「暂无歌词」占位出来，按钮不会变成死 UI */
+emptyLyricsPanelRequestedFor = lyricsAvailable ? null : currentPlayingId;
 }
+syncLyricsPanel();
 }
 }
 function toggleMobileLyricsFullscreen() {
@@ -3776,12 +4249,40 @@ let dragStartY = 0;
 let isTouchDragging = false;
 let touchDraggedItem = null;
 let activeDraggableItems = [];
+/* 触摸拖拽几何缓存：touchmove 里先写 transform 再 getBoundingClientRect()，会让浏览器
+   在每次事件中强制同步布局；随后对每个列表项再读一次 rect → 单个 touchmove N+1 次强制回流。
+   改为在 touchstart 一次性量好所有项的位置/高度（此后只做纯算术），并把上一轮写入的
+   ±5px 视觉提示位移记在 __dragHint 上，使命中判定与改动前逐项等价（测量时机变了，输入值不变）。
+   __dragRect/__dragHint 只在拖拽期间存在，结束时清空。 */
+let touchDragItems = [];
+let touchLastDeltaY = 0;   // 最近一次 touchmove 的位移，供 touchend 复用（免去再读布局）
+const cacheTouchDragRects = (items) => {
+touchDragItems = items;
+items.forEach(item => {
+const r = item.getBoundingClientRect();
+/* 减去当前已施加的拖拽位移，使缓存 top 恒为「未施加拖拽 transform 的静态布局顶边」。 */
+item.__dragRect = { top: r.top - (item.__dragHint || 0), height: r.height };
+item.__dragHint = item.__dragHint || 0;
+});
+};
+const ensureTouchDragRects = () => {
+/* 仅在缓存失效（未量过，或列表已被重渲染导致节点脱离文档）时补量，避免每帧重复测量 */
+if (!touchDragItems.length || !touchDragItems[0].isConnected) {
+const fresh = getDraggableItems();
+if (fresh.length) activeDraggableItems = fresh;
+cacheTouchDragRects(activeDraggableItems.length ? activeDraggableItems : fresh);
+}
+return touchDragItems;
+};
 const getDraggableItems = () => Array.from(playlistItems.querySelectorAll('.draggable-item'));
 const clearDragState = (items = activeDraggableItems) => {
 items.forEach(item => {
 item.classList.remove('drag-over', 'dragging');
 item.style.transform = '';
+delete item.__dragRect;
+item.__dragHint = 0;
 });
+touchDragItems = [];
 };
 playlistItems.addEventListener('dragstart', handleDragStart);
 playlistItems.addEventListener('dragover', handleDragOver);
@@ -3870,8 +4371,11 @@ const touch = e.touches[0];
 e.preventDefault();
 touchDraggedItem = item;
 dragStartY = touch.clientY;
+touchLastDeltaY = 0;
 draggedIndex = parseInt(item.dataset.displayIndex, 10);
 isTouchDragging = true;
+/* 一次性量好全部项的几何（此时未写入任何 transform，测量值即静态布局真值） */
+cacheTouchDragRects(activeDraggableItems);
 touchDraggedItem.classList.add('dragging');
 touchDraggedItem.style.transform = 'translateY(0)';
 }
@@ -3880,38 +4384,49 @@ if (!isTouchDragging || !touchDraggedItem) return;
 e.preventDefault();
 const touch = e.touches[0];
 const deltaY = touch.clientY - dragStartY;
+touchLastDeltaY = deltaY;
 touchDraggedItem.style.transform = `translateY(${deltaY}px)`;
-const items = activeDraggableItems.length ? activeDraggableItems : getDraggableItems();
-const currentRect = touchDraggedItem.getBoundingClientRect();
-const currentCenterY = currentRect.top + currentRect.height / 2;
+const items = ensureTouchDragRects();
+const dragRect = touchDraggedItem.__dragRect;
+if (!dragRect) return;
+/* 全程零布局读取：被拖项中心 = 缓存 top + 当前位移 + 高度/2（translateY 只平移不改高度）。 */
+const currentCenterY = dragRect.top + deltaY + dragRect.height / 2;
 items.forEach(item => {
 if (item === touchDraggedItem) return;
-const itemRect = item.getBoundingClientRect();
-const itemCenterY = itemRect.top + itemRect.height / 2;
+const itemRect = item.__dragRect;
+if (!itemRect) return;
+/* 目标项中心需叠加上一轮写入的 ±5px 提示位移（原实现写提示后才测量下一项）。 */
+const itemCenterY = itemRect.top + (item.__dragHint || 0) + itemRect.height / 2;
 if (Math.abs(currentCenterY - itemCenterY) < itemRect.height / 2) {
 const targetIndex = parseInt(item.dataset.displayIndex, 10);
 item.classList.add('drag-over');
-item.style.transform = draggedIndex < targetIndex ? 'translateY(-5px)' : 'translateY(5px)';
+const hint = draggedIndex < targetIndex ? -5 : 5;
+item.style.transform = `translateY(${hint}px)`;
+item.__dragHint = hint;
 } else {
 item.classList.remove('drag-over');
 item.style.transform = '';
+item.__dragHint = 0;
 }
 });
 }
 function handleTouchEnd(e) {
 if (!isTouchDragging || !touchDraggedItem) return;
 e.preventDefault();
-const items = activeDraggableItems.length ? activeDraggableItems : getDraggableItems();
-const currentRect = touchDraggedItem.getBoundingClientRect();
-const currentCenterY = currentRect.top + currentRect.height / 2;
+const items = ensureTouchDragRects();
+const dragRect = touchDraggedItem.__dragRect;
 let dropIndex = draggedIndex;
+if (dragRect) {
+const currentCenterY = dragRect.top + touchLastDeltaY + dragRect.height / 2;
 for (const item of items) {
 if (item === touchDraggedItem) continue;
-const itemRect = item.getBoundingClientRect();
-const itemCenterY = itemRect.top + itemRect.height / 2;
+const itemRect = item.__dragRect;
+if (!itemRect) continue;
+const itemCenterY = itemRect.top + (item.__dragHint || 0) + itemRect.height / 2;
 if (Math.abs(currentCenterY - itemCenterY) < itemRect.height / 2) {
 dropIndex = parseInt(item.dataset.displayIndex, 10);
 break;
+}
 }
 }
 if (dropIndex !== draggedIndex) {
@@ -4702,9 +5217,33 @@ amllPlayer.update?.(0);
 console.warn('[AMLL] 停用播放器失败:', error);
 }
 }
+/* 页面卸载时的 AMLL 资源清理。
+ * 文档「时序与生命周期 · 清理」检查清单要求：不再需要歌词组件时，
+ * 取消自己创建的 requestAnimationFrame 并释放组件（dispose 会移除元素与内部监听）。
+ * 只在首次创建播放器时注册，避免重复叠加监听。 */
+let amllUnloadCleanupRegistered = false;
+function registerAMLLUnloadCleanup() {
+if (amllUnloadCleanupRegistered) return;
+amllUnloadCleanupRegistered = true;
+window.addEventListener('pagehide', (event) => {
+amllActive = false;
+if (amllFrameRAF) {
+cancelAnimationFrame(amllFrameRAF);
+amllFrameRAF = 0;
+}
+try { amllPlayer?.dispose?.(); } catch (error) { console.warn('[AMLL] 卸载清理失败:', error); }
+amllPlayer = null;
+/* 文档「清理」检查清单：宿主自行创建的资源也要在此释放（动态背景渲染器）。
+   走 onPageHide 而非 dispose：它会把 bfcache 冻结（persisted=true）与真正卸载区分开，
+   否则用户后退返回页面时背景会永久消失。 */
+try { window.HarmoniaDynamicBg?.onPageHide?.(event); } catch (error) { console.warn('[DynamicBg] 卸载清理失败:', error); }
+}, { once: true });
+}
 async function ensureAMLLPlayer() {
 if (amllPlayer) {
 const existingElement = getAMLLPlayerElement(amllPlayer);
+/* 元素被外部清空（如 amLyrics.innerHTML = ''）后重新挂载。
+   行元素是播放器元素的子节点，随父节点一起摘除／恢复，内部状态不受影响，无需重建视图。 */
 if (existingElement && !amLyrics.contains(existingElement)) {
 amLyrics.innerHTML = '';
 amLyrics.classList.add('amll-player-host');
@@ -4713,23 +5252,51 @@ amLyrics.appendChild(existingElement);
 return amllPlayer;
 }
 if (amllPlayerReadyPromise) return amllPlayerReadyPromise;
-const AMLL_CORE_FALLBACK_URL = 'https://cdn.jsdelivr.net/npm/@applemusic-like-lyrics/core@0.5.1/+esm';
-const AMLL_LYRIC_FALLBACK_URL = 'https://cdn.jsdelivr.net/npm/@applemusic-like-lyrics/lyric@1.0.1/+esm';
-const attemptLoad = async (useFallback) => {
+/* 模块加载：本地 vendor 优先，CDN 兜底。
+ *
+ * 两处易错点，均以实测复现后修正：
+ *  1) 相对说明符必须显式解析成绝对 URL。动态 import 的相对说明符是相对于
+ *     「发起 import 的模块」而非页面解析的——main.js 位于 /js/ 下，
+ *     直接 import('./js/vendor/x.mjs') 会被解析成 /js/js/vendor/x.mjs。
+ *     这里统一用 document.baseURI 归一。
+ *  2) file:// 页面下 Chromium 的模块 CORS 规则会拒绝动态 import 本地 ESM，
+ *     故该协议下改走 fetch → Blob URL → import（vendor 产物自包含，无内部相对依赖）。 */
+async function importAmllModule(url) {
+const isAbsolute = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(url) || /^(?:data|blob):/i.test(url);
+const resolved = isAbsolute ? url : new URL(url, document.baseURI).href;
+if (!resolved.startsWith('file:')) return import(resolved);
+const res = await fetch(resolved);
+if (!res.ok) throw new Error('AMLL 本地模块加载失败: HTTP ' + res.status);
+const text = await res.text();
+return import(URL.createObjectURL(new Blob([text], { type: 'text/javascript' })));
+}
+/* 候选来源按优先级排列：本地 vendor → esm.sh → esm.sh 重试。
+   原实现第三个候选是 jsdelivr，但实测该 CDN 在部分网络下已不可达，改用 esm.sh 重试。 */
+const AMLL_MODULE_CANDIDATES = [
+{ core: AMLL_VENDOR_CORE_URL, lyric: AMLL_VENDOR_LYRIC_URL, label: '本地 vendor' },
+{ core: AMLL_CORE_ESM_URL, lyric: AMLL_LYRIC_ESM_URL, label: 'esm.sh' },
+{ core: AMLL_CORE_ESM_URL, lyric: AMLL_LYRIC_ESM_URL, label: 'esm.sh 重试' },
+];
+const attemptLoad = async (source) => {
 setAMLLStatus('正在加载 AMLL 歌词引擎…', 'loading');
-const coreUrl = useFallback ? AMLL_CORE_FALLBACK_URL : AMLL_CORE_ESM_URL;
-const lyricUrl = useFallback ? AMLL_LYRIC_FALLBACK_URL : AMLL_LYRIC_ESM_URL;
 const [coreModule, lyricModule] = await Promise.all([
-import(coreUrl),
-import(lyricUrl)
+importAmllModule(source.core),
+importAmllModule(source.lyric)
 ]);
 amllCoreModule = coreModule;
 amllLyricModule = lyricModule;
+if (window.HarmoniaDynamicBg) {
+  /* 引擎刚就绪：若动态背景开关已开启且此前启用失败（模块加载竞态），补一次启用 */
+  try { window.HarmoniaDynamicBg.bootstrap(); } catch (_) {}
+}
 const LyricPlayerCtor = coreModule.LyricPlayer || coreModule.DomLyricPlayer;
 if (!LyricPlayerCtor) throw new Error('AMLL Core 未导出 LyricPlayer');
 amLyrics.innerHTML = '';
 amLyrics.classList.add('amll-player-host');
 const player = new LyricPlayerCtor();
+/* 文档「时序与生命周期 · 初始化」推荐：优先用 updateLyricProcessConfig 批量下发，
+   避免 setOptimizeOptions / 掩码设置各自触发一次视图重建（构建期无歌词，此调用不重建）。 */
+applyAMLLProcessConfig(player);
 const playerElement = player.getElement();
 playerElement.classList.add('harmonia-amll-player');
 amLyrics.appendChild(playerElement);
@@ -4742,6 +5309,9 @@ player.setCurrentTime(lineObject.startTime, true);
 });
 }
 amllPlayer = player;
+/* 文档「时序与生命周期 · 清理」要求宿主自行清理自己创建的资源；
+   core 0.6.0 的 dispose() 会 abort 内部 AbortController、移除元素并释放全部行组。 */
+registerAMLLUnloadCleanup();
 if (audioPlayer.paused || audioPlayer.ended) {
 pauseAMLLPlayer();
 } else {
@@ -4752,17 +5322,18 @@ setAMLLStatus('', 'hidden');
 return player;
 };
 let lastErr = null;
-for (let i = 0; i < 3; i++) {
+for (let i = 0; i < AMLL_MODULE_CANDIDATES.length; i++) {
 try {
 if (i > 0) await new Promise(r => setTimeout(r, i * 1000));
-amllPlayerReadyPromise = attemptLoad(i === 2); // 第三次尝试用备用 CDN
+const source = AMLL_MODULE_CANDIDATES[i];
+amllPlayerReadyPromise = attemptLoad(source);
 const player = await amllPlayerReadyPromise;
 amllPlayerReadyPromise = null;
 return player;
 } catch (err) {
 lastErr = err;
 amllPlayerReadyPromise = null;
-console.warn(`[AMLL] 加载失败 (第${i+1}次):`, err);
+console.warn(`[AMLL] 加载失败 (第${i+1}次 · ${AMLL_MODULE_CANDIDATES[i].label}):`, err);
 }
 }
 setAMLLStatus('AMLL 歌词引擎加载失败，已使用兼容渲染。', 'error');
@@ -4774,43 +5345,130 @@ const num = Number(value);
 if (!Number.isFinite(num)) return fallback;
 return Math.max(0, Math.round(num * 1000));
 }
-// AMLL 每帧对每行无条件执行 renderStyles（transform/opacity/filter 等 DOM 写入），
-// 行数多时（700+ 行艺术歌词）每帧数千次写入拖垮与 PiP 共享的主线程（实测 761 行 ~10fps）。
-// 补丁：样式输入值未变化时跳过整个写入体 —— 每帧真正变化的只有视口附近十几行，其余行零开销。
-// 纯样式写入无副作用（已核对库源码），行级动画/滚动/高亮行为不受影响。
-function patchAMLLRenderStyles(player) {
-if (!player || !Array.isArray(player.currentLyricGroups)) return;
-for (const group of player.currentLyricGroups) {
-if (!group || group.__renderStylesPatched) continue;
-group.__renderStylesPatched = true;
-const orig = group.renderStyles.bind(group);
-let lastKey = null;
-group.renderStyles = function () {
-const key = this.posY.getCurrentPosition().toFixed(1) + '|' + this.opacity + '|' +
-Math.min(5, this.blur) + '|' + (this.bgSlideY ? this.bgSlideY.getCurrentPosition().toFixed(1) : '') +
-'|' + (this.isActive ? 1 : 0) + '|' + (this.isBgFirst ? 1 : 0);
-if (key === lastKey) return;
-lastKey = key;
-orig();
-};
+/* 速度读取：非法值/越界一律钳制到 [0.2, 3]，避免历史脏数据把背景冻住或抖成噪声 */
+function clampDynamicBgSpeed(value) {
+const num = parseFloat(value);
+if (!Number.isFinite(num)) return DYNAMIC_BG_SPEED_DEFAULT;
+return Math.min(DYNAMIC_BG_SPEED_MAX, Math.max(DYNAMIC_BG_SPEED_MIN, num));
 }
+function readDynamicBgSpeed() {
+const raw = localStorage.getItem(DYNAMIC_BG_SPEED_KEY);
+if (raw === null) return DYNAMIC_BG_SPEED_DEFAULT;
+return clampDynamicBgSpeed(raw);
 }
-// AMLL setLyricLines 内部首次 update(0) 会对全部行同步构建 DOM。两个触发点：
-// 1) 容器尺寸未就绪（size=[0,0]）时 isInSight 对全部行成立 → 全量 rebuildElement（761 行实测 3.6s）；
-// 2) 全部行 built 后每帧 applyAlphaToDom 对每行做 DOM 操作（~50ms/帧）。
-// 绕过（不换渲染器、不改显示）：拦截 update 跳过首次构建 → 等容器尺寸就绪 →
-// calcLayout(force) 把行直接放到目标位置（setTransform force 分支 setPosition 直设当前位置且不构建）
-// → 只构建视口内可见行；再配合 patchAMLLRenderStyles 消除每行无条件样式写入。
-async function amllSetLyricLinesNoBurst(player, lines, initialTime) {
-const origUpdate = player.update;
-player.update = function () {};
+/* ── AMLL 动态背景宿主桥接（js/dynamic-bg.js 通过它反向取用主程序状态）──────────
+   注意：注册语句必须晚于其全部依赖的初始化位置——依赖 amllCoreModule/amllPlayer
+   （let，见文件前段）与 isMobile()（函数声明，上方已定义）。历史上 spatial3d 引导块
+   因早于依赖声明而触发 TDZ 并被 try/catch 静默吞掉（见
+   HarmoniaApp/tests/spatial3d-bootstrap.test.js），此处沿用同一防线的约束。
+   动态背景模块只依赖本契约，不直接读 localStorage、不自行判定运行平台。 */
+window.HarmoniaDynamicBgHost = {
+isEnabled() {
+return localStorage.getItem(DYNAMIC_BG_ENABLED_KEY) === 'true';
+},
+getSpeed() {
+return readDynamicBgSpeed();
+},
+clampSpeed(value) {
+return clampDynamicBgSpeed(value);
+},
+getCoreModule() {
+return amllCoreModule || null;
+},
+/* 惰性取引擎：只加载 core 模块，不创建歌词播放器。
+   若歌词引擎已加载则直接复用（不产生任何网络请求）；否则按与 ensureAMLLPlayer
+   相同的候选顺序单独拉取 core。刻意不调用 ensureAMLLPlayer()——那会实例化
+   LyricPlayer 并把它挂进 #amLyrics，在「经典布局」模式下属于可见副作用。 */
+async ensureEngine() {
+if (amllCoreModule) return amllCoreModule;
+const candidates = [AMLL_VENDOR_CORE_URL, AMLL_CORE_ESM_URL, AMLL_CORE_ESM_URL];
+let lastErr = null;
+for (let i = 0; i < candidates.length; i++) {
 try {
-player.setLyricLines(lines, initialTime);
-} finally {
-player.update = origUpdate;
+if (i > 0) await new Promise(r => setTimeout(r, i * 1000));
+const mod = await importAmllModule(candidates[i]);
+if (!mod || !mod.BackgroundRender || !mod.MeshGradientRenderer) {
+throw new Error('AMLL Core 缺少动态背景导出');
 }
-patchAMLLRenderStyles(player);
-// 等容器尺寸就绪（size=[0,0] 时 isInSight 全真 → 全量构建风暴；就绪后仅视口内行 built）
+amllCoreModule = mod;
+return mod;
+} catch (err) {
+lastErr = err;
+console.warn(`[DynamicBg] Core 加载失败 (第${i + 1}次):`, err);
+}
+}
+throw lastErr || new Error('AMLL Core 加载失败');
+},
+isMobile,
+isPlaying() {
+return !!(audioPlayer && !audioPlayer.paused && !audioPlayer.ended);
+},
+/* 是否已有曲目被加载（用于区分「用户还没放歌」与「用户暂停了」）。
+   没有曲目时不应把背景冻住——否则用户刚打开开关只看到一片静止，
+   会以为功能坏了（同类体验事故见 spatial3d「开了没反应」）。 */
+hasTrack() {
+return !!currentPlayingId;
+},
+/* 开关切换时由模块回调：负责互斥显隐与播放状态对齐（真正的创建/释放在模块内） */
+onEnabledChange(enabled) {
+document.body.classList.toggle('dynamic-bg-on', !!enabled);
+if (enabled && window.HarmoniaDynamicBg) {
+window.HarmoniaDynamicBg.syncPlaying(this.isPlaying());
+}
+}
+};
+/* ── AMLL 歌词处理配置（core 0.6.0）──────────────────────────────────────────
+   文档「时序与生命周期 · 初始化」推荐在 setLyricLines 之前用 updateLyricProcessConfig
+   一次性下发全部处理配置，避免 setOptimizeOptions 与掩码设置各自触发一次视图重建。
+   优化项语义见 https://amll.dev/reference/core/interfaceoptimizelyricoptions ：
+     - resetLineTimestamps：把行级时间戳对齐到字级，逐字遮罩与行高亮才不会互相错位；
+     - cleanUnintentionalOverlaps：清洗非刻意的短重叠（<500ms），避免相邻行同时高亮；
+     - syncMainAndBackgroundLines：主唱与背景人声时间同步；
+     - tryAdvanceStartTime：让歌词最多提前 600ms 进入，减少"慢半拍"观感。
+   这些均为库默认值，此处显式声明是为了让配置可被本工程单点调整与审计。 */
+const AMLL_OPTIMIZE_OPTIONS = {
+resetLineTimestamps: true,
+cleanUnintentionalOverlaps: true,
+normalizeSpaces: true,
+syncMainAndBackgroundLines: true,
+tryAdvanceStartTime: true,
+};
+/* 不雅用语掩码模式：MaskObsceneWordsMode 由 core 导出；取不到时退回库默认（不掩码），
+   不硬编码枚举值，避免枚举名变化导致静默失效。 */
+function getAMLLMaskMode() {
+const modes = amllCoreModule?.MaskObsceneWordsMode;
+if (!modes) return undefined;
+return modes.Disabled ?? modes.None ?? undefined;
+}
+/* 对已存在的播放器也适用：设置变更后调用会重建视图（库内部行为）。 */
+function applyAMLLProcessConfig(player = amllPlayer) {
+if (!player || typeof player.updateLyricProcessConfig !== 'function') return;
+try {
+const maskMode = getAMLLMaskMode();
+player.updateLyricProcessConfig({
+optimizeOptions: AMLL_OPTIMIZE_OPTIONS,
+...(maskMode === undefined ? {} : { maskMode }),
+});
+} catch (error) {
+console.warn('[AMLL] 下发歌词处理配置失败:', error);
+}
+}
+/* ── 歌词行载入（core 0.6.0）────────────────────────────────────────────────
+   0.5.1 时代这里有两层绕过：一是拦截 update 跳过首次全量构建，二是给每个行组打
+   renderStyles 缓存补丁。两者都以当时的实现为前提，升级后均已不成立：
+
+   1) 0.6.0 的 setLyricLines → rebuildLyricView 内部改用逐步渲染——只在
+      commitChanges() 的 isInRenderRange() 为真时才 rebuildElement()，
+      并新增行组 isUiDirty 脏标记避免重复写样式。全量构建风暴这一前提消失，
+      原有的"拦截 update + 等尺寸就绪 + calcLayout 强制布局"三步 hack 不再需要。
+   2) 旧 renderStyles 缓存键（posY/opacity/blur/bgSlideY/isActive/isBgFirst）未覆盖
+      scale，而 0.6.0 的行组 renderStyles 还要负责 scale 与背景变换，
+      沿用旧键会跳过合法写入、导致被动缩放的行动画卡住，故一并移除。
+
+   保留的只有尺寸守卫：容器隐藏（display:none，size=[0,0]）时不必强行布局，
+   等面板可见后由 resizeAMLLPlayer 按真实尺寸触发一次布局即可。 */
+async function amllSetLyricLinesNoBurst(player, lines, initialTime) {
+player.setLyricLines(lines, initialTime);
 const el = (player.getElement && player.getElement()) || player.element;
 if (el) {
 for (let i = 0; i < 10 && (!player.size || !player.size[1]); i++) {
@@ -4818,9 +5476,26 @@ await new Promise(r => requestAnimationFrame(r));
 void el.getBoundingClientRect();
 }
 }
-await player.calcLayout(true, true);
+if (player.size && player.size[1] > 0) {
+/* 容器尺寸已就绪：按重建原因强制布局一次，让行落到正确位置。
+   0.6.0 的 calcLayout 接受 LayoutReason 值（不再是两个布尔参数），
+   传入无效值会在取 LayoutReasonStrategyMap[reason] 后解引用 undefined 抛错。 */
+const layoutReason = amllCoreModule?.LayoutReason;
+if (layoutReason && typeof player.calcLayout === 'function') {
+await player.calcLayout(layoutReason.RebuildView);
+}
 player.update(0);
 }
+}
+/* 词归一。
+ * ★ 这里此前只保留 {startTime, endTime, word} 三个字段，会把 TTML 解析出的
+ *   ruby（tts:ruby 注音）、obscene（amll:obscene 不雅用语掩码）、emptyBeat
+ *   （amll:empty-beat 空拍）以及 romanWord（逐词音译）全部丢弃——
+ *   即上层解析器解析正确、到这里却被抹平，AMLL 核心因此无法渲染注音与掩码。
+ *   core 0.6.0 的 LyricWord 支持这些字段，故按存在性透传。
+ *   字段语义（实测 ttml 1.0.1）：obscene 为布尔；emptyBeat 为**数值**节拍数
+ *   （amll:empty-beat="2"，官方用 parseInt 解析，故 "true" 会得到 NaN 被丢弃，
+ *   此处同样按数值透传，不做布尔化以免丢失节拍数）。 */
 function normalizeAMLLWord(word, fallbackStart, fallbackEnd) {
 const startTime = Number.isFinite(Number(word?.startTime))
 ? Math.round(Number(word.startTime))
@@ -4828,11 +5503,25 @@ const startTime = Number.isFinite(Number(word?.startTime))
 const endTime = Number.isFinite(Number(word?.endTime))
 ? Math.round(Number(word.endTime))
 : (Number.isFinite(Number(word?.end)) ? msFromSeconds(word.end, fallbackEnd) : fallbackEnd);
-return {
+const normalized = {
 startTime: Math.max(0, startTime),
 endTime: Math.max(Math.max(0, startTime) + 1, endTime),
 word: String(word?.word ?? word?.text ?? '')
 };
+if (word?.romanWord) normalized.romanWord = String(word.romanWord);
+if (Array.isArray(word?.ruby) && word.ruby.length) {
+normalized.ruby = word.ruby
+.map(r => ({
+startTime: Math.round(Number(r?.startTime) || 0),
+endTime: Math.round(Number(r?.endTime) || 0),
+word: String(r?.word ?? r?.text ?? '')
+}))
+.filter(r => r.word && r.endTime > r.startTime);
+if (!normalized.ruby.length) delete normalized.ruby;
+}
+if (word?.obscene !== undefined) normalized.obscene = !!word.obscene;
+if (word?.emptyBeat !== undefined) normalized.emptyBeat = word.emptyBeat;
+return normalized;
 }
 function getLyricWordText(word) {
 return String(word?.word ?? word?.text ?? '');
@@ -5052,10 +5741,23 @@ const startTime = msFromSeconds(line.time, 0);
 const next = lyrics[index + 1];
 const endTime = next ? msFromSeconds(next.time, startTime + 5000) : startTime + 5000;
 const translatedLyric = mapping[index] !== -1 ? (translations[mapping[index]]?.text || '') : '';
+/* 逐字时间：parseLyrics 走官方 parseLrcLike 时，LRC A2 / SPL 的行内逐字标记
+   （尖括号或方括号形式）会一并解析出 words[]。有逐字信息就保留，
+   否则退回「整行一个词」——这也是普通 LRC 的必然结果。 */
+const timedWords = (Array.isArray(line.words) ? line.words : [])
+.filter(w => Number.isFinite(w.start) && Number.isFinite(w.end) && w.end > w.start)
+.map(w => ({
+startTime: msFromSeconds(w.start, startTime),
+endTime: msFromSeconds(w.end, endTime),
+word: w.text,
+}));
+const words = timedWords.length > 1
+? timedWords
+: [{ startTime, endTime, word: timedWords[0]?.word ?? line.text }];
 return {
 startTime,
-endTime,
-words: [{ startTime, endTime, word: line.text }],
+endTime: Math.max(endTime, words[words.length - 1].endTime),
+words,
 translatedLyric
 };
 }));
@@ -5290,26 +5992,38 @@ if (bgLine) lines.push(bgLine);
 }
 return normalizeAMLLLines(lines);
 }
+/* 官方 parseTTML 输出 → 工程内部行模型 的适配器。
+ * 实现与测试均在 js/lib/pure.js（纯函数，node --test 直接覆盖）；
+ * 此处为委托封装——main.js 的全局同名包装保证既有调用点不变。
+ * 形状差异说明见 pure.js:adaptAmllTtmlLines。 */
+function adaptAmllTtmlLines(parsed) {
+return HarmoniaLib.adaptAmllTtmlLines(parsed);
+}
+/* TTML 解析入口。
+ * 与旧实现的顺序相反：官方 parseTTML 优先，手写 simpleTTMLToAMLLLines 降级为兜底。
+ * 旧实现先跑手写解析、非空即 return，导致官方解析器从未被调用，
+ * 于是 TTML 文档中列出的能力全部缺失——最典型的是 Apple Music 风格 Head Sidecar
+ * （<iTunesMetadata><translations>/<transliterations>），amll-ttml-db 与社区 TTML
+ * 大量使用该写法；此外还有 tts:ruby 注音、amll:obscene、amll:empty-beat。
+ * 手写解析器保留为兜底：社区 TTML 格式变体繁多，双路径比单路径更稳。 */
 function parseTTMLContentToAMLLLines(ttmlContent) {
-const locallyParsed = simpleTTMLToAMLLLines(ttmlContent);
-if (locallyParsed.length) return locallyParsed;
 if (amllLyricModule?.parseTTML) {
 try {
-const parsed = amllLyricModule.parseTTML(ttmlContent);
-const parsedLines = parsed?.lines || parsed?.lyricLines || [];
-const markedLines = parsedLines.map(line => ({ ...line, _fromTtml: true }));
-const normalized = normalizeAMLLLines(markedLines);
+const adapted = adaptAmllTtmlLines(amllLyricModule.parseTTML(ttmlContent));
+const normalized = normalizeAMLLLines(adapted);
 if (normalized.length) return normalized;
+console.warn('[AMLL] 官方 parseTTML 未解析出歌词行，回退手写解析器');
 } catch (error) {
-console.warn('[AMLL] parseTTML 失败:', error);
+console.warn('[AMLL] parseTTML 失败，回退手写解析器:', error);
 }
 }
-return [];
+return simpleTTMLToAMLLLines(ttmlContent);
 }
 async function renderAMLLLines(lines, options = {}) {
 lines = filterAMLLCredits(lines);   /* 署名过滤：覆盖全部渲染入口（含非逐字路径） */
 lines = ensureWordSpacingForForeignLyrics(lines);
 const normalizedLines = normalizeAMLLLines(lines);
+updateLyricsAvailability(normalizedLines);   /* 布局判定：无有效歌词 ⟺ 播放卡片居中 */
 originalLyricLines = normalizedLines.map(l => ({ ...l }));
 rawLyricText = options.rawLyricText ?? serializeAMLLLinesToLrc(normalizedLines, 'main');
 rawTlyricText = options.rawTlyricText ?? serializeAMLLLinesToLrc(normalizedLines, 'translated');
@@ -5828,7 +6542,38 @@ console.error('Error fetching lyrics:', e);
 return null;
 }
 }
-function parseWordLyrics(yrcText, format = 'yrc') {
+/* 官方 AMLL 行 → 工程既有「逐字歌词行」形状。
+ * 工程内部有两条数据形态：逐字行（time/end/words[].{start,end,text}，来自各平台接口）
+ * 与 AMLL 行（startTime/endTime/words[].word）。此处把前者所需要的字段从官方输出映射回来，
+ * 以免下游 filterLyricCredits / legacyWordLinesToAMLLLines / 翻译对齐全部改写。
+ * 实现与测试在 js/lib/pure.js。 */
+function amllLinesToLegacyWordLines(lines) {
+return HarmoniaLib.amllLinesToLegacyWordLines(lines);
+}
+/* 网易云逐字（YRC）/ QQ 音乐逐字（QRC）解析。
+ * 官方 parser 优先：相比原手写正则，官方实现额外完成文档
+ * （https://amll.dev/guides/lyric/formats#网易云逐字与-qq-音乐逐字）明确描述的行为：
+ *   - 整行被圆括号包裹 → 识别为背景人声行并去除括号；
+ *   - 不含时间戳的圆括号按歌词正文处理（QRC），而非被正则吞掉；
+ *   - 词尾空白按格式规范合并到前一个词，不做跨词合并。
+ * 手写实现降级为兜底：应对格式变体与官方 parser 抛错的场景。
+ * 注意 KRC 是酷狗私有格式，走独立的 parseKugouKrc，不在此列。 */
+function parseWordLyrics(wordLyricText, format = 'yrc') {
+if (!wordLyricText || typeof wordLyricText !== 'string') return [];
+const isQrc = format === QRC || /qrc/i.test(String(format));
+const officialParser = isQrc ? amllLyricModule?.parseQrc : amllLyricModule?.parseYrc;
+if (typeof officialParser === 'function') {
+try {
+const parsed = amllLinesToLegacyWordLines(officialParser(wordLyricText));
+if (parsed.length) return parsed;
+console.warn('[AMLL] 官方 ' + (isQrc ? 'parseQrc' : 'parseYrc') + ' 未解析出歌词行，回退手写解析器');
+} catch (error) {
+console.warn('[AMLL] 官方 ' + (isQrc ? 'parseQrc' : 'parseYrc') + ' 失败，回退手写解析器:', error);
+}
+}
+return parseWordLyricsLegacy(wordLyricText);
+}
+function parseWordLyricsLegacy(yrcText, format = 'yrc') {
 if (!yrcText || typeof yrcText !== 'string') return [];
 const lines = yrcText.split('\n').filter(x => x.trim());
 const result = [];
@@ -6712,6 +7457,8 @@ bgDiv.style.setProperty('filter', 'blur(30px) brightness(0.6)', 'important');
 bgDiv.style.setProperty('transform', 'scale(1.2)', 'important');
 bgDiv.style.backgroundColor = 'transparent';
 console.log('[loadAlbumArt] 模糊背景设置成功');
+/* 动态背景：img 已带 crossOrigin='anonymous'，直接传元素可省一次网络加载 */
+window.HarmoniaDynamicBg?.notifyCover(url, img);
 };
 img.onerror = (err) => {
 console.error('[loadAlbumArt] 图片加载失败:', err, 'URL:', url);
@@ -7054,7 +7801,7 @@ if (cachedSong && cachedSong.audioUrl) {
     audioUrl = cachedSong.audioUrl;
     /* 应用缓存的封面 */
     if (cachedSong.albumArtUrl) {
-        applyAlbumArtWithPreload(cachedSong.albumArtUrl, () => {
+        applyAlbumArtWithPreload(cachedSong.albumArtUrl, (preImg) => {
         albumArt.src = cachedSong.albumArtUrl;
         lastAppliedCoverUrl = cachedSong.albumArtUrl;
         sendCoverToPip(cachedSong.albumArtUrl);
@@ -7068,11 +7815,16 @@ if (cachedSong && cachedSong.audioUrl) {
             bgDiv.style.setProperty('filter', 'blur(30px) brightness(0.6)', 'important');
             bgDiv.style.backgroundColor = 'transparent';
         }
+        /* 动态背景：复用同一份已就绪封面，不额外发起图片请求 */
+        window.HarmoniaDynamicBg?.notifyCover(cachedSong.albumArtUrl, preImg);
         });
     }
     /* 应用缓存的歌词 */
     if (cachedSong.lyricLines && cachedSong.lyricLines.length) {
         await renderAMLLLines(cachedSong.lyricLines, cachedSong.lyricOpts || {});
+    } else {
+        /* 缓存命中但歌词为空：renderAMLLLines 不会被调用，需单独同步一次判定 */
+        updateLyricsAvailability([]);
     }
     console.log('[SongCache] 跳过所有API请求，直接使用缓存');
 } else {
@@ -7086,7 +7838,7 @@ if (cachedSong && cachedSong.audioUrl) {
     /* 封面由 getAlbumArtUrl 返回 URL，手动应用到DOM（此时 lyrics 已渲染完毕） */
     if (albumArtUrl) {
         albumArt.src = albumArtUrl;
-        applyAlbumArtWithPreload(albumArtUrl, () => {
+        applyAlbumArtWithPreload(albumArtUrl, (preImg) => {
         albumArt.src = albumArtUrl;
         lastAppliedCoverUrl = albumArtUrl;
         sendCoverToPip(albumArtUrl);
@@ -7100,6 +7852,8 @@ if (cachedSong && cachedSong.audioUrl) {
             bgDiv.style.setProperty('filter', 'blur(30px) brightness(0.6)', 'important');
             bgDiv.style.backgroundColor = 'transparent';
         }
+        /* 动态背景：复用同一份已就绪封面，不额外发起图片请求 */
+        window.HarmoniaDynamicBg?.notifyCover(albumArtUrl, preImg);
         });
     }
     /* 写入缓存（使用全局变量获取已渲染的歌词数据和选项） */
@@ -7180,7 +7934,32 @@ currentActivePlaylist = currentSearchResults;
 await playSong(currentSearchResults[index], false);
 currentPlaylistIdx = -1;
 }
-function parseLyrics(lyricText){ return HarmoniaLib.parseLyrics(lyricText); }
+/* LRC 家族解析：官方 parseLrcLike 优先，pure.js 手写实现兜底。
+ *
+ * 官方入口按文档（https://amll.dev/guides/lyric/quickstart）覆盖整个 LRC 家族——
+ * 普通 LRC / LRC A2 / SPL / ESLyric 同属一个语法家族，解析规则以 SPL 标准为准。
+ * 手写实现只识别 [mm:ss.xx] 与 [mm:ss:xx]，且把「多时间戳行」折叠为最早的一个；
+ * 官方实现额外支持：
+ *   - SPL 规范时间戳（分 1~3 位、秒 1~2 位、毫秒 1~6 位，不足 3 位视为后位补 0）；
+ *   - 显式行结尾（行末再写一个时间戳）；
+ *   - 行内逐字标记（尖括号形式，LRC A2 / SPL）；
+ *   - `#` 与 `//` 开头的注释行。
+ * 手写实现保留为兜底，并继续作为 pure.js 的可测试契约（tests/js/pure.test.js 覆盖）。
+ *
+ * 注意返回形状：本函数保持既有契约 [{ time(秒), text, translation }]，不返回官方
+ * LyricParseResult 的元数据（本工程各处均按行数组消费；元数据在本工程另有来源）。 */
+function parseLyrics(lyricText) {
+if (!lyricText) return [];
+if (amllLyricModule?.parseLrcLike) {
+try {
+const lines = amllLinesToLegacyWordLines(amllLyricModule.parseLrcLike(String(lyricText)).lines);
+if (lines.length) return lines;
+} catch (error) {
+console.warn('[AMLL] parseLrcLike 失败，回退手写 LRC 解析:', error);
+}
+}
+return HarmoniaLib.parseLyrics(lyricText);
+}
 async function displayAMLyrics(lyricResponse) {
 if (!lyricResponse || !lyricResponse.lyric) {
 return await renderAMLLLines([], { emptyText: '暂无歌词' });
@@ -9029,6 +9808,35 @@ audioPlayer.addEventListener('ended', stopWordLyricLoop);
 audioPlayer.addEventListener('play', resumeAMLLPlayer);
 audioPlayer.addEventListener('pause', pauseAMLLPlayer);
 audioPlayer.addEventListener('ended', pauseAMLLPlayer);
+/* 动态背景动画与歌词动画独立（文档「同步播放状态」允许只控制背景），
+   但用户预期是「暂停即静止」，故与歌词共用同一组事件 */
+audioPlayer.addEventListener('play', () => { window.HarmoniaDynamicBg?.syncPlaying(true); });
+audioPlayer.addEventListener('pause', () => { window.HarmoniaDynamicBg?.syncPlaying(false); });
+audioPlayer.addEventListener('ended', () => { window.HarmoniaDynamicBg?.syncPlaying(false); });
+/* 正在播放状态 → body.playing。
+   为什么需要：CSS 侧以 body:not(.playing) .collapsed-indicator{animation:none} 关掉
+   「正在播放」红点的无限 pulse 动画（实测该动画约占空闲主线程工作 97%），
+   空闲时红点必须彻底静止、播放时才呼吸。因此 body.playing 是那条 CSS 门的唯一依据，
+   必须真实反映媒体状态，且绝不能只盯 audioPlayer。
+   为什么同时看两个元素：无缝交叉淡变期间 audioPlayer 已暂停而 audioPlayerB 正在发声，
+   只看 audioPlayer 会在淡变中途熄灭红点（可见回归）。
+   为什么用媒体事件而非 isPlaying 变量：isPlaying 在多处被赋值、不是单一可信源；
+   play/pause/ended 是媒体元素的客观事实（缓冲/卡顿只触发 waiting，不会误闪）。
+   注意：本文件与 HarmoniaApp/网页源码/js/main.js 必须同时保留该接线——
+   Harmonia/css/layout.css 与 网页源码/css/layout.css 都带这条 CSS 门，
+   缺了 JS 侧会让红点永久冻结（不再呼吸）。 */
+function syncBodyPlayingClass() {
+  const anyPlaying = !!(audioPlayer && !audioPlayer.paused && !audioPlayer.ended)
+    || !!(audioPlayerB && !audioPlayerB.paused && !audioPlayerB.ended);
+  document.body.classList.toggle('playing', anyPlaying);
+}
+audioPlayer.addEventListener('play', syncBodyPlayingClass);
+audioPlayer.addEventListener('pause', syncBodyPlayingClass);
+audioPlayer.addEventListener('ended', syncBodyPlayingClass);
+audioPlayerB.addEventListener('play', syncBodyPlayingClass);
+audioPlayerB.addEventListener('pause', syncBodyPlayingClass);
+audioPlayerB.addEventListener('ended', syncBodyPlayingClass);
+syncBodyPlayingClass();   /* 首屏/会话恢复：按真实媒体状态初始化一次（无布局读取，幂等） */
 (function setupRememberProgress(){
 const enabled = () => localStorage.getItem('rememberProgressEnabled') === 'true';
 let _lastProgressSave = 0;
@@ -9061,6 +9869,17 @@ audioPlayer._restoreId = saved.id;
 })();
 audioPlayer.addEventListener('seeked', () => syncAMLLCurrentTime(true));
 window.addEventListener('resize', debounce(resizeAMLLPlayer, 120));
+/* 居中位移依赖实测宽度；窗口尺寸变化（含跨 768px 断点）后重算/复位 */
+window.addEventListener('resize', debounce(() => {
+if (!isPlayerCardCenterSupported()) {
+document.body.classList.remove('player-card-centered');
+const _mp = qs('.main-player');
+if (_mp) _mp.style.setProperty('--card-center-shift', '0px');
+lyricsPanelVisible = !!lyricsVisible;
+return;
+}
+syncLyricsPanel();
+}, 120));
 function updatePlaylistOrder() {
 playlistOrder = getActivePlayQueue().map(item => item.id);
 syncGaplessPreloadAfterQueueChange(); /* 队列/顺序变化后校验预载指向，防止拖动后过渡仍落到旧「下一首」 */
@@ -9181,6 +10000,16 @@ return queue.find(item => item.id === id)
 function getPlaylistIndexById(id) {
 return getActivePlayQueue().findIndex(item => item.id === id);
 }
+/* 速度滑块旁的倍率徽标与禁用态：开关关闭时点亮禁用样式，让「当前不可调」可预期 */
+function syncDynamicBgSpeedUI() {
+const slider = document.getElementById('dynamicBgSpeedSlider');
+const item = document.getElementById('dynamicBgSpeedItem');
+const label = document.getElementById('dynamicBgSpeedValue');
+const enabled = window.HarmoniaDynamicBgHost.isEnabled();
+if (slider) slider.disabled = !enabled;
+if (item) item.classList.toggle('disabled', !enabled);
+if (label) label.textContent = readDynamicBgSpeed().toFixed(1) + '×';
+}
 function loadVisualSettings() {
 const saved = localStorage.getItem(ALBUM_KEY);
 const isEnabled = saved === 'true';
@@ -9194,6 +10023,17 @@ const trackTransitionToggle = document.getElementById('trackTransitionToggle');
 if (trackTransitionToggle) {
 trackTransitionToggle.checked = isTrackTransitionEnabled();
 }
+/* 动态背景：回填开关与速度滑块初值（此处只同步 UI，不启动引擎——
+   真正启用由文件尾 init() 之后的 bootstrap() 统一处理） */
+const dynamicBgToggle = document.getElementById('dynamicBgToggle');
+if (dynamicBgToggle) {
+dynamicBgToggle.checked = window.HarmoniaDynamicBgHost.isEnabled();
+}
+const dynamicBgSpeedSlider = document.getElementById('dynamicBgSpeedSlider');
+if (dynamicBgSpeedSlider) {
+dynamicBgSpeedSlider.value = String(readDynamicBgSpeed());
+}
+syncDynamicBgSpeedUI();
 }
 function saveVisualSettings() {
 const selectedMode = document.querySelector('input[name="lyricsAnimationMode"]:checked')?.value || 'visual';
@@ -9241,6 +10081,29 @@ trackTransitionToggle.addEventListener('change', function() {
 localStorage.setItem(TRACK_TRANSITION_KEY, this.checked ? 'true' : 'false');
 showDynamicIslandToast(this.checked ? '已开启歌曲过渡动画' : '已关闭歌曲过渡动画', 2000);
 });
+}
+/* 动态背景开关（视觉）：持久化后由 js/dynamic-bg.js 负责创建/释放渲染器 */
+const _dynamicBgToggleEl = document.getElementById('dynamicBgToggle');
+if (_dynamicBgToggleEl) {
+_dynamicBgToggleEl.addEventListener('change', function() {
+localStorage.setItem(DYNAMIC_BG_ENABLED_KEY, this.checked ? 'true' : 'false');
+syncDynamicBgSpeedUI();
+if (window.HarmoniaDynamicBg) window.HarmoniaDynamicBg.setEnabled(this.checked);
+showDynamicIslandToast(this.checked ? '已开启动态背景' : '已关闭动态背景', 2000);
+});
+}
+/* 动态背景流动速度（视觉）：拖动即时生效，无需确认 */
+const _dynamicBgSpeedEl = document.getElementById('dynamicBgSpeedSlider');
+if (_dynamicBgSpeedEl) {
+const onSpeedInput = () => {
+const speed = clampDynamicBgSpeed(_dynamicBgSpeedEl.value);
+localStorage.setItem(DYNAMIC_BG_SPEED_KEY, String(speed));
+const label = document.getElementById('dynamicBgSpeedValue');
+if (label) label.textContent = speed.toFixed(1) + '×';
+if (window.HarmoniaDynamicBg) window.HarmoniaDynamicBg.applyCurrentSettings();
+};
+_dynamicBgSpeedEl.addEventListener('input', onSpeedInput);
+_dynamicBgSpeedEl.addEventListener('change', onSpeedInput);
 }
 if (enableWordLyricJump) {
 enableWordLyricJump.addEventListener('change', function() {
@@ -9326,6 +10189,24 @@ const toastText = e.target.value === 'performance'
 showDynamicIslandToast(toastText, 2200);
 });
 });
+/* ========== 液态玻璃样式（旧 / 新） ========== */
+document.querySelectorAll('input[name="liquidGlassStyle"]').forEach(radio => {
+radio.addEventListener('change', (e) => {
+if (!e.target.checked) return;
+applyLiquidGlassStyle(e.target.value);
+showDynamicIslandToast(
+e.target.value === 'refraction' ? '已切换为新液态玻璃' : '已切换为旧液态玻璃',
+2200
+);
+});
+});
+/* 启动时恢复上次选择（默认 classic，不设置 data 属性即保持旧玻璃） */
+applyLiquidGlassStyle(liquidGlassStyle, false);
+/* 跨过 768px 断点时重估折射是否可用（与 responsive.css 的降级断点一致） */
+window.addEventListener('resize', () => {
+const engine = window.HarmoniaLiquidGlassV2;
+if (engine && liquidGlassStyle === 'refraction') engine.refresh();
+});
 if (isMobile()) {
 desktopLyricsBtn.style.display = 'none';
 if (!lyricsVisible) {
@@ -9337,6 +10218,11 @@ if (toggle) {
 toggle.disabled = true;
 toggle.parentElement.parentElement.style.opacity = '0.6';
 }
+} else {
+/* 首帧：免动画同步一次面板显隐与居中态，避免开场出现「卡片从左侧滑到中点」的入场动画 */
+document.body.classList.add('player-center-no-transition');
+syncLyricsPanel({ immediate: true });
+requestAnimationFrame(() => document.body.classList.remove('player-center-no-transition'));
 }
 LYRICS_OFFSET = calculateLyricsOffset();
 initSidebarControls();
@@ -9743,6 +10629,15 @@ try {
 init();
 } catch (err) {
 console.error('[init] 初始化失败:', err);
+}
+/* 动态背景启动：必须晚于 init()（loadVisualSettings 会回填开关状态）。
+   开关未开启时此处不做任何事，禁用态不创建 WebGL 上下文、不占用 GPU。
+   本调用位于文件尾，全部依赖（DYNAMIC_BG_* 常量、isMobile、amllCoreModule、
+   audioPlayer、HarmoniaDynamicBgHost）均已初始化，不存在 TDZ 风险。 */
+try {
+if (window.HarmoniaDynamicBg) window.HarmoniaDynamicBg.bootstrap();
+} catch (err) {
+console.warn('[DynamicBg] 启动失败:', err);
 }
 /* 开屏动画：主界面初始化结束（无论成败都要露出主界面）后通知 splash 淡出；
    最短展示时长与超时兜底由 js/splash.js 保证，此处只发信号 */
@@ -10562,10 +11457,14 @@ showDynamicIslandToast('凭证有效！(Token 测试通过)', 2500);
 } catch (err) {
 console.error("Token test failed:", err);
 const msg = String(err?.message || '');
-if (msg.includes('凭证已失效') || msg.includes('未登录') || msg.includes('152')) {
-showError('凭证已过期或失效，请重新登录', 4000);
-triggerKugouReLogin(); // 触发退出登录并清理凭证
-} else if (msg.includes('网络请求失败') || msg.includes('Failed to fetch')) {
+/* 按分类处理，不再靠消息子串匹配就清凭证：只有确证「已失效」才提示重登（仍不删凭证） */
+const _kind = classifyKugouRequestError(err, err && err.payload);
+if (_kind === KUGOU_AUTH_KIND_EXPIRED) {
+showError('酷狗凭证已失效，请在设置-账户重新登录', 4000);
+promptKugouRelogin('酷狗凭证已失效，请重新登录');
+} else if (_kind === KUGOU_AUTH_KIND_TEMP && msg.includes('未获服务端认可')) {
+showError('酷狗服务端当前不可用，已保留登录状态，请稍后再试', 4000);
+} else if (msg.includes('网络请求失败') || msg.includes('Failed to fetch') || _kind === KUGOU_AUTH_KIND_NETWORK) {
 showError('网络或服务端暂时不可用，请稍后再试', 3500);
 } else {
 showError(`凭证测试失败：${msg}`, 4000);
@@ -10602,6 +11501,15 @@ if(nickLabel) nickLabel.textContent = `当前账号：${savedNick || '未知'}`;
 if(avatar) {
 avatar.classList.add('loading');
 avatar.src = savedPic || fallbackPic;
+/* 成功加载也必须摘掉 .loading：该 class 驱动 #kugouAvatar.loading 的无限扫光动画
+   （background-position 不可合成 → 每帧主线程重绘，且元素位于 backdrop-filter:blur(42px)
+   的玻璃容器内）。原先只有 onerror 会移除，成功加载后动画会一直空转烧 CPU
+   （虽然被图片本身盖住看不见）。onload/onerror 两条路径都移除，动画窗口即被限定为
+   「真正加载中」这一段。 */
+avatar.onload = function() {
+this.classList.remove('loading');
+this.onload = null;
+};
 avatar.onerror = function() {
 this.classList.remove('loading');
 this.src = fallbackPic;
@@ -10618,6 +11526,11 @@ localStorage.setItem('kugouNickname', info.nickname);
 if (info.pic && avatar) {
 avatar.classList.add('loading');
 avatar.src = info.pic;
+/* 同上一处：成功加载也摘掉 .loading，避免扫光动画无限空转 */
+avatar.onload = function() {
+this.classList.remove('loading');
+this.onload = null;
+};
 avatar.onerror = function() {
 this.classList.remove('loading');
 this.src = fallbackPic;
@@ -10958,16 +11871,20 @@ return lines;
 /* ================= 智能过渡（Smart Transition，st 前缀） =================
    混音引擎：双通道 Web Audio 图上的 DJ 式过渡（非音量交叉淡化）——
    淡出结尾 → bassSwap 低频交接（抽走当前歌低频，下一首低频扫入接棒）；
-   骤然结尾 → echoOut 回声收尾（按 BPM 的节拍延迟拖尾，下一首浮现）；
+   骤然结尾 → 短等功率淡化（echoOut 回声已于 ST5 停用，见 pure.js chooseTransitionEffect）；
    尾部静音 → 静音段浮现；分析失败/无 CORS（酷狗等）→ 音量淡化降级。
    启动点吸附到小节边界（BPM+相位）；高置信鼓点歌之间轻对齐速度（±3%）。 */
-const ST_ANALYSIS_CACHE_KEY = 'stAnalysisCache3';
+/* v4：条目新增 edges.tailSilenceDb（尾部留白实测电平）——判定留白能否整段跳过；
+   v3 条目缺该字段会让长留白的歌退化为保守跳过，故升版强制重新分析。 */
+const ST_ANALYSIS_CACHE_KEY = 'stAnalysisCache5';
+try { localStorage.removeItem('stAnalysisCache4'); } catch (_) {} /* 清掉旧版缓存，避免无用占用 */
 const ST_ANALYSIS_CACHE_MAX = 200;
 const ST_NEGATIVE_CACHE_MS = 24 * 60 * 60 * 1000; // 分析失败负缓存 24h
 const ST_FADE_DURATION_DEFAULT = 6; // 降级淡化时长（无分析结果时）
 const ST_ABRUPT_MIX_MAX = 3;      // 骤然结尾的混音窗口上限（回声拖尾另计）
 const ST_MIX_HP_HZ = 130;         // bassSwap：当前歌低切频率（抽走鼓与贝斯）
-const ST_MIX_LP_START = 700;      // bassSwap：下一首低通扫频起点
+const ST_MIX_HP_FROM = 10;        // bassSwap：当前歌低切起点（近全通）
+const ST_MIX_LP_START = 700;      // ST6 转活：B 侧低通扫入起点（原为死符号，见 09-26 审查 P2-1）
 const ST_ECHO_BEAT_DIV = 3;       // echoOut：延迟 = 3/8 拍（BPM 同步）
 const ST_ECHO_FEEDBACK = 0.45;    // echoOut：反馈量（拖尾浓度）
 const ST_ECHO_LEAD = 0.4;         // echoOut：提前于结尾启动的秒数
@@ -10984,6 +11901,30 @@ const ST_BPM_ALIGN_CONF = 0.6;    // 轻对齐/拍点启动要求的高置信阈
 const ST_BPM_CONF_MIN = 0.45;     // BPM 结果入库的最低置信
 const ST_TAIL_SILENCE_CUT = 0.8;  // 尾部静音 ≥ 此值 → cut
 const ST_BEAT_SNAP_WINDOW = 0.8;  // 距拍点在此窗口内则等到拍点启动
+/* —— 智能过渡增强（ST3）：内容/节拍对齐 —— */
+const ST_TRIGGER_MARGIN = 0.6;    // 触发提前量的调度余量（吸收 timeupdate 粒度约 250ms 与分析迟到）
+const ST_BAR_QUANT_MIN = 4;       // 混音窗口 ≥ 此秒数才做整小节量化（保护 abruptMix 的短窗口）
+const ST_BEATS_PER_BAR = 4;       // 小节拍数（4/4）
+const ST_START_OFFSET_MAX = 3;    // 下一首起播点上限：防异常相位把开头切掉过多
+const ST_SILENCE_QUIET_DB = -50;  // 尾部留白实测电平 ≤ 此值才整段跳过（dBFS；数字静音记 -120）
+/* —— 智能过渡增强（ST6）：调性 × 能量双维相容度 ——
+   新增两类音乐语义：① 重叠期同时发声的两段（A 尾 × B 头）的调性是否相容；
+   ② A 尾是否满能量骤停 / B 头是否软起。据此精修重叠时长与滤波整形。
+   阈值集中于此，全部写进 [ST计划] 日志，便于用真实曲库回看标定。 */
+const ST_KEY_CONF_MIN = 0.75;           // 调性置信门槛（实测标定值；该值与 pure.js 的 keyConfMin 缺省值均由单测守卫，见设计文档 §4.2.15）
+const ST_HARMONIC_GOOD_MIN = 0.85;      // 相容度 ≥ 此值视为相容（不缩短、旁路 B 低通）
+const ST_HARMONIC_CONFLICT_MAX = 0.55;  // 相容度 < 此值视为冲突（缩短 + 强频谱分离）
+const ST_HARMONIC_MIN_OVERLAP = 2;      // 冲突时重叠时长下限（秒）
+const ST_ABRUPT_MIN_OVERLAP = 3;        // A 尾满能量骤停时的重叠下限（秒）
+const ST_ABRUPT_FULL_ENERGY_DB = -3;    // endFullness ≥ 此值判为"在满能量处停止"
+const ST_SOFT_HEAD_DB = -12;            // startFullness ≤ 此值判为"软起/前奏轻"
+const ST_MIX_LP_OPEN = 20000;           // B 侧低通"全开"频率（也用作复位值=等效旁路）
+const ST_MIX_LP_MID = 12000;            // 冲突档低通终点（比中性档收得更紧，仍未全开）
+const ST_RATE_ADJ_MIN_WIDE = 0.94;      // 变速放宽下限（仅高相容 + 高置信 + 差距 ≤6%）
+const ST_RATE_ADJ_MAX_WIDE = 1.06;      // 变速放宽上限
+const ST_HP_DUR_RATIO_GOOD = 0.65;      // 高相容：A 侧低切用时占比（与既有行为一致）
+const ST_HP_DUR_RATIO_NEUTRAL = 0.50;   // 中性档：中速让路
+const ST_HP_DUR_RATIO_CONFLICT = 0.35;  // 冲突档：快速让路
 const ST_PROXY_BASE = 'https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url='; // 自建 cors 代理（歌词代理同域）
 const ST_RANGE_PROBE_URL = 'https://cdn.jsdelivr.net/npm/left-pad@1.3.0/package.json'; // Range 探测源（约 600B，jsDelivr 支持 Range，域已在 CSP 白名单）
 const ST_PROXY_RANGE_KEY = 'stProxyRangeOk';   // {ok, ts}，7 天有效
@@ -11013,11 +11954,17 @@ let stBpmCurrentPending = false;
 let stBpmNextPending = false;
 let stStrategy = null;          // 'overlap' | 'silenceMix' | 'abruptMix' | 'fade'，按歌缓存防抖动
 let stStrategySongId = null;
+/* ST6：调性 + 能量形态（与 edges/bpm 同源，来自同一次 stGetSongFeatures） */
+let stHarmCurrent = null;       // { keyHead, keyTail, energyHead, energyTail }
+let stHarmCurrentId = null;
+let stHarmNext = null;
+let stHarmNextId = null;
 let stRateApplied = 1;          // 本次过渡对待播元素应用的速率
 /* 混音台（Web Audio）：A/B 双通道，各自 gain + 低切；无 CORS 音源不接入（降级音量淡化） */
 let stMixCtx = null;
 let stMixASource = null, stMixAGain = null, stMixAHP = null;
 let stMixBSource = null, stMixBGain = null, stMixBHP = null;
+let stMixBLP = null;            // ST6：B 侧低通（由暗到亮扫入）；plan.eq.bLp === null 时保持全开
 let stMixMode = 'none';         // 'none' | 'fade' | 'echo'（ended/清理路径据此分流）
 let stEchoTimer = null;         // echoOut 启动定时器
 let stEchoDelay = null, stEchoFB = null, stEchoHP = null; // 回声网络（用完即拆）
@@ -11041,8 +11988,23 @@ function completeActiveTransitionNow() {
   try { f(); } catch (_) {}
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) completeActiveTransitionNow();
+  if (document.hidden) { completeActiveTransitionNow(); return; }
+  /* 回前台：长时间挂后台再回来是最容易撞上「token 已过期」的时刻，先补一次续期判断 */
+  maybeRefreshKugouToken('visible');
 });
+/* —— 过渡决策可观测性（P2-2）——
+   把每次过渡的「计划 / 降级原因 / 相位对齐结果」写入环形缓冲，补上"只有散落 [ST诊断] 日志、
+   无法回答这次为什么这样决策"的缺口。读取：控制台执行 window.__stDiag()。 */
+const ST_DIAG_MAX = 20;
+const stDiagRing = [];
+function stDiag(entry) {
+try {
+stDiagRing.push(Object.assign({ at: new Date().toISOString() }, entry));
+if (stDiagRing.length > ST_DIAG_MAX) stDiagRing.shift();
+} catch (_) {}
+}
+try { window.__stDiag = function () { return stDiagRing.slice(); }; } catch (_) {}
+
 function isSmartTransitionEnabled() {
 return localStorage.getItem(SMART_TRANSITION_KEY) === 'true';
 }
@@ -11130,9 +12092,11 @@ else break;
 return silentFrames * hop / sampleRate;
 }
 function stMeasureTail(samples, sampleRate) {
-/* 纯函数：单声道 PCM -> {silenceSec, fading}。
-   从尾部倒扫静音帧得 silenceSec；fading = 尾部内容段（去静音后）后半能量 < 前半 70% 且末帧低于峰值 30%。 */
-const result = { silenceSec: 0, fading: false };
+/* 纯函数：单声道 PCM -> {silenceSec, fading, silenceDb}。
+   从尾部倒扫静音帧得 silenceSec；fading = 尾部内容段（去静音后）后半能量 < 前半 70% 且末帧低于峰值 30%；
+   silenceDb = 留白段实测电平（dBFS，数字静音记 -120）——供「留白能否整段跳过」判定，
+   因为「峰值 2%」的相对阈值会把很轻的真实尾奏也算成静音。 */
+const result = { silenceSec: 0, fading: false, silenceDb: null };
 if (!samples || !sampleRate || sampleRate <= 0 || samples.length < sampleRate / 4) return result;
 const win = 2048, hop = 1024;
 const frames = Math.floor((samples.length - win) / hop);
@@ -11146,7 +12110,7 @@ for (let i = 0; i < win; i += 2) { const s = samples[off + i]; const a = Math.ab
 rms[f] = Math.sqrt(sum / (win / 2));
 if (pk > peak) peak = pk;
 }
-if (peak <= 1e-4) { result.silenceSec = samples.length / sampleRate; return result; } // 整段静音
+if (peak <= 1e-4) { result.silenceSec = samples.length / sampleRate; result.silenceDb = -120; return result; } // 整段静音
 const thr = Math.max(peak * 0.02, 0.001);
 let silentTail = 0;
 for (let f = frames - 1; f >= 0; f--) {
@@ -11154,6 +12118,13 @@ if (rms[f] < thr) silentTail++;
 else break;
 }
 result.silenceSec = silentTail * hop / sampleRate;
+/* 留白段实测电平：留白帧的 RMS 均方根 → dBFS（全 0 记 -120，即数字静音） */
+if (silentTail > 0) {
+let eSum = 0;
+for (let f = frames - silentTail; f < frames; f++) eSum += rms[f] * rms[f];
+const eRms = Math.sqrt(eSum / silentTail);
+result.silenceDb = eRms > 1e-6 ? Math.round(20 * Math.log10(eRms) * 10) / 10 : -120;
+}
 /* 淡出判定：尾部静音前的最后 3s 内容，后半均值显著低于前半且末帧已很轻 */
 const lastContent = frames - 1 - silentTail;
 const secFrames = Math.round(sampleRate / hop);
@@ -11446,12 +12417,16 @@ if (stMixBSource) {
 stMixBGain = stMixCtx.createGain();
 stMixBHP = stMixCtx.createBiquadFilter();
 stMixBHP.type = 'highpass'; stMixBHP.frequency.value = 15; stMixBHP.Q.value = 0.7;
+/* ST6：B 侧低通与 HP 串联，默认全开（等效旁路）。⚠️ 低通"打开"是频率由低到高
+   （700 → 20000）；写成 → 15 会把 B 逐渐闷死至静音，是错误方向。 */
+stMixBLP = stMixCtx.createBiquadFilter();
+stMixBLP.type = 'lowpass'; stMixBLP.frequency.value = ST_MIX_LP_OPEN; stMixBLP.Q.value = 0.7;
 stMixBSource.connect(stMixBGain);
-stMixBGain.connect(stMixBHP); stMixBHP.connect(ensureSpatial3dSegment() || stMixCtx.destination);
+stMixBGain.connect(stMixBHP); stMixBHP.connect(stMixBLP); stMixBLP.connect(ensureSpatial3dSegment() || stMixCtx.destination);
 stMixBGain.gain.value = 0;
 bReady = true;
-} else { stMixBGain = null; stMixBHP = null; }
-} catch (_) { stMixBSource = null; stMixBGain = null; stMixBHP = null; bReady = false; }
+} else { stMixBGain = null; stMixBHP = null; stMixBLP = null; }
+} catch (_) { stMixBSource = null; stMixBGain = null; stMixBHP = null; stMixBLP = null; bReady = false; }
 } else { bReady = !!stMixBSource; }
 applySpatial3dDelay();
 return { aRouted, bReady };
@@ -11469,9 +12444,31 @@ try { if (stEchoFB) stEchoFB.disconnect(); } catch (_) {}
 try { if (stEchoHP) stEchoHP.disconnect(); } catch (_) {}
 stEchoSrcNode = null; stEchoDelay = null; stEchoFB = null; stEchoHP = null; stEchoOut = null;
 }
-function stChooseEffect(edges, tailBufOk, graphOk) {
+function stChooseEffect(edges, graphOk) {
 /* 纯函数主体抽至 HarmoniaLib.chooseTransitionEffect（Node 可测，见 smart-transition-pure.test.js） */
-return HarmoniaLib.chooseTransitionEffect(edges, tailBufOk, graphOk, ST_TAIL_SILENCE_CUT);
+return HarmoniaLib.chooseTransitionEffect(edges, graphOk, ST_TAIL_SILENCE_CUT);
+}
+function stDetectKeyOf(mono, sampleRate) {
+/* ST6：chroma → 调性。任一步失败返回 null（调用方据此走中性分支，不缩短重叠）。
+   纯计算，无网络请求；只消费已解码的 PCM。
+
+   护栏有两层（见设计文档 §4.2.15）：
+   ① **复音证据**（主力）：以最低显著谱峰为参照，统计偏离整数倍的谱峰数——
+      单一基频（含 40 次谐波的单音）恒为 0，真实和声 ≥1。无证据时 fail-closed 返回无效。
+      为什么必需：单音与调性剖面能相关到 0.79~0.83（谐波恰好符合某调音级分布），
+      且其聚合熵不低（C2 40 谐波实测 entropy 0.967），故熵折扣单独无法拒绝它。
+      且一个音高不是"调性"——E 既属 C 大调（三音，协和）也属 E 大调，
+      用 Camelot 轮按"调"比较单音必然给出错误相容度（实测 E pedal vs C 大调被判冲突）。
+   ② **熵折扣**（辅助，minEntropy 0.85）：压低音级分布异常集中的素材。 */
+try {
+const ch = HarmoniaLib.computeChroma(mono, sampleRate, {});
+if (!ch || !ch.ok || !ch.chroma) return null;
+const evidence = (typeof HarmoniaLib.computeHarmonyEvidence === 'function')
+? HarmoniaLib.computeHarmonyEvidence(mono, sampleRate, {})
+: null;
+const k = HarmoniaLib.detectKey(ch.chroma, { harmonyEvidence: evidence });
+return (k && k.tonic !== null && k.tonic !== undefined) ? k : null;
+} catch (_) { return null; }
 }
 async function stDecodeToMono(buf) {
 /* ArrayBuffer -> {mono: Float32Array, sampleRate}，失败返回 null */
@@ -11501,7 +12498,7 @@ const viaProxy = !isDesktopEnv() && normalizeMusicSource(song.source) === 'kugou
 const key = (song.source || '') + ':' + song.id;
 const cache = stLoadAnalysisCache();
 const hit = cache[key];
-const hitUseful = !!hit && (((hit.edges && hit.edges.tailOk) || hit.tailBuf || typeof hit.loudnessDb === 'number') || !!(hit.bpm && hit.bpm.bpm > 0));
+const hitUseful = !!hit && (((hit.edges && hit.edges.tailOk) || hit.tailBuf || typeof hit.loudnessDb === 'number') || !!(hit.bpm && hit.bpm.bpm > 0) || !!(hit.keyHead && hit.keyHead.tonic !== null) || !!(hit.energyTail && hit.energyTail.ok));
 if (hitUseful) { console.info('[ST诊断] 命中分析正缓存', key, viaProxy ? '(proxy)' : '(direct)'); return hit; }
 if (hit && hit.neg && hit.ts && Date.now() - hit.ts < (hit.neg === 'noCors' ? ST_NEG_TTL_NOCORS : ST_NEG_TTL_NETWORK)) { if (!stNegLogged.has(key)) { stNegLogged.add(key); console.warn('[ST诊断] 负缓存生效(' + hit.neg + ')，跳过重复分析 — 清除 localStorage 的 ' + ST_ANALYSIS_CACHE_KEY + ' 可强制重试', key); } return null; }
 const pending = stAnalysisInflight.get(key);
@@ -11512,11 +12509,11 @@ let entry;
 try { entry = await task; } finally { stAnalysisInflight.delete(key); }
 const fresh = stLoadAnalysisCache();
 if (entry.negReason) fresh[key] = { neg: entry.negReason, ts: Date.now() };
-else fresh[key] = { edges: entry.edges, bpm: entry.bpm, loudnessDb: entry.loudnessDb, fetchVia: entry.fetchVia, ts: Date.now() };
+else fresh[key] = { edges: entry.edges, bpm: entry.bpm, loudnessDb: entry.loudnessDb, fetchVia: entry.fetchVia, ts: Date.now(), keyHead: entry.keyHead || null, keyTail: entry.keyTail || null, energyHead: entry.energyHead || null, energyTail: entry.energyTail || null };
 stTrimAnalysisCache(fresh);
 stSaveAnalysisCache(fresh);
 if (entry.tailBuf) stCacheTailBuffer(key, entry.tailBuf); // AudioBuffer 不进 localStorage
-const _stOkEntry = !!((entry.bpm && entry.bpm.bpm > 0) || entry.tailBuf || (entry.edges && entry.edges.tailOk) || typeof entry.loudnessDb === 'number');
+const _stOkEntry = !!((entry.bpm && entry.bpm.bpm > 0) || entry.tailBuf || (entry.edges && entry.edges.tailOk) || typeof entry.loudnessDb === 'number' || (entry.keyHead && entry.keyHead.tonic !== null) || (entry.energyTail && entry.energyTail.ok));
 if (!_stOkEntry && !entry.negReason) console.warn('[ST诊断] 分析结果全部落空且无失败归因 → 不写正缓存', key);
 return _stOkEntry ? fresh[key] : null;
 }
@@ -11575,6 +12572,7 @@ const tailMeasure = tail ? stMeasureTail(tail.mono, tail.sampleRate) : null;
 const edges = {
 leadSilenceSec: head ? stMeasureLeadSilence(head.mono, head.sampleRate) : 0,
 tailSilenceSec: tailMeasure ? tailMeasure.silenceSec : 0,
+tailSilenceDb: (tailMeasure && typeof tailMeasure.silenceDb === 'number') ? tailMeasure.silenceDb : null,
 tailFading: tailMeasure ? tailMeasure.fading : false,
 tailOk: !!tailMeasure // 尾部片段是否分析成功（部分 CDN 不支持后缀 Range，失败时不可误判骤然结尾）
 };
@@ -11584,7 +12582,16 @@ const r = stDetectBpm(head.mono, head.sampleRate);
 console.info('[ST诊断] stDetectBpm输出 bpm=' + r.bpm + ' 置信=' + (Math.round(r.confidence * 1000) / 1000));
 if (r.bpm && r.confidence >= ST_BPM_CONF_MIN) bpm = r;
 }
-return { edges, bpm, tailBuf: tail ? stSliceTailForEcho(tail.mono, tail.sampleRate) : null, loudnessDb, fetchVia: viaProxy ? 'proxy' : 'direct' };
+/* ST6：调性 × 能量双维相容度所需的音乐语义特征——全部复用上面已解码的 PCM，
+   不新增任何网络请求（分析预算仍为头/尾各 ≈30s）。任一项失败为 null，调用方走中性分支。 */
+const keyHead = head ? stDetectKeyOf(head.mono, head.sampleRate) : null;
+const keyTail = tail ? stDetectKeyOf(tail.mono, tail.sampleRate) : null;
+const energyHead = head ? HarmoniaLib.computeEnergyShape(head.mono, head.sampleRate, {}) : null;
+const energyTail = tail ? HarmoniaLib.computeEnergyShape(tail.mono, tail.sampleRate, {}) : null;
+if (keyTail) console.info('[ST诊断] 调性(A尾) tonic=' + keyTail.tonic + ' mode=' + keyTail.mode + ' 置信=' + keyTail.confidence);
+if (keyHead) console.info('[ST诊断] 调性(B头) tonic=' + keyHead.tonic + ' mode=' + keyHead.mode + ' 置信=' + keyHead.confidence);
+if (energyTail && energyTail.ok) console.info('[ST诊断] 能量(A尾) trend=' + energyTail.trend + ' endFullness=' + energyTail.endFullness);
+return { edges, bpm, tailBuf: tail ? stSliceTailForEcho(tail.mono, tail.sampleRate) : null, loudnessDb, fetchVia: viaProxy ? 'proxy' : 'direct', keyHead, keyTail, energyHead, energyTail };
 } catch (e) {
 console.warn('[SmartTransition] 歌曲分析失败:', e?.message || e);
 return { edges: null, bpm: null, tailBuf: null, loudnessDb: null, negReason: 'networkFail', fetchVia: viaProxy ? 'proxy' : 'direct' };
@@ -11611,6 +12618,11 @@ stEdgesCurrent = r.edges; stEdgesCurrentId = song.id;
 console.log('[SmartTransition] 当前歌尾部:', r.edges.tailOk ? ('静音 ' + r.edges.tailSilenceSec.toFixed(2) + 's ' + (r.edges.tailFading ? '淡出结尾' : '非淡出')) : '未解析(容器音源尾段不可独立解码，混音降级为淡化)');
 if (r.bpm) { stBpmCurrent = r.bpm; stBpmCurrentId = song.id; }
 } else { stEdgesCurrent = null; stEdgesCurrentId = song.id; } // 无 CORS 也记 id，避免重复探测
+/* ST6：调性/能量与 edges/bpm 同源（同一次 stGetSongFeatures），一并交接 */
+stHarmCurrent = (r && (r.keyHead || r.keyTail || (r.energyHead && r.energyHead.ok) || (r.energyTail && r.energyTail.ok)))
+? { keyHead: r.keyHead || null, keyTail: r.keyTail || null, energyHead: r.energyHead || null, energyTail: r.energyTail || null }
+: null;
+stHarmCurrentId = song.id;
 }).catch(() => { stEdgesCurrentPending = false; });
 }
 function stEnsureNextEdges() {
@@ -11627,6 +12639,11 @@ stEdgesNext = (r && r.edges) ? r.edges : null;
 stEdgesNextId = song.id;
 if (r && r.edges) console.log('[SmartTransition] 下一首开头静音:', r.edges.leadSilenceSec.toFixed(2) + 's');
 if (r && r.bpm) { stBpmNext = r.bpm; stBpmNextId = song.id; }
+/* ST6：调性/能量与 edges/bpm 同源，一并交接 */
+stHarmNext = (r && (r.keyHead || r.keyTail || (r.energyHead && r.energyHead.ok) || (r.energyTail && r.energyTail.ok)))
+? { keyHead: r.keyHead || null, keyTail: r.keyTail || null, energyHead: r.energyHead || null, energyTail: r.energyTail || null }
+: null;
+stHarmNextId = song.id;
 }).catch(() => { stEdgesNextPending = false; });
 }
 function stEnsureCurrentBpm() {
@@ -11664,6 +12681,8 @@ if (r && r.bpm) console.log('[SmartTransition] 下一首 BPM:', r.bpm.bpm, '置�
 function stEnsureNextPreloaded() {
 try {
 if (currentPlayMode === 'repeat') return;
+/* 队列/顺序变化后预载可能已过期：与 crossfade 触发共用 resolveGaplessNext
+   （含随机排除/自定义顺序/会话一致性），并用 preloadedOk 确保缓冲仍然指向该歌 */
 const _r1 = resolveGaplessNext();
 const upcomingId = _r1 ? _r1.id : null;
 if (!upcomingId) return;
@@ -11689,9 +12708,10 @@ try {
 if (stMixCtx && stMixCtx.state === 'running') {
 const nowM = stMixCtx.currentTime;
 if (stMixAGain) { stMixAGain.gain.cancelScheduledValues(nowM); stMixAGain.gain.setValueAtTime(applyMasterVolumeValue(), nowM); }
-if (stMixAHP) { stMixAHP.frequency.cancelScheduledValues(nowM); stMixAHP.frequency.setValueAtTime(10, nowM); }
+if (stMixAHP) { stMixAHP.frequency.cancelScheduledValues(nowM); stMixAHP.frequency.setValueAtTime(ST_MIX_HP_FROM, nowM); }
 if (stMixBGain) { stMixBGain.gain.cancelScheduledValues(nowM); stMixBGain.gain.setValueAtTime(0, nowM); }
 if (stMixBHP) { stMixBHP.frequency.cancelScheduledValues(nowM); stMixBHP.frequency.setValueAtTime(15, nowM); }
+if (stMixBLP) { stMixBLP.frequency.cancelScheduledValues(nowM); stMixBLP.frequency.setValueAtTime(ST_MIX_LP_OPEN, nowM); }
 }
 } catch (_) {}
 stMixMode = 'none';
@@ -11714,6 +12734,75 @@ setTimeout(() => { playSong(nextSong, true).catch(() => {}); stAutoAdvancing = f
 }
 }
 }
+}
+function stResetTransitionState(nextSong, matchGain) {
+/* 交接后的公共状态复位（原散落在 3 份 finish 中，逐字重复；
+   performCrossfadeToNext.complete 无此尾段，不在收敛范围）：
+   复位过渡标志、清预载句柄、把"下一首"的特征交接为"当前"、恢复响度缓释。
+   不含 A/B 增益与滤波复位（那是包络职责，由各 runner 自己决定时机）。 */
+stActive = false;
+stTriggered = false;
+isCrossfading = false;
+stMixMode = 'none';
+gaplessPreloadUrl = null;
+gaplessPreloadedSongId = null;
+/* 特征交接：下一首变当前，再下一首等待重新分析 */
+stBpmCurrent = (stBpmNextId === nextSong.id) ? stBpmNext : null;
+stBpmCurrentId = nextSong.id;
+stBpmNext = null;
+stBpmNextId = null;
+stEdgesCurrent = (stEdgesNextId === nextSong.id) ? stEdgesNext : null;
+stEdgesCurrentId = nextSong.id;
+stEdgesNext = null;
+stEdgesNextId = null;
+stStrategy = null;
+stStrategySongId = null;
+stRateApplied = 1;
+stStartLoudnessRelease(matchGain);
+}
+function stHandoff(opts) {
+/* 唯一交接实现（替代原先 4 份复制的 finish 公共段）。
+   与既有行为等价的差异只有一处【本方案的止血点】：
+   交接后不再清空 audioPlayerB.src —— 保留 B 已缓冲的数据，供同 URL 复用，
+   避免 A 重新发起请求并重新缓冲（这正是换歌瞬间卡顿的机制性根因）。
+   B 仍会被 pause 且音量归零，不会串音。
+
+   ⚠️ 两个调用方须知（Task 3 评审结论）：
+   ① 返回值仅作**诊断信息**，四个调用点都不消费它——降级动作已在内部完成
+      （B 出错时本函数自己调 stCleanup 并提前 return）。**不要在调用点依赖它决定流程。**
+   ② "不清空 B" 是**有条件的**：B 出错分支会先调 stCleanup 再提前 return，而 stCleanup
+      自己的清理带 `if (!audioPlayerB.error)` 守卫 —— 即在**这条路径上 B.src 不会被清**，
+      出错时 B 保留的是失效/过期的 src。无论哪种情况，**交接后都不得假设 B.src 有有效值**，
+      一切对 B 是否可用的判断都必须继续走 gaplessPreloadUrl / preloadedOk 守卫。
+   返回 true = 已交接；false = B 已出错，已转为 stCleanup 降级（仅供诊断）。 */
+const o = opts || {};
+const nextSong = o.nextSong;
+if (!nextSong) return false;
+const matchGain = (typeof o.matchGain === 'number' && isFinite(o.matchGain)) ? o.matchGain : 1;
+const targetVol = (typeof o.targetVol === 'number' && isFinite(o.targetVol)) ? o.targetVol : applyMasterVolumeValue();
+if (audioPlayerB.error) { stCleanup({ autoAdvance: true }); return false; }
+/* 包络差异留给各 runner：四份 finish 各自的包络复位在 A 侧交接前执行 */
+try { if (typeof o.onBeforeA === 'function') o.onBeforeA(); } catch (e) { console.warn('[SmartTransition] 交接前置回调异常:', e?.message || e); }
+try {
+audioPlayer.pause();
+/* 跨域适配：交接前按新音源重置 crossorigin（酷狗移除，其余 anonymous） */
+stApplySourceMediaAttrs(audioPlayer, nextSong.source);
+audioPlayer.src = audioPlayerB.src;
+audioPlayer.currentTime = Math.max(0, audioPlayerB.currentTime || 0);
+audioPlayer.playbackRate = (typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1;
+/* 交接后 A 由 stMixAGain 接管（3D/EQ attach 时元素 volume 旁路）：必须双写恢复增益，
+否则过渡时被 stSetALevel 淡到 0 的 stMixAGain.gain 不会复位，下一首声音极小 */
+stSetALevel(Math.min(1, targetVol * matchGain));
+audioPlayer.play().catch(() => {});
+} catch (e) {
+console.warn('[SmartTransition] 交接异常:', e?.message || e);
+}
+/* B 侧：暂停并把音量归零，但【保留 src】——已缓冲数据是下一次交接的资源 */
+try { audioPlayerB.pause(); } catch (_) {}
+stSetBLevel(0);
+audioPlayerB.playbackRate = 1;
+stResetTransitionState(nextSong, matchGain);
+return true;
 }
 function stSwitchSongMeta(nextSong) {
 /* 元数据与 UI 切换（合并 performCrossfadeToNext + timeupdate 后置两段重复逻辑） */
@@ -11764,6 +12853,19 @@ return HarmoniaLib.computeMatchGain(
 (typeof nxt?.loudnessDb === 'number') ? nxt.loudnessDb : null);
 } catch (_) { return 1; }
 }
+function stComputeBStartOffset(nextSong) {
+/* 下一首起播点：跳过开头静音，并在两侧高置信时把它的重拍对齐到混音起点。
+   纯函数主体在 pure.js computeTransitionStartOffset（Node 可测，见 smart-transition-align.test.js）。 */
+try {
+const nb = (stBpmNext && stBpmNextId === nextSong.id) ? stBpmNext : null;
+const e = (stEdgesNext && stEdgesNextId === nextSong.id) ? stEdgesNext : null;
+return HarmoniaLib.computeTransitionStartOffset(nb, (e && e.leadSilenceSec) || 0, {
+maxStartSec: ST_START_OFFSET_MAX,
+confidenceMin: ST_BPM_ALIGN_CONF
+});
+} catch (_) { return { startAtSec: 0, aligned: false, beatSec: 0 }; }
+}
+
 let stLoudnessReleaseTimer = null;
 function stAbortLoudnessRelease() {
 if (stLoudnessReleaseTimer) { clearInterval(stLoudnessReleaseTimer); stLoudnessReleaseTimer = null; }
@@ -11783,7 +12885,7 @@ try { if (inGraph && stMixAGain) stMixAGain.gain.value = v; else audioPlayer.vol
 if (x >= 1) stAbortLoudnessRelease();
 }, 50);
 }
-function stRunVolumeMix(nextSong, fadeDur) {
+function stRunVolumeMix(nextSong, fadeDur, plan) {
 /* 音量淡化（降级路径）：无分析结果/静音段浮现/图不可用时的等功率交叉淡化 */
 console.info('[ST诊断] 走音量淡化 fadeDur=' + fadeDur + ' graphOk=' + stMixerGraphOk());
 if (stActive) return false;
@@ -11797,10 +12899,15 @@ if (fadeDur > 0.5 && audioPlayer.paused) { stTriggered = false; return false; }
 /* 轻节拍对齐：仅两侧均高置信时微调待播元素速率（±3%），当前歌不变速 */
 let rate = 1;
 try {
+/* ST6：Plan 已含（可能放宽的）对齐速率；无 Plan 时回退既有路径，行为不变 */
+if (plan && typeof plan.alignRate === 'number' && isFinite(plan.alignRate)) {
+rate = plan.alignRate;
+} else {
 const cb = (stBpmCurrent && stBpmCurrentId === currentPlayingId) ? stBpmCurrent : null;
 const nb = (stBpmNext && stBpmNextId === nextSong.id) ? stBpmNext : null;
 if (cb && nb && cb.confidence >= ST_BPM_ALIGN_CONF && nb.confidence >= ST_BPM_ALIGN_CONF) {
 rate = stComputeAlignRate(cb.bpm, nb.bpm);
+}
 }
 } catch (_) { rate = 1; }
 stRateApplied = rate;
@@ -11812,10 +12919,13 @@ let useEqPath = false;
 try { useEqPath = !!(eqGraphInitialized && eqOutputNode && eqAudioContext && eqAudioContext.state === 'running'); } catch (_) {}
 const startVolA = audioPlayer.volume;
 const targetVol = volumeSlider ? parseFloat(volumeSlider.value) : 0.7;
-const matchGain = stComputeMatchGainFor(currentSongData, nextSong);
+const matchGain = (plan && typeof plan.matchGain === 'number') ? plan.matchGain : stComputeMatchGainFor(currentSongData, nextSong);
+/* 起播点：跳过下一首开头静音 + 重拍相位对齐（见 stComputeBStartOffset） */
+const bStart = stComputeBStartOffset(nextSong);
 stSetBLevel(0);
 try {
-audioPlayerB.currentTime = 0;
+/* 起播点通常就是下一首第一个拍点附近，>0.05s 才值得 seek；异常由 catch 回退 */
+audioPlayerB.currentTime = bStart.startAtSec > 0.05 ? bStart.startAtSec : 0;
 /* 用户设置了播放速度时叠加轻对齐速率，避免交接后速率突变 */
 audioPlayerB.playbackRate = ((typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1) * stRateApplied;
 if ('preservesPitch' in audioPlayerB) audioPlayerB.preservesPitch = true; // 变速不变音高
@@ -11836,22 +12946,12 @@ if (finished) return;
 finished = true;
 stFadeStop();
 activeTransitionFinish = null;
-if (audioPlayerB.error) { stCleanup({ autoAdvance: true }); return; }
-try {
-audioPlayer.pause();
-/* 跨域适配：交接前按新音源重置 crossorigin（酷狗移除，其余 anonymous） */
-stApplySourceMediaAttrs(audioPlayer, nextSong.source);
-audioPlayer.src = audioPlayerB.src;
-audioPlayer.currentTime = Math.max(0, audioPlayerB.currentTime || 0);
-audioPlayer.playbackRate = (typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1;
-/* 交接后 A 由 stMixAGain 接管（3D/EQ attach 时元素 volume 旁路）：必须双写恢复增益，
-否则过渡时被 stSetALevel 淡到 0 的 stMixAGain.gain 不会复位，下一首声音极小 */
-stSetALevel(Math.min(1, targetVol * matchGain));
-audioPlayer.play().catch(() => {});
-} catch (e) {
-console.warn('[SmartTransition] 交接异常:', e?.message || e);
-} finally {
-stStartLoudnessRelease(matchGain);
+/* 包络差异：EQ 图激活时 A 侧淡化走 eqOutputNode.gain，交接前必须归一 */
+stHandoff({
+nextSong: nextSong,
+matchGain: matchGain,
+targetVol: targetVol,
+onBeforeA: function () {
 if (useEqPath) {
 try {
 const now2 = eqAudioContext.currentTime;
@@ -11859,39 +12959,8 @@ eqOutputNode.gain.cancelScheduledValues(now2);
 eqOutputNode.gain.setValueAtTime(1, now2);
 } catch (_) {}
 }
-try { audioPlayerB.pause(); } catch (_) {}
-audioPlayerB.src = '';
-stSetBLevel(0);
-audioPlayerB.playbackRate = 1;
-gaplessPreloadUrl = null;
-gaplessPreloadedSongId = null;
-isCrossfading = false;
-stActive = false;
-stTriggered = false;
-stMixMode = 'none';
-/* 特征交接：下一首变当前，再下一首等待重新分析 */
-stBpmCurrent = (stBpmNextId === nextSong.id) ? stBpmNext : null;
-stBpmCurrentId = nextSong.id;
-stBpmNext = null;
-stBpmNextId = null;
-stEdgesCurrent = (stEdgesNextId === nextSong.id) ? stEdgesNext : null;
-stEdgesCurrentId = nextSong.id;
-stEdgesNext = null;
-stEdgesNextId = null;
-stStrategy = null;
-stStrategySongId = null;
-stRateApplied = 1;
-/* EQ 兼容：新音源不支持 CORS 时自动关闭 EQ（与 playSong 同策略，避免静音） */
-if (eqSettings.enabled && audioPlayer.src) {
-probeEqUrlSupport(audioPlayer.src).then(support => {
-if (!support.ok) {
-eqSettings.enabled = false;
-persistAndRefreshEqUi();
-showDynamicIslandToast('新歌曲音源不支持均衡器，已自动关闭', 3000);
 }
-}).catch(() => {});
-}
-}
+});
 }
 function tick() {
 const t = (performance.now() - t0) / 1000;
@@ -11928,7 +12997,42 @@ if (strat === 'silenceMix') {
 const e = (stEdgesCurrent && stEdgesCurrentId === currentPlayingId) ? stEdgesCurrent : null;
 win = Math.min(win, Math.max(2, ((e && e.tailSilenceSec) || 0) + 1));
 }
+/* 整小节量化（ST3）：当前歌高置信时把窗口对齐到 4 拍小节，使交接点落在强拍上。
+   执行层用 min(窗口, 剩余) 夹取时长，故量化只改变淡化长度、不会让交接越过内容末端。 */
+if (win >= ST_BAR_QUANT_MIN) {
+try {
+const cb = (stBpmCurrent && stBpmCurrentId === currentPlayingId) ? stBpmCurrent : null;
+win = HarmoniaLib.quantizeMixToBar(win, cb, ST_MIX_MIN, ST_MIX_MAX, {
+confidenceMin: ST_BPM_ALIGN_CONF,
+beatsPerBar: ST_BEATS_PER_BAR
+});
+} catch (_) {}
+}
 return win;
+}
+function stSkippableTailSilence(e) {
+/* 当前歌尾部留白里可安全整段跳过的秒数（留白 = 内容已经结束的那一段）。
+   判定见 pure.js computeSkippableTailSilence：相对阈值（峰值 2%）只能说明"很轻"，
+   必须实测电平也足够低（≤ ST_SILENCE_QUIET_DB）才整段跳过，否则只跳固定一小段。 */
+if (!e) return 0;
+try {
+return HarmoniaLib.computeSkippableTailSilence(e.tailSilenceSec || 0,
+(typeof e.tailSilenceDb === 'number') ? e.tailSilenceDb : null, {
+silenceCutSec: ST_TAIL_SILENCE_CUT,
+quietDbMax: ST_SILENCE_QUIET_DB
+});
+} catch (_) { return 0; }
+}
+function stTransitionTriggerLead() {
+/* 触发提前量（ST3/ST4）：= 窗口 + 可跳过的尾部留白 + 余量。
+   交接时刻因此落在当前歌的**内容末端**：尾部长留白被整段跳过，用户不会先干等十几秒；
+   取代原先「窗口 + 固定 1.5s」的猜测余量。纯函数主体在 pure.js computeTransitionTriggerLead。 */
+try {
+const e = (stEdgesCurrent && stEdgesCurrentId === currentPlayingId) ? stEdgesCurrent : null;
+return HarmoniaLib.computeTransitionTriggerLead(stEffectiveWindow(), stSkippableTailSilence(e), {
+marginSec: ST_TRIGGER_MARGIN
+});
+} catch (_) { return stEffectiveWindow() + 1.5; }
 }
 function stCurrentStrategy() {
 /* 按当前歌结尾形态选策略，按歌缓存防抖动。
@@ -11940,7 +13044,7 @@ stStrategy = stDecideStrategy(e);
 stStrategySongId = e ? currentPlayingId : null; // edges 未就绪时不缓存：避免早期算出的 'fade' 在 edges 到达后被误命中
 return stStrategy;
 }
-function stRunBassSwap(nextSong, mixDur) {
+function stRunBassSwap(nextSong, mixDur, plan) {
 /* 低频交接（需 EQ 图）：A 通道低切上行抽走鼓与贝斯，B 通道低切下行扫入接棒低频，等功率增益曲线；
    图不可用时自动回退音量淡化 */
 if (stActive) return false;
@@ -11950,38 +13054,60 @@ if (nextSong.id !== gaplessPreloadedSongId) { stTriggered = false; return false;
 if (audioPlayer.paused) { stTriggered = false; return false; }
 const mix = stEnsureMixer();
 console.info('[ST诊断] 走bassSwap aRouted=' + mix.aRouted + ' bReady=' + mix.bReady + ' 3D=' + (spatial3dEnabled() ? '开' : '关'));
-if (!mix.aRouted || !mix.bReady) return stRunVolumeMix(nextSong, mixDur);
+if (!mix.aRouted || !mix.bReady) return stRunVolumeMix(nextSong, mixDur, plan);
 let rate = 1;
 try {
+/* ST6：Plan 已含（可能放宽的）对齐速率；无 Plan 时回退既有路径，行为不变 */
+if (plan && typeof plan.alignRate === 'number' && isFinite(plan.alignRate)) {
+rate = plan.alignRate;
+} else {
 const cb = (stBpmCurrent && stBpmCurrentId === currentPlayingId) ? stBpmCurrent : null;
 const nb = (stBpmNext && stBpmNextId === nextSong.id) ? stBpmNext : null;
 if (cb && nb && cb.confidence >= ST_BPM_ALIGN_CONF && nb.confidence >= ST_BPM_ALIGN_CONF) rate = stComputeAlignRate(cb.bpm, nb.bpm);
+}
 } catch (_) { rate = 1; }
 stRateApplied = rate;
 const targetVol = volumeSlider ? parseFloat(volumeSlider.value) : 0.7;
-const matchGain = stComputeMatchGainFor(currentSongData, nextSong);
+const matchGain = (plan && typeof plan.matchGain === 'number') ? plan.matchGain : stComputeMatchGainFor(currentSongData, nextSong);
+/* 起播点：跳过下一首开头静音 + 重拍相位对齐（见 stComputeBStartOffset） */
+const bStart = stComputeBStartOffset(nextSong);
 const startA = Math.max(0.0001, stMixAGain.gain.value);
 try {
 const now = stMixCtx.currentTime;
 stMixAGain.gain.cancelScheduledValues(now);
 stMixAGain.gain.setValueAtTime(startA, now);
+const eqPlan = (plan && plan.eq) ? plan.eq : null;
+/* ST6：冲突时缩短 A 侧低切用时（更快让路）；高相容时与既有 0.65 一致 */
+const aHpRatio = (eqPlan && typeof eqPlan.aHpDurRatio === 'number') ? eqPlan.aHpDurRatio : ST_HP_DUR_RATIO_GOOD;
 stMixAHP.frequency.cancelScheduledValues(now);
-stMixAHP.frequency.setValueAtTime(Math.max(10, stMixAHP.frequency.value || 10), now);
-stMixAHP.frequency.linearRampToValueAtTime(ST_MIX_HP_HZ, now + mixDur * 0.65); /* 抽走低频 */
+stMixAHP.frequency.setValueAtTime(Math.max(ST_MIX_HP_FROM, stMixAHP.frequency.value || ST_MIX_HP_FROM), now);
+stMixAHP.frequency.linearRampToValueAtTime((eqPlan && eqPlan.aHpTo) || ST_MIX_HP_HZ, now + mixDur * aHpRatio); /* 抽走低频 */
 stMixBGain.gain.cancelScheduledValues(now);
 stMixBGain.gain.setValueAtTime(0.0001, now);
 stMixBHP.frequency.cancelScheduledValues(now);
 stMixBHP.frequency.setValueAtTime(300, now);
 stMixBHP.frequency.exponentialRampToValueAtTime(15, now + mixDur * 0.8); /* 低频接棒 */
+/* ST6：B 侧低通扫入（由暗到亮）。plan.eq.bLp === null → 复位为全开（等效旁路）。
+   ⚠️ 方向：from(700) → to(20000/12000) 是"打开"；写成 to=15 会把 B 闷死至静音。
+   bypass 用 null 而非 0：低通频率 0 就是全静音，是危险哨兵值。 */
+if (stMixBLP) {
+stMixBLP.frequency.cancelScheduledValues(now);
+if (eqPlan && eqPlan.bLp && eqPlan.bLp.to > eqPlan.bLp.from) {
+stMixBLP.frequency.setValueAtTime(eqPlan.bLp.from, now);
+stMixBLP.frequency.exponentialRampToValueAtTime(eqPlan.bLp.to, now + mixDur * 0.8);
+} else {
+stMixBLP.frequency.setValueAtTime(ST_MIX_LP_OPEN, now);
+}
+}
 } catch (e) {
 console.warn('[SmartTransition] bassSwap 调度失败，回退音量淡化:', e?.message || e);
-return stRunVolumeMix(nextSong, mixDur);
+return stRunVolumeMix(nextSong, mixDur, plan);
 }
 stActive = true;
 stMixMode = 'fade';
 stSwitchSongMeta(nextSong);
 try {
-audioPlayerB.currentTime = 0;
+audioPlayerB.currentTime = bStart.startAtSec > 0.05 ? bStart.startAtSec : 0;
 audioPlayerB.playbackRate = ((typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1) * stRateApplied;
 if ('preservesPitch' in audioPlayerB) audioPlayerB.preservesPitch = true;
 } catch (_) {}
@@ -11993,64 +13119,27 @@ if (finished) return;
 finished = true;
 stFadeStop();
 activeTransitionFinish = null;
-if (audioPlayerB.error) { stCleanup({ autoAdvance: true }); return; }
-try {
-audioPlayer.pause();
-stApplySourceMediaAttrs(audioPlayer, nextSong.source);
-audioPlayer.src = audioPlayerB.src;
-audioPlayer.currentTime = Math.max(0, audioPlayerB.currentTime || 0);
-audioPlayer.playbackRate = (typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1;
-/* 交接后 A 由 stMixAGain 接管（3D/EQ attach 时元素 volume 旁路）：必须双写恢复增益，
-否则过渡时被 stSetALevel 淡到 0 的 stMixAGain.gain 不会复位，下一首声音极小 */
-stSetALevel(Math.min(1, targetVol * matchGain));
-audioPlayer.play().catch(() => {});
-} catch (e) {
-console.warn('[SmartTransition] 交接异常:', e?.message || e);
-} finally {
+/* 包络差异：bassSwap 的 HP/LP 扫频必须在交接前复位，否则残留滤波会让后续普通播放发闷 */
+stHandoff({
+nextSong: nextSong,
+matchGain: matchGain,
+targetVol: targetVol,
+onBeforeA: function () {
 try {
 const now2 = stMixCtx.currentTime;
 stMixAGain.gain.cancelScheduledValues(now2);
 stMixAGain.gain.setValueAtTime(Math.min(1, targetVol * matchGain), now2);
 stMixAHP.frequency.cancelScheduledValues(now2);
-stMixAHP.frequency.setValueAtTime(10, now2);
+stMixAHP.frequency.setValueAtTime(ST_MIX_HP_FROM, now2);
 stMixBGain.gain.cancelScheduledValues(now2);
 stMixBGain.gain.setValueAtTime(0, now2);
 stMixBHP.frequency.cancelScheduledValues(now2);
 stMixBHP.frequency.setValueAtTime(15, now2);
+/* ST6：B 侧低通复位为全开，避免残留滤波让后续普通播放发闷 */
+if (stMixBLP) { stMixBLP.frequency.cancelScheduledValues(now2); stMixBLP.frequency.setValueAtTime(ST_MIX_LP_OPEN, now2); }
 } catch (_) {}
-try { audioPlayerB.pause(); } catch (_) {}
-audioPlayerB.src = '';
-stSetBLevel(0); /* 3D 丽音挂载后元素 volume 被旁路 */
-audioPlayerB.playbackRate = 1;
-stMixMode = 'none';
-gaplessPreloadUrl = null;
-gaplessPreloadedSongId = null;
-isCrossfading = false;
-stActive = false;
-stTriggered = false;
-/* 特征交接：下一首变当前，再下一首等待重新分析 */
-stBpmCurrent = (stBpmNextId === nextSong.id) ? stBpmNext : null;
-stBpmCurrentId = nextSong.id;
-stBpmNext = null;
-stBpmNextId = null;
-stEdgesCurrent = (stEdgesNextId === nextSong.id) ? stEdgesNext : null;
-stEdgesCurrentId = nextSong.id;
-stEdgesNext = null;
-stEdgesNextId = null;
-stStrategy = null;
-stStrategySongId = null;
-stRateApplied = 1;
-stStartLoudnessRelease(matchGain);
-if (eqSettings.enabled && audioPlayer.src) {
-probeEqUrlSupport(audioPlayer.src).then(support => {
-if (!support.ok) {
-eqSettings.enabled = false;
-persistAndRefreshEqUi();
-showDynamicIslandToast('新歌曲音源不支持均衡器，已自动关闭', 3000);
 }
-}).catch(() => {});
-}
-}
+});
 }
 function tick() {
 const t = (performance.now() - t0) / 1000;
@@ -12068,8 +13157,11 @@ stFadeStart(tick);
 return true;
 }
 function stPerformEchoOut(nextSong) {
-/* 回声收尾（骤然结尾，从 ended 进入）：干声已停，把尾部原料的最后一小片送进
-   BPM 同步的延迟反馈网络拖出回声，同时下一首淡入；回声尾在交接后继续衰减。 */
+/* 回声收尾：干声已停，把尾部原料的最后一小片送进 BPM 同步的延迟反馈网络拖出回声，
+   同时下一首淡入；回声尾在交接后继续衰减。
+   ⚠️ 当前**不在自动选择路径上**（2026-09-30 ST5）：chooseTransitionEffect 已不再产出 echoOut，
+   ended 分支也已移除。原因：拖尾会盖到下一首开头上，而"骤然结尾"判据覆盖绝大多数正常结尾，
+   实测几乎每首歌都触发。实现保留，待做成可选设置（开关 + 强度）后再启用。 */
 if (stActive || stMixMode !== 'none') return false;
 if (!isSmartTransitionEnabled()) return false;
 if (!gaplessPreloadUrl || !audioPlayerB.src || audioPlayerB.src === window.location.href) return false;
@@ -12086,6 +13178,8 @@ if (stMixCtx.state === 'suspended') stMixCtx.resume().catch(() => {});
 const ctx = stMixCtx;
 const targetVol = volumeSlider ? parseFloat(volumeSlider.value) : 0.7;
 const matchGain = stComputeMatchGainFor(currentSongData, nextSong);
+/* 起播点：跳过下一首开头静音 + 重拍相位对齐（见 stComputeBStartOffset） */
+const bStart = stComputeBStartOffset(nextSong);
 const bpmInfo = (stBpmCurrent && prevSong && stBpmCurrentId === prevSong.id) ? stBpmCurrent : null;
 const beat = (bpmInfo && bpmInfo.bpm > 0) ? 60 / bpmInfo.bpm : 0.5;
 let rate = 1;
@@ -12126,12 +13220,28 @@ stDismantleEcho();
 return false;
 }
 stRateApplied = rate;
+/* 决策可观测：echoOut 走 ended 路径，不经过 stPerformTransition，单独记一条计划 */
+try {
+const _echoPlan = {
+kind: 'echoOut',
+from: prevSong && prevSong.id,
+to: nextSong.id,
+startAtSec: bStart.startAtSec,
+phaseAligned: !!bStart.aligned,
+rate: Math.round(rate * 10000) / 10000,
+beatSec: Math.round(beat * 1000) / 1000,
+tailBufSec: Math.round((tail.mono.length / (tail.sampleRate || 1)) * 100) / 100,
+matchGain: matchGain
+};
+stDiag(_echoPlan);
+console.info('[ST计划] ' + JSON.stringify(_echoPlan));
+} catch (_) {}
 stActive = true;
 stMixMode = 'echo';
 console.info('[SmartTransition] 回声收尾启动（骤然结尾），3D丽音=' + (spatial3dEnabled() ? '开' : '关'));
 stSwitchSongMeta(nextSong);
 try {
-audioPlayerB.currentTime = 0;
+audioPlayerB.currentTime = bStart.startAtSec > 0.05 ? bStart.startAtSec : 0;
 audioPlayerB.playbackRate = ((typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1) * stRateApplied;
 if ('preservesPitch' in audioPlayerB) audioPlayerB.preservesPitch = true;
 } catch (_) {}
@@ -12141,48 +13251,8 @@ const et0 = performance.now();
 function finishEcho() {
 stFadeStop();
 activeTransitionFinish = null;
-if (audioPlayerB.error) { stCleanup({ autoAdvance: true }); return; }
-try {
-stApplySourceMediaAttrs(audioPlayer, nextSong.source);
-audioPlayer.src = audioPlayerB.src;
-audioPlayer.currentTime = Math.max(0, audioPlayerB.currentTime || 0);
-audioPlayer.playbackRate = (typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1;
-/* 交接后 A 由 stMixAGain 接管（3D/EQ attach 时元素 volume 旁路）：必须双写恢复增益，
-否则过渡时被 stSetALevel 淡到 0 的 stMixAGain.gain 不会复位，下一首声音极小 */
-stSetALevel(Math.min(1, targetVol * matchGain));
-audioPlayer.play().catch(() => {});
-} catch (e) { console.warn('[SmartTransition] 回声交接异常:', e?.message || e); }
-try { audioPlayerB.pause(); } catch (_) {}
-audioPlayerB.src = '';
-stSetBLevel(0);
-audioPlayerB.playbackRate = 1;
-gaplessPreloadUrl = null;
-gaplessPreloadedSongId = null;
-isCrossfading = false;
-stActive = false;
-stTriggered = false;
-stMixMode = 'none';
-stBpmCurrent = (stBpmNextId === nextSong.id) ? stBpmNext : null;
-stBpmCurrentId = nextSong.id;
-stBpmNext = null;
-stBpmNextId = null;
-stEdgesCurrent = (stEdgesNextId === nextSong.id) ? stEdgesNext : null;
-stEdgesCurrentId = nextSong.id;
-stEdgesNext = null;
-stEdgesNextId = null;
-stStrategy = null;
-stStrategySongId = null;
-stRateApplied = 1;
-stStartLoudnessRelease(matchGain);
-if (eqSettings.enabled && audioPlayer.src) {
-probeEqUrlSupport(audioPlayer.src).then(support => {
-if (!support.ok) {
-eqSettings.enabled = false;
-persistAndRefreshEqUi();
-showDynamicIslandToast('新歌曲音源不支持均衡器，已自动关闭', 3000);
-}
-}).catch(() => {});
-}
+/* 包络差异：最小——无 A/B 增益与滤波复位，故无 onBeforeA */
+stHandoff({ nextSong: nextSong, matchGain: matchGain, targetVol: targetVol });
 }
 function tickEcho() {
 const t = (performance.now() - et0) / 1000;
@@ -12195,28 +13265,130 @@ stFadeStart(tickEcho);
 return true;
 }
 function stPerformCut(nextSong) {
-/* 兼容兑底：分析判定静音结尾但混音触发已错过时，从 ended 近零窗口交接 */
+/* 兼容兑底：分析判定静音结尾但混音触发已错过时，从 ended 近零窗口交接。
+   近零窗口无需精修 → 显式传 null Plan（走既有行为） */
 if (stActive) return false;
-return stRunVolumeMix(nextSong, 0.08);
+return stRunVolumeMix(nextSong, 0.08, null);
+}
+function stBuildPlan(nextSong, edgesNow) {
+/* ST6：把「音乐语义」两维（调性相容度 / 能量形态）交纯函数产出冻结 Plan。
+   数据全部来自既有分析缓存与内存态（stHarmCurrent/stHarmNext），缺数据时 Plan 与既有取值逐项相等。
+   注意：Plan 不含起播点——起播相位仍由 stComputeBStartOffset（ST3）单点负责。 */
+const harmCur = (stHarmCurrentId === currentPlayingId) ? stHarmCurrent : null;
+const harmNext = (stHarmNextId === nextSong.id) ? stHarmNext : null;
+const cache = stLoadAnalysisCache();
+const curKey = ((currentSongData && currentSongData.source) || '') + ':' + ((currentSongData && currentSongData.id) || '');
+const nextKey = (nextSong.source || '') + ':' + nextSong.id;
+const curEntry = cache[curKey] || null;
+const nextEntry = cache[nextKey] || null;
+return HarmoniaLib.buildTransitionShape(
+{
+edges: edgesNow,
+bpm: (stBpmCurrent && stBpmCurrentId === currentPlayingId) ? stBpmCurrent : null,
+loudnessDb: (curEntry && typeof curEntry.loudnessDb === 'number') ? curEntry.loudnessDb : null,
+keyHead: harmCur ? harmCur.keyHead : (curEntry ? curEntry.keyHead : null),
+keyTail: harmCur ? harmCur.keyTail : (curEntry ? curEntry.keyTail : null),
+energyHead: harmCur ? harmCur.energyHead : (curEntry ? curEntry.energyHead : null),
+energyTail: harmCur ? harmCur.energyTail : (curEntry ? curEntry.energyTail : null)
+},
+{
+edges: (stEdgesNext && stEdgesNextId === nextSong.id) ? stEdgesNext : null,
+bpm: (stBpmNext && stBpmNextId === nextSong.id) ? stBpmNext : null,
+loudnessDb: (nextEntry && typeof nextEntry.loudnessDb === 'number') ? nextEntry.loudnessDb : null,
+keyHead: harmNext ? harmNext.keyHead : (nextEntry ? nextEntry.keyHead : null),
+keyTail: harmNext ? harmNext.keyTail : (nextEntry ? nextEntry.keyTail : null),
+energyHead: harmNext ? harmNext.energyHead : (nextEntry ? nextEntry.energyHead : null),
+energyTail: harmNext ? harmNext.energyTail : (nextEntry ? nextEntry.energyTail : null)
+},
+{
+windowSec: stEffectiveWindow(),
+maxExtendSec: ST_MIX_MAX,
+rateBounds: [ST_RATE_ADJ_MIN, ST_RATE_ADJ_MAX],
+wideRateBounds: [ST_RATE_ADJ_MIN_WIDE, ST_RATE_ADJ_MAX_WIDE],
+keyConfMin: ST_KEY_CONF_MIN,
+harmonicGoodMin: ST_HARMONIC_GOOD_MIN,
+harmonicConflictMax: ST_HARMONIC_CONFLICT_MAX,
+harmonicMinOverlap: ST_HARMONIC_MIN_OVERLAP,
+abruptMinOverlap: ST_ABRUPT_MIN_OVERLAP,
+abruptFullEnergyDb: ST_ABRUPT_FULL_ENERGY_DB,
+softHeadDb: ST_SOFT_HEAD_DB,
+mixMin: ST_MIX_MIN,
+mixMax: ST_MIX_MAX,
+bpmAlignConf: ST_BPM_ALIGN_CONF,
+lpStartHz: ST_MIX_LP_START,
+lpOpenHz: ST_MIX_LP_OPEN,
+lpMidHz: ST_MIX_LP_MID,
+hpFromHz: ST_MIX_HP_FROM,
+hpToHz: ST_MIX_HP_HZ,
+hpDurRatioGood: ST_HP_DUR_RATIO_GOOD,
+hpDurRatioNeutral: ST_HP_DUR_RATIO_NEUTRAL,
+hpDurRatioConflict: ST_HP_DUR_RATIO_CONFLICT
+},
+{
+baseKind: stCurrentStrategy(),
+graphOk: stMixerGraphOk(),
+playbackRate: (typeof currentPlaybackRate !== 'undefined' && currentPlaybackRate) || 1
+}
+);
 }
 function stPerformTransition(nextSong, remaining) {
 if (!isSmartTransitionEnabled()) return false;
-/* 窗口与触发侧同源（stEffectiveWindow），避免提前启动截断当前歌；不超出现在歌剩余 */
-const mixDur = Math.max(2, Math.min(stEffectiveWindow(), remaining));
 /* 效果分发：淡出结尾+EQ 图 → 低频交接；其余/图不可用 → 音量淡化（回声收尾在 ended 处理） */
 const e = (stEdgesCurrent && stEdgesCurrentId === currentPlayingId) ? stEdgesCurrent : null;
 try { stEnsureMixer(); } catch (_) {}
-const effect = stChooseEffect(e, !!stGetTailBufferForSong(currentSongData), stMixerGraphOk());
-if (effect === 'bassSwap' && stRunBassSwap(nextSong, mixDur)) return true;
-return stRunVolumeMix(nextSong, mixDur);
+/* ST6：调性 × 能量双维精修 → 冻结 Plan（缺新数据时与既有取值逐项相等） */
+let plan = null;
+try { plan = stBuildPlan(nextSong, e); } catch (planErr) { plan = null; console.warn('[SmartTransition] Plan 构建失败，回退既有决策:', planErr?.message || planErr); }
+/* 窗口与触发侧同源（stEffectiveWindow），避免提前启动截断当前歌；不超出现在歌剩余。
+   Plan 只精修"期望重叠"，与剩余时长的夹取仍在执行层（与既有形态一致）。 */
+const mixDur = Math.max(2, Math.min(plan ? plan.overlapSec : stEffectiveWindow(), remaining));
+let effect = stChooseEffect(e, stMixerGraphOk());
+/* ST6：冲突时 Plan 要求频谱分离（B 侧低通非 null），而 bassSwap 是唯一拥有 HP/LP 所有权
+   与复位逻辑的 runner → 图可用时优先走它，让滤波整形真正生效。 */
+if (plan && plan.eq.bLp !== null && stMixerGraphOk()) effect = 'bassSwap';
+/* 决策可观测：一条结构性记录说明这次为什么这样过渡（含相位对齐结果与响度补偿） */
+try {
+const _cb = (stBpmCurrent && stBpmCurrentId === currentPlayingId) ? stBpmCurrent : null;
+const _nb = (stBpmNext && stBpmNextId === nextSong.id) ? stBpmNext : null;
+const _bStart = stComputeBStartOffset(nextSong);
+const _ne = (stEdgesNext && stEdgesNextId === nextSong.id) ? stEdgesNext : null;
+const _plan = {
+kind: effect,
+from: currentPlayingId,
+to: nextSong.id,
+windowSec: Math.round(mixDur * 1000) / 1000,
+triggerLeadSec: stTransitionTriggerLead(),
+startAtSec: _bStart.startAtSec,
+phaseAligned: !!_bStart.aligned,
+rate: Math.round(((_cb && _nb && _cb.confidence >= ST_BPM_ALIGN_CONF && _nb.confidence >= ST_BPM_ALIGN_CONF) ? stComputeAlignRate(_cb.bpm, _nb.bpm) : 1) * 10000) / 10000,
+bpmA: _cb ? _cb.bpm : null,
+bpmB: _nb ? _nb.bpm : null,
+tailOk: !!(e && e.tailOk),
+tailSilenceSec: (e && e.tailSilenceSec) || 0,
+tailSilenceDb: (e && typeof e.tailSilenceDb === 'number') ? e.tailSilenceDb : null,
+skippableSilenceSec: stSkippableTailSilence(e),
+tailFading: !!(e && e.tailFading),
+leadSilenceSec: _ne ? (_ne.leadSilenceSec || 0) : null,
+matchGain: stComputeMatchGainFor(currentSongData, nextSong),
+st6: plan
+};
+stDiag(_plan);
+console.info('[ST计划] ' + JSON.stringify(_plan));
+} catch (_) {}
+if (effect === 'bassSwap') {
+if (stRunBassSwap(nextSong, mixDur, plan)) return true;
+/* 降级归因：bassSwap 需要混音图，图不可用时落回音量淡化 */
+stDiag({ stage: 'fallback', from: 'bassSwap', to: 'volumeMix', reason: 'mixer-graph-or-b-mix-unavailable' });
+}
+return stRunVolumeMix(nextSong, mixDur, plan);
 }
 function stTryStartTransition(remaining) {
-const _gN = resolveGaplessNext();
-const nextSongId = _gN ? _gN.id : null;
+const _stR = resolveGaplessNext();
+const nextSongId = _stR ? _stR.id : null;
 if (!nextSongId) return;
 const nextSong = getSongById(nextSongId);
 if (!nextSong) return;
-if (!(gaplessPreloadUrl && audioPlayerB.src && audioPlayerB.readyState >= 2)) return;
+if (!_stR || !_stR.preloadedOk || !(gaplessPreloadUrl && audioPlayerB.src && audioPlayerB.readyState >= 2)) return;
 stTriggered = true;
 const start = () => {
 stBeatTimer = null;
@@ -12259,13 +13431,8 @@ stEnsureNextPreloaded();
 const remaining = duration - currentTime;
 /* 首尾+BPM 分析提前启动（拉取+解码需数秒），保证进入过渡窗口前就绪 */
 if (currentTime >= 3) { stEnsureCurrentEdges(); stEnsureNextEdges(); stEnsureCurrentBpm(); stEnsureNextBpm(); }
-const edgesNow = (stEdgesCurrent && stEdgesCurrentId === currentPlayingId) ? stEdgesCurrent : null;
-if (stChooseEffect(edgesNow, !!stGetTailBufferForSong(currentSongData), stMixerGraphOk()) === 'echoOut') {
-/* 骤然结尾+回声原料就绪：让歌完整播完，由 ended 时刻以 echoOut 交接 */
-if (currentPlayingId && currentTime < 1) stTriggered = false;
-return;
-}
-if (remaining <= stEffectiveWindow() + 1.5 && remaining > 0 && !stTriggered) {
+/* ST5：回声收尾已下线，骤然结尾由下面的常规触发做短交叉淡化（不再提前 return 等 ended） */
+if (remaining <= stTransitionTriggerLead() && remaining > 0 && !stTriggered) {
 stTryStartTransition(remaining);
 }
 if (currentPlayingId && currentTime < 1) stTriggered = false;
@@ -12301,12 +13468,15 @@ setCachedSong(nextSong, { audioUrl });
 function performCrossfadeToNext() {
 if (!isCrossfadeEnabled()) return false;
 if (!gaplessPreloadUrl || !audioPlayerB.src || audioPlayerB.src === window.location.href) return false;
+/* 队列在预加载后发生过变化 → 预加载已过期：放弃混音，走常规切歌（避免元数据/音频错配） */
+const _xfR = resolveGaplessNext();
+if (!_xfR || !_xfR.preloadedOk) return false;
 /* B 已接入混音图：仅允许 CORS 干净源混音（污染源在图内必然静音） */
 if (stMixBSource && !stKnownCorsOk(gaplessPreloadUrl)) return false;
 isCrossfading = true;
 /* crossfade 开始时立即切换元数据并触发 Apple Music 风格过渡动画，
    避免 3 秒淡入期间界面仍显示上一首歌信息 */
-const upcomingId = (() => { const r = resolveGaplessNext(); return r ? r.id : null; })();
+const upcomingId = _xfR.id;
 const upcomingSong = upcomingId ? getSongById(upcomingId) : null;
 if (upcomingSong) {
 currentPlayingId = upcomingId;
@@ -12331,6 +13501,8 @@ albumArt.src = url;
 lastAppliedCoverUrl = url;
 sendCoverToPip(url);
 albumArt.classList.add('loaded');
+/* 智能过渡路径：这里只有 URL（预加载的 preImg 未透传），传 URL 由 AMLL 自行加载 */
+window.HarmoniaDynamicBg?.notifyCover(url);
 const bgDiv = document.querySelector('.am-background');
 if (bgDiv) {
 bgDiv.style.setProperty('background-image', `url(${url})`, 'important');
@@ -12363,31 +13535,14 @@ function complete() {
   fadeCompleted = true;
   activeTransitionFinish = null;
   if (fadeInterval) clearInterval(fadeInterval);
-  if (audioPlayerB.error) { stCleanup({ autoAdvance: true }); return; }
-  try {
-    audioPlayer.pause();
-    audioPlayer.src = audioPlayerB.src;
-    audioPlayer.currentTime = audioPlayerB.currentTime || 0;
-    stSetALevel(targetVol); /* 挂图后元素 volume 被旁路，走双写 */
-    audioPlayer.play().catch(() => {});
-    crossfadeCompleted = true;
-  } catch (e) {
-    console.warn('[Gapless] crossfade 完成阶段异常:', e?.message || e);
-  } finally {
-    // 无论是否异常，必须清理所有跨fade相关状态，防止 isCrossfading 卡死
-    audioPlayerB.pause();
-    audioPlayerB.src = '';
-    stSetBLevel(0);
-    gaplessPreloadUrl = null;
-    gaplessPreloadedSongId = null;
-    isCrossfading = false;
-    // fade 跑完后必须重置，让下一首歌能正常触发其 own crossfade。
-    // 不做这个重置的话，下一首的 timeupdate 中 `currentTime < 1` 永远为 false
-    //（因为 audioPlayer.currentTime 从 audioPlayerB.currentTime≈3 开始），
-    // 导致下一首 crossfade 永远不触发，表现为交替失败。
-    // 无论是否异常（含 catch 路径）都必须复位，否则下一首 crossfade 永远无法触发
-    crossfadeTriggered = false;
-  }
+  /* 包络差异：本路径无 matchGain（原 complete 只调 stSetALevel(targetVol)），传 1 保持等价 */
+  stHandoff({ nextSong: nextSong, matchGain: 1, targetVol: targetVol });
+  crossfadeCompleted = true;
+  /* fade 跑完后必须重置，让下一首歌能正常触发其 own crossfade。
+     不做这个重置的话，下一首的 timeupdate 中 `currentTime < 1` 永远为 false
+     （因为 audioPlayer.currentTime 从 audioPlayerB.currentTime≈3 开始），
+     导致下一首 crossfade 永远不触发，表现为交替失败。 */
+  crossfadeTriggered = false;
 }
 activeTransitionFinish = complete;
 /* 后台标签页 setInterval 被节流 → 立即完成交接，避免新歌卡在静音/长时间卡顿 */
@@ -12451,7 +13606,7 @@ const remaining = duration - currentTime;
 	if (!nextSongId) return;
 	const nextSong = getSongById(nextSongId);
 	if (!nextSong) return;
-	if (!(gaplessPreloadUrl && audioPlayerB.src && audioPlayerB.readyState >= 2)) return;
+	if (!_tuR || !_tuR.preloadedOk || !(gaplessPreloadUrl && audioPlayerB.src && audioPlayerB.readyState >= 2)) return;
 	// 所有校验通过后才置位，避免失败路径下标志卡死导致后续无法触发
 	crossfadeTriggered = true;
 	try {
@@ -12509,16 +13664,7 @@ if (currentPlayMode === 'repeat'){
   }
   return;
 }
-if (isSmartTransitionEnabled() && stCurrentStrategy() === 'abruptMix') {
-/* 回声收尾：骤然结尾，用尾部原料拖出节拍同步回声，下一首浮现 */
-const _eR = resolveGaplessNext();
-const eNid = _eR ? _eR.id : null;
-const eNs = eNid ? getSongById(eNid) : null;
-if (_eR && _eR.preloadedOk && eNs && gaplessPreloadUrl && audioPlayerB.readyState >= 2) {
-try { if (stPerformEchoOut(eNs)) return; }
-catch (e) { console.warn('[SmartTransition] 回声收尾异常，回退普通切歌:', e?.message || e); }
-}
-}
+/* ST5：abruptMix 的 echoOut 分支已移除（回声拖尾会盖到下一首；见 pure.js chooseTransitionEffect 注释） */
 if (isSmartTransitionEnabled() && stCurrentStrategy() === 'silenceMix') {
 /* 兑底：静音结尾但混音触发已错过（分析完成太晚），ended 时近零窗口交接 */
 const _cR = resolveGaplessNext();
@@ -14561,7 +15707,7 @@ if(window.requestIdleCallback)requestIdleCallback(()=>{import(AMLL_CORE_ESM_URL)
 const HARMONIA_MIGRATION_VERSION = 1;
 const HARMONIA_MIGRATION_GROUPS = {
   playlists: ['musicPlaylist', 'harmoniaPlaylists', 'musicFavorites', 'musicHistory', 'musicPlayerCustomOrder'],
-  settings: ['musicPlayerVolume', 'playbackRate', 'rememberProgressEnabled', 'spatial3dEnabled', 'desktopLyricsPipEnabled', 'miniPlayerLyricsPillEnabled', 'lyricsSettings', 'wordLyricsSource', 'lyricsRendererMode', 'lyricsAnimationMode', 'timeDisplayMode', 'amllTtmlSource', 'musicSource', 'crossfadeEnabled', 'smartTransitionEnabled', 'stAnalysisCache', 'stMixDuration', 'krcRemoveCredits', 'kugouAudioQuality', 'mvFeatureEnabled', 'albumEffectEnabled', 'trackTransitionEnabled', 'musicPlayerEqSettings', 'settings-bg-mode', 'startupBgFetched', 'lastPlayPosition', 'harmoniaSleepTimer'],
+  settings: ['musicPlayerVolume', 'playbackRate', 'rememberProgressEnabled', 'spatial3dEnabled', 'desktopLyricsPipEnabled', 'miniPlayerLyricsPillEnabled', 'lyricsSettings', 'wordLyricsSource', 'lyricsRendererMode', 'lyricsAnimationMode', 'timeDisplayMode', 'liquidGlassStyle', 'amllTtmlSource', 'musicSource', 'crossfadeEnabled', 'smartTransitionEnabled', 'stAnalysisCache5', 'stMixDuration', 'krcRemoveCredits', 'kugouAudioQuality', 'mvFeatureEnabled', 'albumEffectEnabled', 'trackTransitionEnabled', 'dynamicBgEnabled', 'dynamicBgSpeed', 'musicPlayerEqSettings', 'settings-bg-mode', 'startupBgFetched', 'lastPlayPosition', 'harmoniaSleepTimer'],
   api: ['translationSettings', 'kugouToken', 'kugouUserId', 'kugouDfid', 'kugouNickname', 'kugouPic']
 };
 function collectHarmoniaMigrationData() {

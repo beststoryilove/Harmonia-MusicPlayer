@@ -46,9 +46,12 @@
 
 ### 🎤 逐字歌词 (AML)
 
-- **AMLL (Apple Music-like Lyrics)** 引擎驱动，逐字填充动画
+- **AMLL (Apple Music-like Lyrics)** 引擎驱动（core 0.6.0 + lyric 1.1.0，本地内置），逐字填充动画
 - 支持翻译 / 罗马音 切换显示
-- 支持 **TTML** 高级歌词格式（对唱、背景人声等）
+- 支持 **TTML** 高级歌词格式：对唱（`ttm:agent`）、背景人声（`x-bg`）、
+  **Apple 风格 Head Sidecar 翻译/音译**（`iTunesMetadata`）、**Ruby 注音**（`tts:ruby`）
+- 歌词解析优先使用 AMLL 官方 parser（`parseLrcLike` / `parseYrc` / `parseQrc` / `parseTTML`），
+  覆盖 LRC 家族（LRC / LRC A2 / SPL / ESLyric）与各平台逐字格式
 - 经典模式 / AMLL 模式可自由切换
 - 多种动画模式：**视觉优先 / 性能优先 / 预览模式**
 
@@ -84,6 +87,8 @@
 - 背景随专辑封面主色调动态变化
 - **流体动画** 背景层
 - 播放器布局：**Harmonia 经典 / Apple Music** 风格可切换
+- **纯音乐自动收起歌词**：识别到当前歌曲是纯音乐（或拿不到歌词）时自动隐藏歌词面板，
+  播放卡片平滑滑到中间；下一首有歌词时卡片滑回左侧、歌词面板淡入回来（宽屏非移动端生效）
 
 ### 🎛️ 音频均衡器
 
@@ -167,11 +172,16 @@ Harmonia/
 │   │   ├── 设置持久化
 │   │   └── 快捷键 / 初始化
 │   ├── stFlacRepair.js    # FLAC/WAV 无损音源尾部修复（智能过渡）
-│   └── MODULES.md         # 模块文档
-├── demos/                 # 功能演示（liquid-elastic-switch 弹性开关）
+│   ├── vendor/            # 本地内置 AMLL bundle（由 tools/amll-build 构建，勿手工改）
+│   └── MODULES.md         # 模块文档（含 AMLL 引擎升级注意事项）
+├── css/
+│   └── vendor/            # 本地内置 AMLL 样式
+├── tools/
+│   └── amll-build/        # AMLL bundle 构建工程（core 0.6.0 / lyric 1.1.0 + esbuild）
+├── demos/                 # 功能演示（liquid-elastic-switch 弹性开关、ttml-lyric-modes）
 ├── docs/                  # 设计文档与实施计划（docs/superpowers/ 规格）
 ├── superpowers/           # 技能 / 工作流目录
-└── tests/                 # 零依赖 node 测试（flac-repair.test.mjs 等）
+└── tests/                 # 零依赖 node 测试（pure.test.js、amll-lyrics.test.js、player-card-centering.test.js、kugou-auth-grade.test.js）
 ```
 
 ### 技术栈
@@ -181,7 +191,7 @@ Harmonia/
 | **Markup** | HTML5 |
 | **Styles** | CSS3 (Liquid Glass, Flexbox, Grid, Animation, Backdrop Filter) |
 | **Script** | Vanilla JavaScript (ES6+) / 零依赖 |
-| **歌词引擎** | [@applemusic-like-lyrics/core](https://github.com/amll-dev/applemusic-like-lyrics) (ESM) |
+| **歌词引擎** | [@applemusic-like-lyrics/core](https://github.com/amll-dev/applemusic-like-lyrics) 0.6.0 + [lyric](https://github.com/amll-dev/applemusic-like-lyrics) 1.1.0（本地内置 bundle，构建见 `tools/amll-build/`） |
 | **音频处理** | Web Audio API (10 段 EQ) |
 | **桌面扩展** | Picture-in-Picture API / WebSocket |
 | **图标** | [Font Awesome 6.4](https://fontawesome.com/) |
