@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Harmonia 音乐播放器隐私政策：本地存储说明、第三方接口与媒体 CDN 披露、自建代理日志、您的权利与安全措施。">
+  <title>Harmonia 音乐播放器 · 隐私政策 · Harmonia</title>
+  <style>
+    @font-face{src:url(fonts/PingFangSC-Regular.woff2);font-family:"PingFangSC-Regular";font-display:swap}
+    @font-face{src:url(fonts/sf-pro-display_regular.woff2);font-family:"SFPro-Regular";font-display:swap}
+    @font-face{src:url(fonts/PingFangSC-Semibold.woff2);font-family:"PingFangSC-Semibold";font-display:swap}
+    @font-face{src:url(fonts/sf-pro-display_semibold.woff2);font-family:"SFPro-Semibold";font-display:swap}
+
+    :root{
+      --bg:#000;
+      --ink:#f5f5f7;
+      --ink-2:rgba(255,255,255,.72);
+      --ink-3:rgba(255,255,255,.48);
+      --hairline:rgba(255,255,255,.09);
+      --accent:#ff2d55;
+      --accent-soft:rgba(255,45,85,.12);
+      --font-body:"SFPro-Regular","PingFangSC-Regular",-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+      --font-head:"SFPro-Semibold","PingFangSC-Semibold",-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+
+    body{
+      font-family:var(--font-body);
+      color:var(--ink);
+      line-height:1.85;
+      background:
+        radial-gradient(1100px 620px at 82% -10%, rgba(255,45,85,.09), transparent 62%),
+        radial-gradient(900px 560px at -12% 108%, rgba(88,86,214,.08), transparent 60%),
+        var(--bg);
+      background-attachment:fixed;
+      min-height:100vh;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:geometricPrecision;
+    }
+
+    ::selection{background:rgba(255,45,85,.38);color:#fff}
+
+    .page{max-width:760px;margin:0 auto;padding:44px 28px 72px}
+
+    /* ── 顶部导航 ── */
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:36px}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;border:none}
+    .brand-mark{
+      width:34px;height:34px;border-radius:10px;flex-shrink:0;
+      background:linear-gradient(135deg,#ff2d55,#b8345f);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 6px 18px rgba(255,45,85,.22);
+    }
+    .brand-mark svg{width:17px;height:17px;fill:#fff}
+    .brand-name{font-family:var(--font-head);font-size:15px;font-weight:600;letter-spacing:.3px;color:var(--ink-2)}
+    .navlinks{display:flex;gap:8px;flex-wrap:wrap}
+    .navlinks a{
+      font-size:12.5px;color:var(--ink-3);text-decoration:none;border:1px solid var(--hairline);
+      border-radius:999px;padding:5px 13px;transition:color .18s ease,border-color .18s ease,background .18s ease;
+    }
+    .navlinks a:hover{color:var(--ink);border-color:rgba(255,255,255,.22)}
+    .navlinks a.active{color:var(--ink);background:var(--accent-soft);border-color:rgba(255,45,85,.35)}
+
+    h1{
+      font-family:var(--font-head);
+      font-size:32px;line-height:1.32;font-weight:700;
+      letter-spacing:.3px;color:var(--ink);
+      margin-bottom:14px;
+    }
+
+    /* ── 目录 ── */
+    .toc{
+      margin:26px 0 8px;padding:16px 20px;
+      background:rgba(255,255,255,.035);
+      border:1px solid var(--hairline);border-radius:14px;
+    }
+    .toc-title{font-family:var(--font-head);font-size:11.5px;font-weight:700;color:var(--accent);letter-spacing:2px;margin-bottom:10px}
+    .toc ol{list-style:none;margin:0;columns:2;column-gap:26px}
+    .toc li{padding-left:0;margin-bottom:5px}
+    .toc li::before{content:none}
+    .toc a{font-size:13px;color:var(--ink-2);text-decoration:none;border-bottom:none}
+    .toc a:hover{color:#ff7d97}
+
+    /* ── 正文 ── */
+    section{margin-top:46px}
+    h2{
+      font-family:var(--font-head);font-size:21px;font-weight:700;letter-spacing:.2px;
+      padding-bottom:13px;margin-bottom:18px;border-bottom:1px solid var(--hairline);
+      scroll-margin-top:20px;
+    }
+    h3{
+      font-family:var(--font-head);
+      font-size:15.5px;font-weight:600;color:var(--ink);
+      margin:26px 0 10px;
+    }
+    p{font-size:14.5px;color:var(--ink-2);margin-bottom:12px}
+    ul,ol{margin:4px 0 14px;padding-left:0}
+    ul{list-style:none}
+    ul li{
+      font-size:14.5px;color:var(--ink-2);
+      padding-left:18px;position:relative;margin-bottom:7px;
+    }
+    ul li::before{
+      content:"";position:absolute;left:2px;top:.92em;
+      width:5px;height:5px;border-radius:50%;
+      background:var(--accent);opacity:.75;
+    }
+    ul ul{margin:7px 0 4px}
+    ol{list-style:none;counter-reset:item}
+    ol li{
+      font-size:14.5px;color:var(--ink-2);
+      padding-left:26px;position:relative;margin-bottom:7px;counter-increment:item;
+    }
+    ol li::before{
+      content:counter(item) ".";
+      position:absolute;left:2px;top:0;
+      font-family:var(--font-head);font-size:13px;color:var(--accent);opacity:.85;
+    }
+    ol ol{margin:7px 0 4px}
+
+    strong{color:var(--ink);font-weight:600}
+    code{
+      font-family:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+      font-size:.88em;color:var(--ink);
+      background:rgba(255,255,255,.07);
+      border:1px solid var(--hairline);
+      border-radius:6px;padding:1px 6px;
+      word-break:break-all;
+    }
+    a{color:#ff7d97;text-decoration:none;border-bottom:1px solid rgba(255,125,151,.35);transition:color .18s ease,border-color .18s ease}
+    a:hover{color:#ffa5b5;border-bottom-color:currentColor}
+
+    /* ── 表格 ── */
+    .tbl-wrap{overflow-x:auto;margin:6px 0 18px;border:1px solid var(--hairline);border-radius:12px}
+    table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:420px}
+    th,td{padding:10px 13px;border-bottom:1px solid var(--hairline);vertical-align:top;color:var(--ink-2)}
+    th{
+      font-family:var(--font-head);font-weight:600;font-size:12.5px;color:var(--ink);
+      background:rgba(255,255,255,.04);letter-spacing:.3px;white-space:nowrap;
+    }
+    tbody tr:last-child td{border-bottom:none}
+    td strong{color:var(--ink)}
+
+    /* ── 引用 / 提示块 ── */
+    blockquote{
+      margin:16px 0;padding:15px 18px;
+      background:var(--accent-soft);
+      border:1px solid rgba(255,45,85,.18);
+      border-radius:14px;
+    }
+    blockquote p,blockquote li{color:rgba(255,255,255,.82);font-size:14px}
+    blockquote p:last-child,blockquote ul:last-child,blockquote ol:last-child,blockquote blockquote:last-child{margin-bottom:0}
+    blockquote ul li::before{background:var(--accent);opacity:.9}
+    blockquote code{background:rgba(255,255,255,.1)}
+
+    /* ── 页脚 ── */
+    footer{margin-top:52px;padding-top:24px;border-top:1px solid var(--hairline)}
+    .foot-meta{font-size:12px;color:var(--ink-3);text-align:center;margin-bottom:22px}
+    .foot-actions{display:flex;flex-direction:column;align-items:center;gap:14px}
+    .back{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:11px 26px;border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.13);
+      color:var(--ink);font-size:14px;font-weight:600;
+      text-decoration:none;
+      transition:background .18s ease,border-color .18s ease,transform .18s ease;
+    }
+    .back .arrow{transition:transform .18s ease}
+    .back:hover{background:rgba(255,45,85,.14);border-color:rgba(255,45,85,.4)}
+    .back:hover .arrow{transform:translateX(-3px)}
+    .foot-repo{font-size:12.5px;color:var(--ink-3)}
+    .foot-repo a{color:var(--ink-2);border-bottom:none}
+    .foot-repo a:hover{color:var(--ink)}
+
+    /* ── 响应式 ── */
+    @media (max-width:640px){
+      .page{padding:32px 20px 56px}
+      h1{font-size:26px}
+      h2{font-size:19px}
+      p,li{font-size:14px}
+      .toc ol{columns:1}
+      section{margin-top:38px}
+      .topbar{margin-bottom:26px}
+    }
+
+    @media print{
+      body{background:#fff;color:#000}
+      .brand-mark{box-shadow:none}
+      .back,.navlinks,.toc{display:none}
+      p,li,td,th,.foot-meta,.foot-repo{color:#333}
+      strong,h1,h2,h3{color:#000}
+      code{background:#f2f2f2;border-color:#ddd}
+      a{color:#c4003a;border-bottom-color:#c4003a}
+      blockquote{background:#fdf2f4;border-color:#f3c3cd}
+      footer{border-color:#ddd}
+      th{background:#f7f7f7}
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <div class="topbar">
+      <a class="brand" href="index.html">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+        <span class="brand-name">Harmonia</span>
+      </a>
+      <div class="navlinks">
+        <a href="privacy.html" class="active">隐私政策</a>
+        <a href="agreement.html">用户协议</a>
+        <a href="main.html">进入播放器</a>
+      </div>
+    </div>
+
+    <h1>Harmonia 音乐播放器 · 隐私政策</h1>
+
+<nav class="toc"><div class="toc-title">目录</div><ol><li><a href="#sec-1-引言">1. 引言</a></li><li><a href="#sec-2-我们是谁">2. 我们是谁</a></li><li><a href="#sec-3-我们处理哪些信息">3. 我们处理哪些信息</a></li><li><a href="#sec-4-信息如何存储与保存期限">4. 信息如何存储与保存期限</a></li><li><a href="#sec-5-第三方共享与请求清单">5. 第三方共享与请求清单</a></li><li><a href="#sec-6-自建接口与日志说明">6. 自建接口与日志说明</a></li><li><a href="#sec-7-您的权利">7. 您的权利</a></li><li><a href="#sec-8-未成年人保护">8. 未成年人保护</a></li><li><a href="#sec-9-安全措施">9. 安全措施</a></li><li><a href="#sec-10-本政策的更新">10. 本政策的更新</a></li><li><a href="#sec-11-联系我们">11. 联系我们</a></li><li><a href="#sec-附录-术语说明">附录：术语说明</a></li></ol></nav>
+
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">项目</th><th style="text-align:left">内容</th></tr></thead><tbody><tr><td style="text-align:left">文档版本</td><td style="text-align:left">v3.0</td></tr><tr><td style="text-align:left">生效日期</td><td style="text-align:left">2026-10-03</td></tr><tr><td style="text-align:left">最后更新</td><td style="text-align:left">2026-10-03</td></tr><tr><td style="text-align:left">适用产品</td><td style="text-align:left">Harmonia 音乐播放器网页版、桌面端（Windows / macOS / Linux）、移动端（Android / iOS）</td></tr><tr><td style="text-align:left">个人信息处理者</td><td style="text-align:left">azalkmin</td></tr><tr><td style="text-align:left">联系方式</td><td style="text-align:left">3570522422@qq.com</td></tr></tbody></table></div>
+
+<section><h2 id="sec-1-引言">1. 引言</h2>
+<p>Harmonia 音乐播放器（以下简称"<strong>本项目</strong>"或"<strong>我们</strong>"）是一款开源的在线音乐播放器。我们高度重视您的隐私，并致力于以<strong>透明、最小必要</strong>的方式处理您的信息。</p>
+<p>本政策旨在向您说明：我们（以及在本项目运行过程中涉及的第三方）会接触哪些信息、这些信息存放在哪里、用于什么目的、保存多久，以及您可以如何行使自己的权利。</p>
+<p><strong>核心结论（速览）</strong>：</p>
+<ul><li>本项目<strong>没有用于收集用户个人信息的自有后端账号体系</strong>，不设注册登录，不做用户画像；</li><li>您的播放列表、收藏、播放历史、听歌统计、播放设置等数据<strong>仅保存在您本机的浏览器存储或应用数据目录中</strong>，我们无法读取、上传或共享；</li><li>本项目<strong>未集成任何统计分析、崩溃上报、广告或用户行为追踪 SDK</strong>；</li><li>当您使用<strong>第三方账号登录</strong>、<strong>AI 歌词翻译</strong>、<strong>在线播放</strong>等功能时，相关信息会<strong>由您的设备发送给对应第三方服务</strong>（部分请求经我们的自建代理转发），这是功能实现的必要环节，详见第 5 节；</li><li>为支撑在线播放与歌词获取，本项目由开发者自建了少量<strong>接口代理</strong>。这些接口在转发请求时<strong>可能产生最小必要的访问日志</strong>，详见第 6 节。</li></ul>
+</section>
+<section><h2 id="sec-2-我们是谁">2. 我们是谁</h2>
+<ul><li><strong>个人信息处理者</strong>：azalkmin</li><li><strong>联系方式</strong>：3570522422@qq.com</li><li><strong>开源仓库</strong>：<a href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" rel="noopener noreferrer">https://github.com/beststoryilove/Harmonia-MusicPlayer</a></li></ul>
+<p>本项目为个人开发者维护的开源项目，非商业运营主体，未在中华人民共和国境外设立机构。若您对本政策有任何疑问、意见或投诉，可通过上述邮箱联系我们。</p>
+</section>
+<section><h2 id="sec-3-我们处理哪些信息">3. 我们处理哪些信息</h2>
+<h3>3.1 您主动提供的信息</h3>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">信息类别</th><th style="text-align:left">具体内容</th><th style="text-align:left">是否必需</th><th style="text-align:left">存储位置</th></tr></thead><tbody><tr><td style="text-align:left">第三方账号凭证</td><td style="text-align:left">酷狗音乐登录令牌（token）、用户 ID、设备标识（dfid）、昵称、头像地址</td><td style="text-align:left">使用酷狗账号相关功能时必需</td><td style="text-align:left">您本机（<code>localStorage</code> / <code>sessionStorage</code> / 桌面端应用数据目录）</td></tr><tr><td style="text-align:left">AI 翻译服务令牌</td><td style="text-align:left">您自行填写的第三方大模型 API Key（用于歌词翻译）</td><td style="text-align:left">使用 AI 歌词翻译时必需</td><td style="text-align:left">您本机（优先操作系统密钥环加密；网页端为会话级或本地加密副本）</td></tr><tr><td style="text-align:left">自定义翻译提示词</td><td style="text-align:left">您填写的翻译风格提示词</td><td style="text-align:left">否</td><td style="text-align:left">您本机</td></tr></tbody></table></div>
+<p><strong>我们不要求、也不提供</strong>手机号、邮箱、真实姓名、身份证件、支付信息等注册类信息。本项目没有账号注册功能。</p>
+<h3>3.2 您在使用过程中产生的信息（全部保存在本机）</h3>
+<p>以下数据由本项目在您的设备上生成并保存，<strong>不会上传至我们</strong>：</p>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">类别</th><th style="text-align:left">具体内容（示例存储键名）</th></tr></thead><tbody><tr><td style="text-align:left">播放内容数据</td><td style="text-align:left">播放列表、我的收藏、播放历史（<code>musicPlaylist</code>、<code>musicFavorites</code>、<code>musicHistory</code>）</td></tr><tr><td style="text-align:left">播放偏好</td><td style="text-align:left">音量、播放倍速、播放模式、自定义排序、背景模式、歌词来源与显示设置、记忆播放进度开关（<code>musicPlayerVolume</code>、<code>playbackRate</code>、<code>musicPlayerCustomOrder</code>、<code>lyricsSettings</code>、<code>wordLyricsSource</code>、<code>rememberProgressEnabled</code>、<code>lastPlayPosition</code> 等）</td></tr><tr><td style="text-align:left">听歌统计</td><td style="text-align:left">累计收听时长、播放次数、按日时长统计、歌曲信息映射（<code>harmoniaStats</code>）——<strong>仅供您在本地查看个人听歌数据，不上报</strong></td></tr><tr><td style="text-align:left">界面状态</td><td style="text-align:left">设置面板标签、桌面歌词开关、Mini 播放器设置、灵动岛状态等</td></tr><tr><td style="text-align:left">智能过渡分析缓存</td><td style="text-align:left">无损音源分析结果（<code>stAnalysisCache5</code>，上限 200 条；旧版键 <code>stAnalysisCache4</code> 会在启动时自动清除）。<strong>注意：应用内目前没有清除该缓存的按钮</strong>，如需清除请通过浏览器的站点数据管理功能操作</td></tr></tbody></table></div>
+<blockquote><p>上述数据<strong>完全由您控制</strong>。您可以通过清除浏览器站点数据、卸载应用或使用应用内"清除缓存"功能删除它们。清除后相关数据不可恢复。</p></blockquote>
+<p><strong>⚠️ 关于"配置备份"导出功能</strong>：当您主动使用该功能导出配置时，生成的文件为 <strong>JSON 明文</strong>，其中<strong>包含您的酷狗登录令牌与账号信息</strong>（如昵称、头像地址）。请您：</p>
+<ul><li>妥善保管导出的备份文件，<strong>不要</strong>分享给他人或上传至公开位置；</li><li>仅在您信任的设备上导入该备份；</li><li>若备份文件已泄露，请及时在酷狗音乐中退出登录，使令牌失效。</li></ul>
+<h3>3.3 我们不收集的信息</h3>
+<p>在<strong>不启用</strong>第 5 节所述第三方功能的前提下，本项目自身：</p>
+<ul><li>❌ 不主动收集或留存您的 IP 地址（<strong>例外</strong>：第 6.2 节所述自建代理的最小必要访问日志可能包含来源 IP，其用途与留存期限受严格限制）；</li><li>❌ 不收集您的设备型号、操作系统版本、浏览器指纹或广告标识符；</li><li>❌ 不收集您的精确地理位置；</li><li>❌ 不读取您的通讯录、相册、短信、通话记录或剪贴板内容（分享卡片功能仅在您主动点击"复制"时写入剪贴板）；</li><li>❌ 不进行用户画像、个性化广告推送或跨站行为追踪；</li><li>❌ 不向任何第三方出售、出租或交换您的个人信息。</li></ul>
+<blockquote><p><strong>重要说明</strong>：在您使用<strong>在线播放、加载封面、播放 MV</strong> 等功能时，您的设备会<strong>直接连接</strong>第 5.1.1 节所述的<strong>媒体 CDN</strong>（域名由上游接口动态返回），您的 IP 地址与 User-Agent 会被该等 CDN 按其自身策略记录。同理，您访问本项目所使用的托管平台、您的网络运营商，以及第 5 节列明的第三方服务，<strong>也可能</strong>记录访问日志（如 IP、时间、User-Agent）。<strong>这些均属于其独立的数据处理行为，不受本政策约束，请您参阅相应服务的隐私政策。</strong></p></blockquote>
+<h3>3.4 设备权限说明（移动端 / 桌面端）</h3>
+<p>本项目<strong>仅申请实现音乐播放所必需的最小权限</strong>。经核查当前发布的移动端工程配置：</p>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">平台</th><th style="text-align:left">声明的权限 / 用途描述</th><th style="text-align:left">用途</th></tr></thead><tbody><tr><td style="text-align:left">Android</td><td style="text-align:left"><code>android.permission.INTERNET</code></td><td style="text-align:left">获取在线音乐、歌词、封面等（必需）</td></tr><tr><td style="text-align:left">Android</td><td style="text-align:left"><code>android.permission.SYSTEM_ALERT_WINDOW</code></td><td style="text-align:left">悬浮窗，用于桌面歌词 / 悬浮播放控制</td></tr><tr><td style="text-align:left">iOS</td><td style="text-align:left">无任何 <code>*UsageDescription</code> 权限用途声明</td><td style="text-align:left">——</td></tr></tbody></table></div>
+<p><strong>本项目不申请</strong>以下权限，也不读取对应数据：</p>
+<ul><li>❌ 通讯录、通话记录、短信；</li><li>❌ 相机、麦克风；</li><li>❌ 精确地理位置；</li><li>❌ 相册读取（保存图片时通过系统分享 / 下载流程由您主动选择目标位置）。</li></ul>
+<blockquote><p>桌面端（Electron）为本地应用，不涉及系统权限弹窗。其网络与文件行为详见第 4、6 节与第 9 节。</p></blockquote>
+</section>
+<section><h2 id="sec-4-信息如何存储与保存期限">4. 信息如何存储与保存期限</h2>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">数据类型</th><th style="text-align:left">存储位置</th><th style="text-align:left">保存期限</th></tr></thead><tbody><tr><td style="text-align:left">播放列表 / 收藏 / 历史 / 偏好设置</td><td style="text-align:left">您本机的浏览器 <code>localStorage</code> 或应用数据目录</td><td style="text-align:left">直至您主动清除</td></tr><tr><td style="text-align:left">听歌统计</td><td style="text-align:left">同上</td><td style="text-align:left">直至您主动清除</td></tr><tr><td style="text-align:left">酷狗登录凭证</td><td style="text-align:left">同上（<code>sessionStorage</code> 优先，<code>localStorage</code> 兜底）；<strong>桌面端另在本机应用数据目录写入明文副本</strong>（见 4.1）</td><td style="text-align:left">直至您退出登录或主动清除；有效期由<strong>酷狗音乐服务端</strong>控制（其续期机制通常按约 30 天滚动延长），本应用不设本地强制过期</td></tr><tr><td style="text-align:left">AI 翻译令牌</td><td style="text-align:left">桌面端：操作系统密钥环（Electron <code>safeStorage</code>，加密后存为 <code>translationTokenSealed</code>；<strong>Linux 上若系统无可用密钥环，Electron 会降级为内置明文密钥后端，此时防护强度等同于本地混淆而非真正的密钥环保护</strong>；若系统报告加密不可用，则降级为仅会话级存储）；网页端：会话级存储 + 本地加密副本（AES-GCM，<code>translationApiTokenEnc</code>）</td><td style="text-align:left">直至您清除或重装</td></tr><tr><td style="text-align:left">自建接口访问日志</td><td style="text-align:left">托管平台（Vercel）的运行时日志</td><td style="text-align:left"><strong>Hobby 套餐约 1 小时，Pro 套餐约 24 小时</strong>，由平台滚动删除；我们未配置日志外送（Log Drains），不作长期留存</td></tr></tbody></table></div>
+<p><strong>关于数据出境</strong>：若您使用位于境外的第三方服务（如 OpenAI、Anthropic 等），您主动提交的歌词文本与歌曲信息将被传输至境外。请您在选用此类服务前自行评估并确认。我们不参与、也无法控制该等传输。</p>
+<h3>4.1 桌面端的额外说明</h3>
+<p>桌面端（Electron）在您登录酷狗账号后，会将登录凭证（token、用户 ID、设备标识 dfid、昵称、头像地址、有效期等）以 <strong>JSON 文件形式写入本机应用数据目录</strong>：</p>
+<ul><li>文件路径：<code>&lt;用户数据目录&gt;/Harmonia/kugou-credential.json</code>；</li><li>写入权限：仅当前用户可读写（<code>0600</code>）；</li><li>字段范围：仅限上述白名单字段，不包含您的账号密码；</li><li><strong>该文件为明文存储，未使用操作系统密钥环加密</strong>。若您的电脑被他人使用、存在恶意软件或磁盘未加密，凭证可能被读取。<strong>建议不要在公共或共享设备上登录账号</strong>，并可通过退出登录删除该文件。</li></ul>
+<blockquote><p>我们已知悉该设计的安全取舍，并会在后续版本评估加密方案。</p></blockquote>
+</section>
+<section><h2 id="sec-5-第三方共享与请求清单">5. 第三方共享与请求清单</h2>
+<p>本项目<strong>不会主动向第三方共享您的个人信息</strong>。但在您使用特定功能时，您的设备会<strong>直接</strong>向以下第三方发起请求。</p>
+<blockquote><p><strong>关于"中转"的说明</strong>：下表中的多数请求由您的设备<strong>直连</strong>第三方；但<strong>部分请求（如网易云歌词、部分图片）会经由我们在 6.1 节列明的自建 CORS 代理转发</strong>。该等代理仅做技术性转发，不做内容留存，但会产生最小必要的访问日志（详见 6.2 节）。我们<strong>不存储</strong>您请求的内容本身。</p></blockquote>
+<h3>5.1 音乐与歌词数据</h3>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">第三方服务</th><th style="text-align:left">域名 / 地址</th><th style="text-align:left">涉及信息</th><th style="text-align:left">触发场景</th></tr></thead><tbody><tr><td style="text-align:left">GD 音乐台开发者 API</td><td style="text-align:left"><code>music-api.gdstudio.xyz</code></td><td style="text-align:left">搜索关键词、歌曲 ID</td><td style="text-align:left">搜索、获取播放地址、歌词、封面</td></tr><tr><td style="text-align:left">网易云音乐接口</td><td style="text-align:left"><code>music.163.com</code>（<strong>经自建 CORS 代理转发</strong>，见 6.1）</td><td style="text-align:left">歌曲 ID</td><td style="text-align:left">获取逐字歌词</td></tr><tr><td style="text-align:left">AMLL TTML 歌词数据库</td><td style="text-align:left"><code>amlldb.bikonoo.com</code>、<code>raw.githubusercontent.com</code></td><td style="text-align:left">歌曲 ID</td><td style="text-align:left">获取 TTML 高级歌词</td></tr><tr><td style="text-align:left">酷狗音乐接口</td><td style="text-align:left"><code>api-kugou.harmoniamusicplayer.dpdns.org</code>（自建代理，见 6.1）</td><td style="text-align:left">搜索关键词、歌曲 ID、登录令牌</td><td style="text-align:left">酷狗音源搜索、播放、歌单同步、榜单、评论、私人 FM</td></tr></tbody></table></div>
+<h3>5.1.1 媒体文件 CDN（域名由上游接口动态返回）</h3>
+<p>上表的音乐接口在返回结果中会给出<strong>音频、专辑封面、MV 视频的实际文件地址</strong>，您的设备随后会<strong>直接向这些地址发起请求</strong>以完成播放与显示。</p>
+<blockquote><p><strong>重要</strong>：这些 CDN 的域名由上游接口<strong>动态返回，我们无法预先固定或穷举</strong>，因此无法在本政策中逐一列明。实际域名通常是音乐平台的资源分发域名（如各音源自身的 CDN）。</p></blockquote>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">涉及信息</th><th style="text-align:left">触发场景</th></tr></thead><tbody><tr><td style="text-align:left">您的 IP 地址、User-Agent、请求时间（由 CDN 按其自身策略记录）</td><td style="text-align:left">播放音频（含无缝过渡时的分段 Range 请求）、加载专辑封面、播放 MV</td></tr></tbody></table></div>
+<p><strong>请知悉</strong>：该等请求由您的设备<strong>直连 CDN</strong>，我们不经手、不代理。这些 CDN 的运营方可能依据其自身隐私政策记录访问日志。<strong>您使用在线播放功能即意味着同意与相应 CDN 建立直接连接。</strong></p>
+<h3>5.2 AI 歌词翻译（默认关闭，需您主动启用并自备 API Key）</h3>
+<p>启用后，本项目会将<strong>当前歌曲的歌词文本、歌曲名、艺人名</strong>发送至<strong>您自行选择</strong>的服务商：</p>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">服务商</th><th style="text-align:left">接口地址</th></tr></thead><tbody><tr><td style="text-align:left">OpenAI</td><td style="text-align:left"><code>api.openai.com</code></td></tr><tr><td style="text-align:left">DeepSeek</td><td style="text-align:left"><code>api.deepseek.com</code></td></tr><tr><td style="text-align:left">智谱 AI</td><td style="text-align:left"><code>open.bigmodel.cn</code></td></tr><tr><td style="text-align:left">通义千问</td><td style="text-align:left"><code>dashscope.aliyuncs.com</code></td></tr><tr><td style="text-align:left">Moonshot</td><td style="text-align:left"><code>api.moonshot.cn</code></td></tr><tr><td style="text-align:left">Anthropic</td><td style="text-align:left"><code>api.anthropic.com</code></td></tr><tr><td style="text-align:left">LongCat</td><td style="text-align:left"><code>api.longcat.chat</code></td></tr><tr><td style="text-align:left">自定义</td><td style="text-align:left">由您填写</td></tr></tbody></table></div>
+<blockquote><p>该等歌词文本及歌曲信息由对应服务商按其隐私政策处理，相关<strong>费用与合规责任由您自行承担</strong>。若不希望歌词外发，请保持该功能关闭。</p></blockquote>
+<h3>5.3 其他资源与更新检查</h3>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">服务</th><th style="text-align:left">用途</th></tr></thead><tbody><tr><td style="text-align:left"><code>api.github.com</code>（本项目 Releases）</td><td style="text-align:left">检查版本更新、读取更新日志</td></tr><tr><td style="text-align:left"><code>esm.sh</code></td><td style="text-align:left">加载歌词引擎依赖（AMLL）——<strong>已本地内置，仅在本地副本加载失败时作为兜底</strong></td></tr><tr><td style="text-align:left"><code>cdnjs.cloudflare.com</code></td><td style="text-align:left">加载 Font Awesome 图标样式</td></tr><tr><td style="text-align:left"><code>cdn.jsdelivr.net</code></td><td style="text-align:left"><strong>连通性探测</strong>（用于判断网络能力，不加载实际内容）</td></tr><tr><td style="text-align:left"><code>unpkg.com</code></td><td style="text-align:left">仅在页面头部预连接（<code>preconnect</code>）与内容安全策略中声明，<strong>当前版本不实际加载资源</strong></td></tr><tr><td style="text-align:left"><code>picsum.photos</code>、<code>v2.xxapi.cn</code></td><td style="text-align:left">默认背景 / 随机背景图</td></tr></tbody></table></div>
+<h3>5.4 第三方 Cookie</h3>
+<p>上述第三方请求可能依据其自身策略在您的浏览器或应用 WebView 中写入 Cookie。桌面端应用会在退出时刷新 Cookie 存储。您可以通过浏览器或系统的隐私设置进行限制，但这可能影响部分功能。</p>
+</section>
+<section><h2 id="sec-6-自建接口与日志说明">6. 自建接口与日志说明</h2>
+<h3>6.1 自建代理接口</h3>
+<p>为支持跨域请求（CORS）与部分音源能力，本项目由开发者运营以下接口：</p>
+<ul><li><code>cors.harmoniamusicplayer.dpdns.org</code> —— 通用 CORS 代理，用于转发第三方请求（含歌词、图片等）；</li><li><code>api-kugou.harmoniamusicplayer.dpdns.org</code> —— 酷狗音乐接口代理；</li><li><code>api.harmoniamusicplayer.dpdns.org</code> —— 部分网易云接口。</li></ul>
+<p>这些接口<strong>仅做请求转发</strong>，不用于收集用户身份信息，也不建立用户档案。</p>
+<h3>6.2 日志</h3>
+<p>上述接口部署在 <strong>Vercel</strong>（云托管平台）。我们<strong>没有自建日志系统，也没有配置日志外送（Log Drains）</strong>。在请求转发过程中，<strong>Vercel 平台会自动记录运行时日志</strong>，其内容通常包括：</p>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">日志字段</th><th style="text-align:left">说明</th></tr></thead><tbody><tr><td style="text-align:left">请求时间、请求路径与方法</td><td style="text-align:left">用于排查故障</td></tr><tr><td style="text-align:left">来源 IP 地址</td><td style="text-align:left">由平台自动附带</td></tr><tr><td style="text-align:left">User-Agent</td><td style="text-align:left">由您的浏览器 / 应用发送</td></tr><tr><td style="text-align:left">响应状态码、函数名、部署 ID、区域</td><td style="text-align:left">由平台自动附带</td></tr></tbody></table></div>
+<p><strong>留存期限</strong>：按 Vercel 的平台策略，运行时日志在 <strong>Hobby 套餐下保留约 1 小时，Pro 套餐下保留约 24 小时</strong>，随后由平台<strong>自动滚动删除</strong>。我们<strong>不另行备份、不导出、不长期留存</strong>该等日志。</p>
+<p><strong>处理目的</strong>（严格限于）：</p>
+<ol><li>排查接口故障与性能问题；</li><li>防止滥用、攻击与异常流量；</li><li>满足托管平台自身的安全与合规要求。</li></ol>
+<p>我们<strong>不会</strong>将日志用于用户画像、广告投放，也不会将其出售或共享给第三方。</p>
+<p><strong>关于平台的独立处理行为</strong>：Vercel 作为云服务提供商，会依据其自身条款与隐私政策处理托管数据（包括可能涉及的数据跨境传输与平台层面的安全日志）。这属于其独立的处理行为，我们无法控制。详情请参阅 <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Vercel 隐私政策</a> 与 <a href="https://vercel.com/docs/observability/runtime-logs#limits" target="_blank" rel="noopener noreferrer">Vercel 运行时日志说明</a>。</p>
+<blockquote><p><strong>提示</strong>：由于日志留存时间极短（最长约 24 小时），若您希望行使查阅、删除等权利，请在请求发生后尽快联系我们，逾期日志将由平台自动清除、无法找回。</p></blockquote>
+<h3>6.3 本地通信功能</h3>
+<ul><li><strong>桌面歌词</strong>：本项目通过 WebSocket 连接您本机运行的歌词客户端（<code>ws://localhost:8765</code>），并附带一个随机校验值（<code>?token=</code>）。通信内容仅为当前歌曲信息、歌词文本与播放进度，<strong>仅在本机回环地址内传输，不经互联网，不包含身份信息</strong>。<ul><li><strong>如实说明</strong>：该歌词服务端（同为本项目开源组件）<strong>已实现</strong> token 校验与来源（Origin）白名单，但 <strong>token 校验默认关闭</strong>，需由您在启动歌词服务端时通过环境变量显式启用。因此在默认配置下，本机上的其他程序理论上可连接该端口并读取播放信息。若您在意此风险，建议启用该服务端的 token 校验，或在不使用桌面歌词时关闭该服务端。</li></ul></li></ul>
+</section>
+<section><h2 id="sec-7-您的权利">7. 您的权利</h2>
+<p>依据《中华人民共和国个人信息保护法》等法律法规，您对自己的个人信息享有以下权利：</p>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">权利</th><th style="text-align:left">在本项目中的行使方式</th></tr></thead><tbody><tr><td style="text-align:left">知情权</td><td style="text-align:left">查阅本政策及第 5 节第三方清单</td></tr><tr><td style="text-align:left">决定权</td><td style="text-align:left">不启用相关功能即为不授权；所有第三方功能默认关闭或需主动配置</td></tr><tr><td style="text-align:left">查阅、复制权</td><td style="text-align:left">本地数据可通过浏览器开发者工具或应用数据目录直接查看、导出</td></tr><tr><td style="text-align:left">更正、补充权</td><td style="text-align:left">在应用设置中直接修改</td></tr><tr><td style="text-align:left">删除权</td><td style="text-align:left">清除浏览器站点数据 / 卸载应用 / 退出登录 / 使用应用内清除功能</td></tr><tr><td style="text-align:left">撤回同意</td><td style="text-align:left">关闭对应功能开关、清除已保存的凭证</td></tr><tr><td style="text-align:left">投诉举报</td><td style="text-align:left">通过 3570522422@qq.com 联系我们，我们将在 15 个工作日内答复</td></tr></tbody></table></div>
+<p>由于本项目<strong>不持有</strong>您的个人信息，多数权利您可以通过本机操作直接实现。对于第 6 节所述日志，若您希望行使查阅或删除权利，请联系我们。</p>
+</section>
+<section><h2 id="sec-8-未成年人保护">8. 未成年人保护</h2>
+<p>本项目为通用音乐播放工具，<strong>不以未成年人为主要服务对象</strong>，也不主动收集未成年人个人信息。</p>
+<p>若您为未满 14 周岁的儿童，请在监护人陪同下阅读本政策，并在取得监护人同意后使用本项目。若监护人发现儿童在未经同意的情况下向我们提供了信息，可通过 3570522422@qq.com 联系我们，我们将及时处理。</p>
+</section>
+<section><h2 id="sec-9-安全措施">9. 安全措施</h2>
+<p>我们采取以下措施保护您的信息安全：</p>
+<ul><li><strong>数据本地化</strong>：核心个人数据不离开您的设备；</li><li><strong>凭证加密</strong>：桌面端 AI 令牌通过操作系统密钥环加密存储（<strong>Linux 无可用密钥环时会降级，详见第 4 节</strong>）；网页端使用 AES-GCM 本地加密副本；</li><li><strong>会话隔离</strong>：酷狗登录令牌优先存放于会话级存储，降低持久化泄露风险；</li><li><strong>传输安全</strong>：与第三方服务的通信优先使用 HTTPS / WSS；</li><li><strong>内容安全策略</strong>：网页端配置了 CSP，限制可执行的脚本来源与可连接的目标域；</li><li><strong>外链隔离</strong>：桌面端会拦截窗口内导航，外链改用系统浏览器打开；对第三方资源不携带来源标识（<code>referrerpolicy="no-referrer"</code>）。</li></ul>
+<p><strong>已知的安全取舍（我们如实告知）</strong>：</p>
+<ol><li><strong>桌面端放行证书错误</strong>：由于音乐源 CDN 证书链参差不齐，桌面端为保障资源加载可用性，对证书校验失败采取了<strong>放行</strong>策略。这意味着在极端情况下（如您处于不安全的公共 Wi-Fi），攻击者理论上可对网络流量实施中间人攻击。<strong>建议您避免在不信任的网络环境下使用桌面端</strong>，或改用网页版。</li><li><strong>桌面端登录凭证为明文落盘</strong>：详见第 4.1 节。</li><li><strong>桌面端跨域策略宽松</strong>：为兼容多个音乐源，桌面端对跨域请求采取了较宽松的策略。</li></ol>
+<p>但请您理解：<strong>任何技术措施都无法保证绝对安全</strong>。您应妥善保管自己的设备与第三方 API Key，避免在公共设备上登录账号或保存令牌。</p>
+</section>
+<section><h2 id="sec-10-本政策的更新">10. 本政策的更新</h2>
+<p>我们可能会适时更新本政策。更新时我们将：</p>
+<ol><li>修改文档顶部的"最后更新"日期与版本号；</li><li>对涉及您权利的重大变更，在项目仓库与产品内以显著方式提示；</li><li>若变更需要您的重新授权，我们将另行征求您的同意。</li></ol>
+<p>继续使用本项目即表示您接受更新后的政策。若您不同意，请停止使用并清除本地数据。</p>
+</section>
+<section><h2 id="sec-11-联系我们">11. 联系我们</h2>
+<p>如您对本政策有任何疑问、意见、投诉或权利行使请求，请联系：</p>
+<ul><li><strong>邮箱</strong>：3570522422@qq.com</li><li><strong>GitHub Issues</strong>：<a href="https://github.com/beststoryilove/Harmonia-MusicPlayer/issues" target="_blank" rel="noopener noreferrer">https://github.com/beststoryilove/Harmonia-MusicPlayer/issues</a></li><li><strong>社区</strong>：QQ 群（见项目 README）</li></ul>
+<p>我们将在收到请求后 <strong>15 个工作日</strong>内予以答复。</p>
+</section>
+<section><h2 id="sec-附录-术语说明">附录：术语说明</h2>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">术语</th><th style="text-align:left">含义</th></tr></thead><tbody><tr><td style="text-align:left">个人信息</td><td style="text-align:left">以电子或其他方式记录的与已识别或可识别的自然人有关的各种信息</td></tr><tr><td style="text-align:left">本地存储</td><td style="text-align:left">数据保存在您的设备上，我们无法远程访问</td></tr><tr><td style="text-align:left">第三方服务</td><td style="text-align:left">非由本项目运营、但为本项目功能提供支持的外部服务</td></tr><tr><td style="text-align:left">CORS 代理</td><td style="text-align:left">用于绕过浏览器同源策略限制、转发请求的中间服务</td></tr></tbody></table></div>
+<p>*本政策最后更新于 2026-10-03。如对内容有疑问，请联系 3570522422@qq.com。*</p></section>
+
+    <footer>
+      <div class="foot-meta">最后修订：2026年10月3日 · 版本 v3.0</div>
+      <div class="foot-actions">
+        <a class="back" href="main.html">
+          <span class="arrow">←</span> 返回 Harmonia 播放器
+        </a>
+        <span class="foot-repo">开源仓库 · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+      </div>
+    </footer>
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Harmonia 音乐播放器用户协议：开源许可与使用范围、内容版权、用户行为规范、第三方服务、免责声明与责任限制。">
+  <title>Harmonia 音乐播放器 · 用户协议 · Harmonia</title>
+  <style>
+    @font-face{src:url(fonts/PingFangSC-Regular.woff2);font-family:"PingFangSC-Regular";font-display:swap}
+    @font-face{src:url(fonts/sf-pro-display_regular.woff2);font-family:"SFPro-Regular";font-display:swap}
+    @font-face{src:url(fonts/PingFangSC-Semibold.woff2);font-family:"PingFangSC-Semibold";font-display:swap}
+    @font-face{src:url(fonts/sf-pro-display_semibold.woff2);font-family:"SFPro-Semibold";font-display:swap}
+
+    :root{
+      --bg:#000;
+      --ink:#f5f5f7;
+      --ink-2:rgba(255,255,255,.72);
+      --ink-3:rgba(255,255,255,.48);
+      --hairline:rgba(255,255,255,.09);
+      --accent:#ff2d55;
+      --accent-soft:rgba(255,45,85,.12);
+      --font-body:"SFPro-Regular","PingFangSC-Regular",-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+      --font-head:"SFPro-Semibold","PingFangSC-Semibold",-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+
+    body{
+      font-family:var(--font-body);
+      color:var(--ink);
+      line-height:1.85;
+      background:
+        radial-gradient(1100px 620px at 82% -10%, rgba(255,45,85,.09), transparent 62%),
+        radial-gradient(900px 560px at -12% 108%, rgba(88,86,214,.08), transparent 60%),
+        var(--bg);
+      background-attachment:fixed;
+      min-height:100vh;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:geometricPrecision;
+    }
+
+    ::selection{background:rgba(255,45,85,.38);color:#fff}
+
+    .page{max-width:760px;margin:0 auto;padding:44px 28px 72px}
+
+    /* ── 顶部导航 ── */
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:36px}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;border:none}
+    .brand-mark{
+      width:34px;height:34px;border-radius:10px;flex-shrink:0;
+      background:linear-gradient(135deg,#ff2d55,#b8345f);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 6px 18px rgba(255,45,85,.22);
+    }
+    .brand-mark svg{width:17px;height:17px;fill:#fff}
+    .brand-name{font-family:var(--font-head);font-size:15px;font-weight:600;letter-spacing:.3px;color:var(--ink-2)}
+    .navlinks{display:flex;gap:8px;flex-wrap:wrap}
+    .navlinks a{
+      font-size:12.5px;color:var(--ink-3);text-decoration:none;border:1px solid var(--hairline);
+      border-radius:999px;padding:5px 13px;transition:color .18s ease,border-color .18s ease,background .18s ease;
+    }
+    .navlinks a:hover{color:var(--ink);border-color:rgba(255,255,255,.22)}
+    .navlinks a.active{color:var(--ink);background:var(--accent-soft);border-color:rgba(255,45,85,.35)}
+
+    h1{
+      font-family:var(--font-head);
+      font-size:32px;line-height:1.32;font-weight:700;
+      letter-spacing:.3px;color:var(--ink);
+      margin-bottom:14px;
+    }
+
+    /* ── 目录 ── */
+    .toc{
+      margin:26px 0 8px;padding:16px 20px;
+      background:rgba(255,255,255,.035);
+      border:1px solid var(--hairline);border-radius:14px;
+    }
+    .toc-title{font-family:var(--font-head);font-size:11.5px;font-weight:700;color:var(--accent);letter-spacing:2px;margin-bottom:10px}
+    .toc ol{list-style:none;margin:0;columns:2;column-gap:26px}
+    .toc li{padding-left:0;margin-bottom:5px}
+    .toc li::before{content:none}
+    .toc a{font-size:13px;color:var(--ink-2);text-decoration:none;border-bottom:none}
+    .toc a:hover{color:#ff7d97}
+
+    /* ── 正文 ── */
+    section{margin-top:46px}
+    h2{
+      font-family:var(--font-head);font-size:21px;font-weight:700;letter-spacing:.2px;
+      padding-bottom:13px;margin-bottom:18px;border-bottom:1px solid var(--hairline);
+      scroll-margin-top:20px;
+    }
+    h3{
+      font-family:var(--font-head);
+      font-size:15.5px;font-weight:600;color:var(--ink);
+      margin:26px 0 10px;
+    }
+    p{font-size:14.5px;color:var(--ink-2);margin-bottom:12px}
+    ul,ol{margin:4px 0 14px;padding-left:0}
+    ul{list-style:none}
+    ul li{
+      font-size:14.5px;color:var(--ink-2);
+      padding-left:18px;position:relative;margin-bottom:7px;
+    }
+    ul li::before{
+      content:"";position:absolute;left:2px;top:.92em;
+      width:5px;height:5px;border-radius:50%;
+      background:var(--accent);opacity:.75;
+    }
+    ul ul{margin:7px 0 4px}
+    ol{list-style:none;counter-reset:item}
+    ol li{
+      font-size:14.5px;color:var(--ink-2);
+      padding-left:26px;position:relative;margin-bottom:7px;counter-increment:item;
+    }
+    ol li::before{
+      content:counter(item) ".";
+      position:absolute;left:2px;top:0;
+      font-family:var(--font-head);font-size:13px;color:var(--accent);opacity:.85;
+    }
+    ol ol{margin:7px 0 4px}
+
+    strong{color:var(--ink);font-weight:600}
+    code{
+      font-family:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+      font-size:.88em;color:var(--ink);
+      background:rgba(255,255,255,.07);
+      border:1px solid var(--hairline);
+      border-radius:6px;padding:1px 6px;
+      word-break:break-all;
+    }
+    a{color:#ff7d97;text-decoration:none;border-bottom:1px solid rgba(255,125,151,.35);transition:color .18s ease,border-color .18s ease}
+    a:hover{color:#ffa5b5;border-bottom-color:currentColor}
+
+    /* ── 表格 ── */
+    .tbl-wrap{overflow-x:auto;margin:6px 0 18px;border:1px solid var(--hairline);border-radius:12px}
+    table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:420px}
+    th,td{padding:10px 13px;border-bottom:1px solid var(--hairline);vertical-align:top;color:var(--ink-2)}
+    th{
+      font-family:var(--font-head);font-weight:600;font-size:12.5px;color:var(--ink);
+      background:rgba(255,255,255,.04);letter-spacing:.3px;white-space:nowrap;
+    }
+    tbody tr:last-child td{border-bottom:none}
+    td strong{color:var(--ink)}
+
+    /* ── 引用 / 提示块 ── */
+    blockquote{
+      margin:16px 0;padding:15px 18px;
+      background:var(--accent-soft);
+      border:1px solid rgba(255,45,85,.18);
+      border-radius:14px;
+    }
+    blockquote p,blockquote li{color:rgba(255,255,255,.82);font-size:14px}
+    blockquote p:last-child,blockquote ul:last-child,blockquote ol:last-child,blockquote blockquote:last-child{margin-bottom:0}
+    blockquote ul li::before{background:var(--accent);opacity:.9}
+    blockquote code{background:rgba(255,255,255,.1)}
+
+    /* ── 页脚 ── */
+    footer{margin-top:52px;padding-top:24px;border-top:1px solid var(--hairline)}
+    .foot-meta{font-size:12px;color:var(--ink-3);text-align:center;margin-bottom:22px}
+    .foot-actions{display:flex;flex-direction:column;align-items:center;gap:14px}
+    .back{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:11px 26px;border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.13);
+      color:var(--ink);font-size:14px;font-weight:600;
+      text-decoration:none;
+      transition:background .18s ease,border-color .18s ease,transform .18s ease;
+    }
+    .back .arrow{transition:transform .18s ease}
+    .back:hover{background:rgba(255,45,85,.14);border-color:rgba(255,45,85,.4)}
+    .back:hover .arrow{transform:translateX(-3px)}
+    .foot-repo{font-size:12.5px;color:var(--ink-3)}
+    .foot-repo a{color:var(--ink-2);border-bottom:none}
+    .foot-repo a:hover{color:var(--ink)}
+
+    /* ── 响应式 ── */
+    @media (max-width:640px){
+      .page{padding:32px 20px 56px}
+      h1{font-size:26px}
+      h2{font-size:19px}
+      p,li{font-size:14px}
+      .toc ol{columns:1}
+      section{margin-top:38px}
+      .topbar{margin-bottom:26px}
+    }
+
+    @media print{
+      body{background:#fff;color:#000}
+      .brand-mark{box-shadow:none}
+      .back,.navlinks,.toc{display:none}
+      p,li,td,th,.foot-meta,.foot-repo{color:#333}
+      strong,h1,h2,h3{color:#000}
+      code{background:#f2f2f2;border-color:#ddd}
+      a{color:#c4003a;border-bottom-color:#c4003a}
+      blockquote{background:#fdf2f4;border-color:#f3c3cd}
+      footer{border-color:#ddd}
+      th{background:#f7f7f7}
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <div class="topbar">
+      <a class="brand" href="index.html">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+        <span class="brand-name">Harmonia</span>
+      </a>
+      <div class="navlinks">
+        <a href="privacy.html">隐私政策</a>
+        <a href="agreement.html" class="active">用户协议</a>
+        <a href="main.html">进入播放器</a>
+      </div>
+    </div>
+
+    <h1>Harmonia 音乐播放器 · 用户协议</h1>
+
+<nav class="toc"><div class="toc-title">目录</div><ol><li><a href="#sec-1-协议的接受与变更">1. 协议的接受与变更</a></li><li><a href="#sec-2-许可与使用范围">2. 许可与使用范围</a></li><li><a href="#sec-3-内容版权与使用规范">3. 内容版权与使用规范</a></li><li><a href="#sec-4-用户行为规范">4. 用户行为规范</a></li><li><a href="#sec-5-第三方服务与账号">5. 第三方服务与账号</a></li><li><a href="#sec-6-免责声明与责任限制">6. 免责声明与责任限制</a></li><li><a href="#sec-7-开源组件与致谢">7. 开源组件与致谢</a></li><li><a href="#sec-8-隐私保护">8. 隐私保护</a></li><li><a href="#sec-9-协议终止">9. 协议终止</a></li><li><a href="#sec-10-法律适用与争议解决">10. 法律适用与争议解决</a></li><li><a href="#sec-11-其他">11. 其他</a></li><li><a href="#sec-附-用户须知-通俗版">附：用户须知（通俗版）</a></li></ol></nav>
+
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">项目</th><th style="text-align:left">内容</th></tr></thead><tbody><tr><td style="text-align:left">文档版本</td><td style="text-align:left">v3.0</td></tr><tr><td style="text-align:left">生效日期</td><td style="text-align:left">2026-10-03</td></tr><tr><td style="text-align:left">最后更新</td><td style="text-align:left">2026-10-03</td></tr><tr><td style="text-align:left">适用产品</td><td style="text-align:left">Harmonia 音乐播放器网页版、桌面端（Windows / macOS / Linux）、移动端（Android / iOS）</td></tr><tr><td style="text-align:left">协议主体</td><td style="text-align:left">azalkmin</td></tr><tr><td style="text-align:left">联系方式</td><td style="text-align:left">3570522422@qq.com</td></tr></tbody></table></div>
+
+<section><h2 id="sec-1-协议的接受与变更">1. 协议的接受与变更</h2>
+<h3>1.1 协议的成立</h3>
+<p>本协议是您与 azalkmin（以下简称"<strong>我们</strong>"）之间就使用 <strong>Harmonia 音乐播放器</strong>（以下简称"<strong>本软件</strong>"）所订立的协议。</p>
+<p>当您实施以下任一行为时，即视为您已<strong>完整阅读、理解并同意</strong>本协议全部内容：</p>
+<ul><li>下载、安装、启动或以其他方式使用本软件；</li><li>在网页端访问并使用本软件。</li></ul>
+<p><strong>若您不同意本协议的任何内容，请立即停止使用并删除本软件。</strong></p>
+<h3>1.2 协议的变更</h3>
+<p>我们保留根据法律法规变化、产品迭代或运营需要修改本协议的权利。变更时我们将：</p>
+<ol><li>更新文档顶部的版本号与"最后更新"日期；</li><li>对涉及您重大权益的变更，在项目仓库或软件内以显著方式提示；</li><li>重大变更自公示之日起生效，若您继续使用即视为接受。</li></ol>
+<p>若您不同意变更后的协议，请停止使用本软件。</p>
+<h3>1.3 附加条款</h3>
+<p>本软件可能包含由第三方提供的组件、库或服务，其使用可能适用单独的许可条款（见第 7 节）。该等条款与本协议不一致时，就该第三方组件而言，以其条款为准。</p>
+</section>
+<section><h2 id="sec-2-许可与使用范围">2. 许可与使用范围</h2>
+<h3>2.1 开源许可</h3>
+<p>本软件源代码依据 <strong>MIT License</strong> 发布，您可以依据该许可证的条款自由使用、复制、修改、合并、发布、分发、再许可和/或销售本软件的副本，但须保留原始版权声明与许可声明。</p>
+<blockquote><p><strong>重要提示</strong>：MIT License 本身<strong>不限制商业使用</strong>。本协议第 2.2 条中的使用限制，仅作为<strong>使用本软件名称、官方渠道与官方服务的条件</strong>，以及作为<strong>我们对社区的使用期待</strong>。若您需要将代码用于商业目的，<strong>MIT License 已授予您相应权利</strong>，但您须：</p>
+<ul><li>移除与本项目相关的名称、图标、标识（详见第 2.3 条）；</li><li>自行承担全部合规责任，包括但不限于音乐内容授权、第三方接口授权与个人信息保护义务；</li><li>不得声称获得我们的官方支持或背书。</li></ul></blockquote>
+<h3>2.2 使用限制</h3>
+<p>在<strong>使用本项目官方渠道发布的版本、名称或官方服务</strong>时，您同意不得：</p>
+<ul><li>❌ 将本软件<strong>倒卖</strong>、转售，或以付费墙、会员制等方式向他人收费提供；</li><li>❌ 将本软件嵌入付费产品或商业服务中对外提供；</li><li>❌ 移除、遮挡或篡改本软件中的版权声明、开源许可声明与作者署名；</li><li>❌ 利用本软件从事任何违反法律法规的活动；</li><li>❌ 以任何方式暗示我们为您修改后的版本提供担保或背书。</li></ul>
+<h3>2.3 名称与标识</h3>
+<p>"Harmonia"名称、软件图标及相关标识归 azalkmin 所有。上述开源许可<strong>不包含</strong>商标或名称使用授权。您在分发修改版本时，应更换名称与图标，避免与官方版本产生混淆。</p>
+<h3>2.4 修改与分发</h3>
+<p>您有权修改本软件源代码。但您须自行承担因修改产生的一切后果，包括但不限于：</p>
+<ul><li>修改后功能的正确性与安全性；</li><li>因更换 AI 翻译服务商、音乐接口等产生的<strong>费用</strong>；</li><li>因接入未授权内容或服务导致的<strong>法律与合规责任</strong>。</li></ul>
+<p><strong>我们不对任何第三方修改版本提供技术支持、更新服务或安全保证。</strong></p>
+</section>
+<section><h2 id="sec-3-内容版权与使用规范">3. 内容版权与使用规范</h2>
+<h3>3.1 本软件不提供音乐内容</h3>
+<p><strong>本软件本身不存储、不托管、不提供任何音乐文件、歌词或图片内容。</strong> 本软件仅是一个<strong>技术性的播放器客户端</strong>，通过调用第三方公开接口获取数据。</p>
+<h3>3.2 内容权利归属</h3>
+<ul><li>所有音乐作品、录音制品、歌词、专辑封面及 MV 的著作权及相关权利，均归<strong>其各自的权利人</strong>（如唱片公司、词曲作者、表演者）所有；</li><li>本软件<strong>不授予</strong>您任何音乐内容的权利；</li><li>您通过本软件获取的内容，其使用范围受<strong>权利人许可条款</strong>与<strong>第三方平台服务条款</strong>约束。</li></ul>
+<h3>3.3 使用建议与风险提示</h3>
+<ul><li><strong>请支持正版音乐</strong>，通过合法渠道获取授权；</li><li>本软件<strong>不提供音乐文件的下载功能</strong>，仅以流式方式在线播放。您通过"保存专辑图""分享卡片""配置备份"等功能导出的文件，其中<strong>专辑封面、歌曲信息等仍属权利人所有</strong>，请仅限个人欣赏使用，不得用于商业用途或公开传播；</li><li>本软件会在您本机缓存部分数据（如专辑图、歌词、无损音源分析结果）以提升体验，该等缓存<strong>仅供本机播放使用</strong>，请勿提取后对外传播；</li><li>您因下载、传播、二次使用受版权保护内容而产生的一切法律责任，<strong>由您自行承担</strong>。</li></ul>
+<h3>3.4 第三方接口的合法性与稳定性</h3>
+<p>本软件调用的第三方接口（含开发者自建代理，详见《隐私政策》第 5、6 节）<strong>并非</strong>由内容权利人正式授权的内容分发渠道。您理解并同意：</p>
+<ul><li>该等接口可能因权利人主张、平台策略调整或技术原因<strong>随时失效、变更或中断</strong>；</li><li>我们<strong>不保证</strong>任何接口的持续可用性、内容完整性或合法性；</li><li>因使用该等接口产生的版权纠纷，由<strong>实际使用者</strong>自行承担，我们在法律允许的最大范围内不承担责任。</li></ul>
+</section>
+<section><h2 id="sec-4-用户行为规范">4. 用户行为规范</h2>
+<p>使用本软件时，您不得：</p>
+<ol><li>上传、传播、存储任何违法、侵权、色情、暴力、恐怖或虚假信息；</li><li>侵犯他人的知识产权、名誉权、隐私权或其他合法权益；</li><li>对本软件或第三方接口实施网络攻击、爬虫抓取、DDoS、漏洞扫描或压力测试；</li><li>逆向工程、破解第三方服务的付费或会员机制（包括但不限于伪造凭证、绕过鉴权、滥用 VIP 领取功能）；</li><li>使用自动化脚本批量请求第三方接口，造成其服务负担；</li><li>规避、破坏本软件的安全机制或内容安全策略（CSP）；</li><li>其他违反法律法规、公序良俗或第三方服务条款的行为。</li></ol>
+<p><strong>若您违反上述规范，我们有权停止向您提供官方服务，并保留追究法律责任的权利。</strong></p>
+</section>
+<section><h2 id="sec-5-第三方服务与账号">5. 第三方服务与账号</h2>
+<h3>5.1 第三方账号</h3>
+<p>本软件支持使用<strong>酷狗音乐</strong>等第三方账号登录，以便同步歌单、获取音质等。您理解并同意：</p>
+<ul><li>登录行为发生在<strong>您与第三方平台之间</strong>，须遵守该平台的服务条款与隐私政策；</li><li>我们<strong>不存储</strong>您的第三方账号密码，仅在本机保存登录令牌；</li><li>第三方平台可能因风控、策略调整等原因限制或终止该等登录方式，<strong>我们无法干预，亦不承担责任</strong>；</li><li>请勿在公共设备上登录，由此产生的账号风险由您自行承担。</li></ul>
+<h3>5.2 AI 翻译服务</h3>
+<p>本软件的 AI 歌词翻译功能需您<strong>自行提供</strong>第三方大模型 API Key：</p>
+<ul><li>歌词文本与歌曲信息将发送至<strong>您选择的服务商</strong>；</li><li>产生的<strong>费用由您自行承担</strong>；</li><li>您须遵守该服务商的使用条款，不得用于违法或侵权用途；</li><li>我们不对翻译结果的准确性、合法性作任何保证。</li></ul>
+<h3>5.3 第三方链接</h3>
+<p>本软件可能包含指向第三方网站或服务的链接（如 GitHub、社区、博客）。我们不对该等第三方内容的合法性、准确性或安全性负责，访问风险由您自行承担。</p>
+</section>
+<section><h2 id="sec-6-免责声明与责任限制">6. 免责声明与责任限制</h2>
+<h3>6.1 "现状"提供</h3>
+<p><strong>本软件按"现状"和"现有"基础提供，不附带任何形式的明示或默示保证</strong>，包括但不限于对适销性、特定用途适用性、不侵权、无错误或不中断的保证。</p>
+<h3>6.2 具体免责事项</h3>
+<p>在法律允许的最大范围内，我们不对以下情形承担责任：</p>
+<ol><li><strong>服务中断</strong>：因第三方接口失效、政策变更、网络故障、平台封禁或不可抗力导致的功能不可用；</li><li><strong>数据丢失</strong>：因您清除缓存、卸载应用、更换设备、浏览器限制或存储配额不足导致的数据丢失（本地数据无法恢复）；</li><li><strong>内容问题</strong>：第三方内容的可用性、准确性、完整性或版权合规性；</li><li><strong>账号风险</strong>：第三方账号被封禁、限制或凭证泄露；</li><li><strong>设备损害</strong>：因使用本软件导致的设备故障、性能下降或电量消耗；</li><li><strong>间接损失</strong>：任何间接、附带、特殊、惩罚性或后果性损失，包括利润损失、数据损失或商誉损失。</li></ol>
+<h3>6.3 责任限制</h3>
+<p>若我们依法需承担责任，<strong>赔偿总额以您为使用本软件实际支付的费用为限</strong>（由于本软件免费提供，该金额通常为零）。</p>
+<h3>6.4 例外</h3>
+<p>本条免责与限制<strong>不适用于</strong>：因我们故意或重大过失造成的损害，以及法律明文规定不得免除或限制的责任。</p>
+</section>
+<section><h2 id="sec-7-开源组件与致谢">7. 开源组件与致谢</h2>
+<p>本软件使用了以下开源项目与资源，其权利归各自作者所有，在此致谢：</p>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">项目 / 资源</th><th style="text-align:left">用途</th><th style="text-align:left">许可</th></tr></thead><tbody><tr><td style="text-align:left"><a href="https://github.com/amll-dev/applemusic-like-lyrics" target="_blank" rel="noopener noreferrer">AMLL (Apple Music-like Lyrics)</a></td><td style="text-align:left">逐字歌词引擎</td><td style="text-align:left">见其仓库</td></tr><tr><td style="text-align:left"><a href="https://fontawesome.com/" target="_blank" rel="noopener noreferrer">Font Awesome</a></td><td style="text-align:left">图标库</td><td style="text-align:left">CC BY 4.0 / SIL OFL 1.1 / MIT</td></tr><tr><td style="text-align:left">Apple <strong>PingFang</strong> / <strong>SF Pro</strong></td><td style="text-align:left">字体资源</td><td style="text-align:left">归 Apple Inc. 所有</td></tr><tr><td style="text-align:left"><a href="https://music-api.gdstudio.xyz" target="_blank" rel="noopener noreferrer">GD 音乐台开发者 API</a></td><td style="text-align:left">音乐数据接口</td><td style="text-align:left">见其站点说明</td></tr><tr><td style="text-align:left"><a href="https://github.com/MakcRe/KuGouMusicApi" target="_blank" rel="noopener noreferrer">KuGouMusicApi</a></td><td style="text-align:left">酷狗接口实现参考</td><td style="text-align:left">MIT</td></tr><tr><td style="text-align:left"><a href="https://github.com/mengobs/musicplayer" target="_blank" rel="noopener noreferrer">mengobs/musicplayer</a></td><td style="text-align:left">歌词展示参考</td><td style="text-align:left">见其仓库</td></tr></tbody></table></div>
+<blockquote><p>完整的第三方依赖清单与许可文本，请参见项目仓库。若您认为本软件侵犯了您的合法权益，请通过第 11 节联系方式告知，我们将及时处理。</p></blockquote>
+</section>
+<section><h2 id="sec-8-隐私保护">8. 隐私保护</h2>
+<p>我们对您个人信息的处理规则，详见 <strong>《Harmonia 音乐播放器 · 隐私政策》</strong>（同目录 <code>隐私政策.md</code>）。该政策是本协议不可分割的组成部分。</p>
+<p><strong>简要提示</strong>：本软件的核心数据均保存在您的本机，我们不设账号体系、不做用户画像、不集成统计分析或广告 SDK。</p>
+</section>
+<section><h2 id="sec-9-协议终止">9. 协议终止</h2>
+<ol><li>您可随时通过<strong>停止使用并删除本软件</strong>来终止本协议；</li><li>若您违反本协议，我们可终止向您提供官方服务；</li><li>协议终止后，第 3 节（内容版权）、第 6 节（免责声明）、第 10 节（法律适用）等依其性质应继续有效的条款仍然有效。</li></ol>
+</section>
+<section><h2 id="sec-10-法律适用与争议解决">10. 法律适用与争议解决</h2>
+<ol><li><strong>法律适用</strong>：本协议的订立、效力、解释、履行及争议解决，均适用<strong>中华人民共和国大陆地区法律</strong>（不含冲突法规则）；</li><li><strong>争议解决</strong>：本项目为个人开源项目，我们<strong>无意也无力与用户对簿公堂</strong>。因本协议产生的任何争议，请首先通过 3570522422@qq.com 与我们友好沟通，我们承诺真诚协商解决。协商不成的，双方均可依法向<strong>有管辖权的人民法院</strong>提起诉讼；</li><li><strong>条款可分割性</strong>：若本协议任何条款被认定为无效或不可执行，不影响其余条款的效力。</li></ol>
+</section>
+<section><h2 id="sec-11-其他">11. 其他</h2>
+<ol><li><strong>完整协议</strong>：本协议（连同《隐私政策》及第三方许可条款）构成您与我们之间就本软件的完整约定；</li><li><strong>权利保留</strong>：我们未行使或延迟行使本协议项下任何权利，不构成对该权利的放弃；</li><li><strong>联系方式</strong>：如您对本协议有任何疑问，请联系 3570522422@qq.com 或提交 <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer/issues" target="_blank" rel="noopener noreferrer">GitHub Issue</a>。</li></ol>
+</section>
+<section><h2 id="sec-附-用户须知-通俗版">附：用户须知（通俗版）</h2>
+<p>为便于理解，以下要点供您快速参考。<strong>如与正文冲突，以正文为准。</strong></p>
+<div class="tbl-wrap"><table><thead><tr><th style="text-align:left">您需要知道的</th><th style="text-align:left">说明</th></tr></thead><tbody><tr><td style="text-align:left">本软件是播放器，不是音乐来源</td><td style="text-align:left">我们不提供、不存储任何音乐文件</td></tr><tr><td style="text-align:left">请支持正版</td><td style="text-align:left">所有内容版权归权利人所有</td></tr><tr><td style="text-align:left">您的数据在您自己设备上</td><td style="text-align:left">我们不收集、不上传</td></tr><tr><td style="text-align:left">第三方功能有风险</td><td style="text-align:left">登录、翻译、在线播放会向第三方发送必要信息（部分经自建代理转发）</td></tr><tr><td style="text-align:left">接口可能失效</td><td style="text-align:left">第三方策略变化会导致功能不可用，我们不担责</td></tr><tr><td style="text-align:left">免费且"现状"提供</td><td style="text-align:left">我们不保证无错误、不中断</td></tr><tr><td style="text-align:left">代码开源可商用</td><td style="text-align:left">但请更换名称图标，并自负合规责任</td></tr></tbody></table></div>
+<p>*本协议最后更新于 2026-10-03。如对内容有疑问，请联系 3570522422@qq.com。*</p></section>
+
+    <footer>
+      <div class="foot-meta">最后修订：2026年10月3日 · 版本 v3.0</div>
+      <div class="foot-actions">
+        <a class="back" href="main.html">
+          <span class="arrow">←</span> 返回 Harmonia 播放器
+        </a>
+        <span class="foot-repo">开源仓库 · <a href="https://github.com/beststoryilove/Harmonia-MusicPlayer" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+      </div>
+    </footer>
+
+  </main>
+</body>
+</html>
