@@ -97,7 +97,21 @@
     return Math.min(Math.pow(u, 3) * Math.pow(denom, -0.75), 2.4);  /* 钳制边缘无穷斜率 */
   }
 
-  /* 生成位移图（dataURL）：圆角矩形 SDF → 边缘折射方向编码进 R/G */
+  /* 生成位移图（dataURL）：圆角矩形 SDF → 边缘折射方向编码进 R/G。
+
+     性能要点（2026-10-17 优化）：**只遍历 bevel 环带**。
+     内距 ≥ bezel 的像素在原实现里同样要算一遍 sd() 才被判定为中性而写回 128，
+     而它们占整图的 70%~87%（实测：设置卡 860×600 为 87.0%，侧边栏 320×805 为 80.3%）。
+     现在先把整图铺成中性 (128,128,128,255)，再只扫环带，输出与原实现**逐字节相同** ——
+     这一点由 demos/liquid-glass-lab/tests/perf/map-equiv.mjs 用金标准比对锁定，
+     16 个几何（含 bezel=0、r=0、4×4 极小元素、1440×120 极端长宽比）全部一致。
+
+     行内扫描区间（图坐标）：
+       行的上下内距 dy < bezel → 整行都可能落在环带内，扫全宽；
+       否则只需左右两段，左段到 xBand、右段自 W-1-xBand 起。
+     xBand 取「圆角处环带的最大横向延伸」与 bezel 的较大者，
+     圆角实际延伸 = r − √((r−bezel)² − v²)（v 为该行到圆角圆心的纵向距离）。
+     取超集 + 内层仍用原来的精确判据 dIn < bezel，故不会漏算也不会多写。 */
   function makeMap(w, h, radius, bezel) {
     var s = Math.min(1, Math.sqrt(180000 / (w * h)));   /* 限制画布像素量 */
     var W = Math.max(4, Math.round(w * s)), H = Math.max(4, Math.round(h * s));
@@ -110,26 +124,84 @@
       var ax = Math.max(qx, 0), ay = Math.max(qy, 0);
       return Math.hypot(ax, ay) + Math.min(Math.max(qx, qy), 0) - r;
     }
-    var i = 0;
-    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++, i += 4) {
-      var px = (x + .5) / s, py = (y + .5) / s;
-      var dIn = -sd(px, py);           /* 内距：0=边缘 */
-      var R = 128, G = 128;
-      if (dIn < bezel) {
-        var slope = profileSlope(Math.max(dIn, 0) / bezel);
-        if (slope > .01) {
-          var gx = sd(px + .8, py) - sd(px - .8, py);
-          var gy = sd(px, py + .8) - sd(px, py - .8);
-          var gl = Math.hypot(gx, gy) || 1;
-          var m = slope / 2.4;
-          R = Math.round(128 + gx / gl * m * 127);
-          G = Math.round(128 + gy / gl * m * 127);
+
+    /* 1) 整图先铺中性。环带外像素到此为止，与原实现写回的值完全相同。
+
+       用 32 位视图一次填充，而不是 fill(128) 再逐像素补 alpha：
+       后者是两趟 O(w·h) 且 Uint8ClampedArray 的写入带钳制语义，在 180k 像素的
+       设置卡上实测占掉整块优化收益的一大半。字节序按运行环境判定，
+       小端下 0xFF808080 落到内存正是 R=0x80,G=0x80,B=0x80,A=0xFF。
+       视图不可用（偏移非 4 字节对齐）时回退到两趟写法。 */
+    var u32 = null;
+    if ((d.byteOffset & 3) === 0 && (d.length & 3) === 0) {
+      u32 = new Uint32Array(d.buffer, d.byteOffset, d.length >>> 2);
+    }
+    if (u32) {
+      var le = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+      u32.fill(le ? 0xFF808080 : 0x808080FF);
+    } else {
+      d.fill(128);
+      for (var a = 3; a < d.length; a += 4) d[a] = 255;
+    }
+
+    var rr = r - bezel; if (rr < 0) rr = 0;
+    var rr2 = rr * rr;
+
+    /* 2) 只扫环带 */
+    for (var y = 0; y < H; y++) {
+      var py = (y + .5) / s;
+      var dyTop = py < (h - py) ? py : (h - py);       /* 到上下边界的较小内距 */
+      var xa1, xb0;
+      if (dyTop < bezel) {
+        xa1 = W - 1; xb0 = W;                          /* 扫全宽；xb0=W 使中段判据恒不成立 */
+      } else {
+        var v = py < r ? (r - py) : (py > h - r ? (py - (h - r)) : 0);
+        var inner = rr2 - v * v;
+        var xBand = r - Math.sqrt(inner > 0 ? inner : 0);
+        if (xBand < bezel) xBand = bezel;
+        var span = Math.ceil(xBand * s) + 1;           /* +1 松弛，内层判据会把多算的排除 */
+        xa1 = span > W - 1 ? W - 1 : span;
+        xb0 = W - span; if (xb0 < 0) xb0 = 0;
+      }
+
+      var rowBase = y * W * 4;
+      for (var x = 0; x < W; x++) {
+        /* 中段必为中性，整段跳过 —— 这就是原实现里"算完又丢弃"的那部分 */
+        if (x > xa1 && x < xb0) { x = xb0 - 1; continue; }
+        var px = (x + .5) / s;
+        var dIn = -sd(px, py);           /* 内距：0=边缘 */
+        if (dIn < bezel) {
+          var slope = profileSlope(Math.max(dIn, 0) / bezel);
+          if (slope > .01) {
+            var gx = sd(px + .8, py) - sd(px - .8, py);
+            var gy = sd(px, py + .8) - sd(px, py - .8);
+            var gl = Math.hypot(gx, gy) || 1;
+            var m = slope / 2.4;
+            var i = rowBase + x * 4;
+            d[i] = Math.round(128 + gx / gl * m * 127);
+            d[i + 1] = Math.round(128 + gy / gl * m * 127);
+          }
         }
       }
-      d[i] = R; d[i + 1] = G; d[i + 2] = 128; d[i + 3] = 255;
     }
     ctx.putImageData(im, 0, 0);
     return cv.toDataURL();
+  }
+
+  /* 位移图缓存：同一 (w,h,radius,bezel) 只生成一次。
+     主项目里灵动岛在 180×40 与 540×480 之间反复切换，每切一次都要重建位移图；
+     按尺寸缓存后第二次起直接复用。上限 24 条，超出按插入顺序淘汰。 */
+  var mapCache = new Map();
+  var MAP_CACHE_MAX = 24;
+
+  function makeMapCached(w, h, radius, bezel) {
+    var key = w + '|' + h + '|' + radius + '|' + bezel;
+    var hit = mapCache.get(key);
+    if (hit !== undefined) return hit;
+    var url = makeMap(w, h, radius, bezel);
+    if (mapCache.size >= MAP_CACHE_MAX) mapCache.delete(mapCache.keys().next().value);
+    mapCache.set(key, url);
+    return url;
   }
 
   function register(el, cfg) {
@@ -197,7 +269,7 @@
       var rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || Math.min(w, h) / 2;
       rad = Math.min(rad, Math.min(w, h) / 2);
       feI.setAttribute('width', w); feI.setAttribute('height', h);
-      feI.setAttribute('href', makeMap(w, h, rad, cfg.bezel));
+      feI.setAttribute('href', makeMapCached(w, h, rad, cfg.bezel));
       feD.setAttribute('in2', MAP_RES);                  /* 位移图已与当前盒子对齐 → 启用折射 */
       /* 必须用 important 内联声明：.dynamic-island / .liquid-glass 等在样式表里
          对 backdrop-filter 也标了 !important，普通内联声明会输给它们。
@@ -245,6 +317,8 @@
       it.el.__lgv2 = false;
     });
     items = [];
+    /* 缓存里的 dataURL 字符串会占内存；停用时一并释放，避免关掉又打开越积越多 */
+    mapCache.clear();
   }
 
   /* 启用：注册全部目标元素并建立折射 */

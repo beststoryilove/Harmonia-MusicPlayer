@@ -1,0 +1,188 @@
+/* 协议同意门样式（js/consent.js 的配套表现层）
+ * 设计文档：docs/superpowers/specs/2026-10-06-consent-gate-design.md
+ * 层级：99998 —— 低于 splash（99999），开屏动画淡出后弹窗自然可见；
+ *       高于播放器现有最高层 10000。 */
+
+#consentGate {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  opacity: 0;
+  animation: consentFadeIn 0.32s ease-out forwards;
+}
+
+/* [hidden] 守卫：作者样式 #consentGate{display:flex} 的优先级高于浏览器 UA
+ * 样式表的 [hidden]{display:none}，不加这条，二次访问（已同意，init 提前返回、
+ * hidden 保持 true）时弹窗会以"无交互的死弹窗"形态可见。 */
+#consentGate[hidden] {
+  display: none;
+}
+
+@keyframes consentFadeIn {
+  to { opacity: 1; }
+}
+
+.consent-card {
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(86vh, 720px);
+  overflow-y: auto;
+  background: rgba(28, 28, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  padding: 28px 26px 24px;
+  color: #fff;
+  font-family: "PingFangSC-Regular", "SFPro-Regular", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  transform: translateY(12px) scale(0.98);
+  animation: consentCardIn 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes consentCardIn {
+  to { transform: translateY(0) scale(1); }
+}
+
+/* 同意后淡出（时长与 consent.js 移除节点的 setTimeout 320ms 一致） */
+#consentGate.consent-leaving {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+#consentGate.consent-leaving .consent-card {
+  transform: translateY(8px) scale(0.98);
+  transition: transform 0.3s ease;
+}
+
+/* 锁滚动：html.consent-locked 期间禁止背景滚动 */
+html.consent-locked,
+html.consent-locked body {
+  overflow: hidden !important;
+}
+
+.consent-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  outline: none; /* 初始焦点落点，去掉焦点环但保留可聚焦 */
+}
+
+.consent-lead {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.consent-lead a,
+.consent-doc-links a {
+  color: var(--primary-color, #ff2d55);
+  text-decoration: none;
+}
+.consent-lead a:hover,
+.consent-doc-links a:hover { text-decoration: underline; }
+
+.consent-points {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+.consent-points li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.66);
+}
+.consent-points li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.85em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--primary-color, #ff2d55);
+  opacity: 0.9;
+}
+
+.consent-doc-links {
+  display: flex;
+  gap: 18px;
+  margin: 0 0 16px;
+}
+.consent-doc-links a {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.consent-agree-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 0 18px;
+  cursor: pointer;
+}
+.consent-agree-row input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--primary-color, #ff2d55);
+  cursor: pointer;
+}
+.consent-agree-row span {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  user-select: none;
+}
+
+.consent-submit {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary-gradient, linear-gradient(135deg, #ff2d55, #ff375f));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+.consent-submit:hover:not(:disabled) { transform: translateY(-1px); }
+.consent-submit:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+.consent-submit:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+  .consent-card {
+    padding: 22px 18px 18px;
+    border-radius: 16px;
+  }
+  .consent-title { font-size: 18px; }
+  .consent-lead { font-size: 13px; }
+  .consent-submit { font-size: 14px; padding: 11px 0; }
+}
+
+/* 弹窗出现期间的可用性保护：减少动态效果偏好下不做入场动画 */
+@media (prefers-reduced-motion: reduce) {
+  #consentGate,
+  .consent-card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

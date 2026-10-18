@@ -25,6 +25,7 @@
   let background = null;      // BackgroundRender 实例（仅启用时存在）
   let container = null;       // #amllBgContainer
   let lastAlbum = null;       // 最近一次专辑资源（URL 字符串或 HTMLImageElement）
+  let lastAlbumUrl = null;    // 与 lastAlbum 对应的 URL（元素不可安全读取时用它兜底）
   let starting = false;       // 引擎加载中，避免并发重复创建
   let failedAt = 0;           // 上次启用失败时间戳
   let playingState = null;    // 期望的播放状态；引擎就绪后据此 resume/pause
@@ -36,9 +37,80 @@
   let autoRetryTimer = 0;     // 自动重试定时器
   let autoRetryCount = 0;     // 已自动重试次数（成功后复位）
   let lastSkipReason = null;  // 只读诊断：最近一次未启用的原因
+  let rendered = false;       // 渲染器是否已产出可见内容（决定是否隐藏旧的模糊背景）
+  let unavailableNotified = false; // 已向用户提示过「无法渲染」，避免重复打扰
 
   function warn(...args) {
     console.warn('[DynamicBg]', ...args);
+  }
+
+  /* ── 画布安全性探测（安卓「纯黑」根因防线）──────────────────────────────
+     AMLL 的 MeshGradientRenderer 会把封面 drawImage 进一个**渲染器实例级共享**的
+     32×32 取样画布（reduceImageSizeCanvas），再 getImageData 取色。若传入的 Image 是
+     「跨域且未声明 crossOrigin」的，drawImage 会**永久**污染那张共享画布
+     —— clearRect 无法解除；此后每一次 setAlbum 都在 getImageData 抛 SecurityError，
+     于是 meshStates 永远为空 → 背景 canvas 没有任何内容 → 露出 body 的纯黑
+     —— 这就是安卓端「开启动态背景后背景纯黑」的根因。
+
+     为什么只有安卓：桌面 Electron 主窗口设了 webSecurity:false（源码/desktop/main.js），
+     不执行同源策略，未声明 crossOrigin 的跨域图**不污染**画布，故桌面端从不触发。
+
+     这里在把元素交给 AMLL 之前，先用一张一次性 1×1 画布自证「可读」：不可读就退化为
+     传 URL 字符串 —— AMLL 收到 URL 时会自行 new Image() 并设 crossOrigin='anonymous'，
+     失败只会静默降级（绝不会污染共享画布）。代价是一次 1×1 drawImage，可忽略。 */
+  function isCanvasSafeImage(imgEl) {
+    try {
+      if (!imgEl || imgEl.tagName !== 'IMG' || !imgEl.naturalWidth) return false;
+      const probe = document.createElement('canvas');
+      probe.width = 1;
+      probe.height = 1;
+      const ctx = probe.getContext('2d');
+      if (!ctx) return false;
+      ctx.drawImage(imgEl, 0, 0, 1, 1);
+      ctx.getImageData(0, 0, 1, 1);   // 已被跨域数据污染时会抛 SecurityError
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /* 渲染器是否已产出内容。
+     返回 true=有内容 / false=确定没有 / null=无法判定（AMLL 内部字段改名等）。
+     依赖 renderer.meshStates 这一内部字段：它由 setAlbum 成功取色后 push。
+     与既有 rendererDiag() 读取 frameTime/flowSpeed/paused 属同一取舍（版本已 pin）。 */
+  function rendererHasContent() {
+    if (!background || typeof background.getRenderer !== 'function') return null;
+    try {
+      const r = background.getRenderer();
+      if (!r || !Array.isArray(r.meshStates)) return null;
+      return r.meshStates.length > 0;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /* 背景可见性收敛：**只有确认渲染器真的有内容**才隐藏旧的专辑图模糊背景。
+     历史事故：onEnabledChange(true) 在渲染器建起来之前就把 .am-background 隐藏了，
+     一旦取色失败（如上面的画布污染）就只剩 body 的纯黑底板 —— 用户看到「一片纯黑」。
+     无法判定时按「有内容」处理，保持与改动前一致的桌面行为，避免误伤。
+     attempted=true 表示「这次确实给过封面」：只有这种情况下的空内容才是真故障，需要提示用户；
+     尚未有曲目时（attempted=false）保持安静，否则刚打开开关就会弹一条误导性的错误提示。 */
+  function syncVisibility(attempted) {
+    const has = rendererHasContent();
+    const visible = has === null ? true : has;
+    rendered = visible;
+    if (container) container.classList.toggle('active', visible);
+    document.body.classList.toggle('dynamic-bg-on', visible);
+    if (!visible && attempted) notifyUnavailable();
+  }
+
+  /* 渲染器起来了但始终没有内容：明确告知用户，而不是留一块纯黑让人以为界面坏了。 */
+  function notifyUnavailable() {
+    if (unavailableNotified) return;
+    const host = getHost();
+    if (!host || typeof host.onRenderUnavailable !== 'function') return;
+    unavailableNotified = true;
+    try { host.onRenderUnavailable(); } catch (error) { warn('通知宿主失败:', error); }
   }
 
   function getHost() {
@@ -97,16 +169,32 @@
 
   /* 专辑资源下发：优先传 HTMLImageElement（已解码，省一次网络加载），
      否则传 URL 由 AMLL 自行加载。注意不可直接传未设 crossOrigin 的图片元素，
-     否则 WebGL 贴图会被跨域污染。 */
+     否则 WebGL 贴图会被跨域污染。
+     另：**必须**先经 isCanvasSafeImage 自证可读 —— AMLL 内部会把它 drawImage 进共享
+     取样画布再 getImageData，被污染的画布会永久失效（见 isCanvasSafeImage 注释）。
+     自证不通过时退化为传 URL：AMLL 收到 URL 会自行 new Image()+crossOrigin='anonymous'，
+     即使取图失败也只降级、不污染，故这条兜底永远安全。 */
   async function applyAlbum() {
-    if (!background || !lastAlbum) return;
+    if (!background) return;
+    /* 尚无封面：AMLL 的 isNoCover=true 时 meshStates 为空，canvas 全透明。
+       此时必须让旧模糊背景继续可见（syncVisibility 会据此判定），不能留一块纯黑。 */
+    if (!lastAlbum) { syncVisibility(false); return; }
+    let target = lastAlbum;
+    if (target && target.tagName === 'IMG' && !isCanvasSafeImage(target)) {
+      const fallbackUrl = lastAlbumUrl;
+      warn('封面元素不可安全读取（跨域未声明 crossOrigin），退化为按 URL 加载');
+      if (!fallbackUrl) { syncVisibility(false); return; }
+      target = fallbackUrl;
+    }
     try {
-      await background.setAlbum(lastAlbum);
-      albumState = (lastAlbum && lastAlbum.tagName === 'IMG') ? 'element' : 'url';
+      await background.setAlbum(target);
+      albumState = (target && target.tagName === 'IMG') ? 'element' : 'url';
     } catch (error) {
       albumState = 'error';
       warn('设置专辑资源失败:', error);
     }
+    /* 取色完成后才决定背景是否可见：成功即隐藏旧模糊背景，失败则保留它当底板。 */
+    syncVisibility(true);
   }
 
   /* 启用失败后的退避重试。getHost() 缺失或用户已关开关时不再排队。 */
@@ -155,8 +243,9 @@
       const containerEl = ensureContainer();
       containerEl.innerHTML = '';
       containerEl.appendChild(background.getElement());
-      containerEl.classList.add('active');
-      document.body.classList.add('dynamic-bg-on');
+      /* 刻意**不**在这里加 .active / body.dynamic-bg-on：
+         此时还没有任何内容，加了两者只会把旧的专辑图模糊背景藏掉、露出 body 纯黑。
+         可见性统一由 applyAlbum() 末尾的 syncVisibility() 按「渲染器是否真有内容」决定。 */
 
       background.setFPS(host.isMobile() ? 30 : 60);
       background.setStaticMode(false);
@@ -201,6 +290,8 @@
     document.body.classList.remove('dynamic-bg-on');
     lastAppliedSpeed = null;
     albumState = null;
+    rendered = false;
+    unavailableNotified = false;
   }
 
   /* 主界面初始化完成后调用：仅在开关已开启时才真正启用。
@@ -248,6 +339,7 @@
      若开关是开的但渲染器仍未起来（冷启动首次尝试失败），在此按设计文档补一次启用——
      这是「下次封面就绪时重试」的落点。重试频率由 RETRY_DELAY_MS 冷却与退避上限约束。 */
   function notifyCover(url, imgEl) {
+    if (typeof url === 'string' && url) lastAlbumUrl = url;
     if (imgEl && imgEl.tagName === 'IMG' && imgEl.naturalWidth > 0) lastAlbum = imgEl;
     else if (url && typeof url === 'string') lastAlbum = url;
     else return;
@@ -270,6 +362,7 @@
     cancelAutoRetry();
     disable();
     lastAlbum = null;
+    lastAlbumUrl = null;
   }
 
   /* bfcache 往返：pagehide 在「进入缓存」时也会触发，此时若走终态 dispose，
@@ -289,13 +382,19 @@
      因为 WebGL 默认 preserveDrawingBuffer:false，帧外读回只会得到全黑。 */
   function rendererDiag() {
     if (!background || typeof background.getRenderer !== 'function') {
-      return { frameTime: null, flowSpeed: null, paused: null };
+      return { frameTime: null, flowSpeed: null, paused: null, meshCount: null };
     }
     try {
       const r = background.getRenderer();
-      return { frameTime: r ? r.frameTime : null, flowSpeed: r ? r.flowSpeed : null, paused: r ? r.paused : null };
+      return {
+        frameTime: r ? r.frameTime : null,
+        flowSpeed: r ? r.flowSpeed : null,
+        paused: r ? r.paused : null,
+        /* meshStates 数量即「取色成功的封面数」：0 = canvas 全透明（背景不可见） */
+        meshCount: (r && Array.isArray(r.meshStates)) ? r.meshStates.length : null
+      };
     } catch (error) {
-      return { frameTime: null, flowSpeed: null, paused: null };
+      return { frameTime: null, flowSpeed: null, paused: null, meshCount: null };
     }
   }
 
@@ -319,7 +418,9 @@
       /* 冷启动启用失败时，下面三项能一眼看出「还没启用、为什么、还有没有在重试」 */
       skipReason: lastSkipReason,
       autoRetryCount: autoRetryCount,
-      autoRetryPending: !!autoRetryTimer
+      autoRetryPending: !!autoRetryTimer,
+      /* 背景是否真的已产出内容（决定旧模糊背景是否被隐藏）；false 时界面保留可见底板 */
+      rendered: rendered
     }, rendererDiag())
   };
 

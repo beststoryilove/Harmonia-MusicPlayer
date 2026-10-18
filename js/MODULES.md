@@ -21,12 +21,13 @@
 |------|----------|------|
 | DOM 缓存 | `dynamicIsland`, `searchInput`, `audioPlayer`... | 全局 DOM 引用（启动时一次性缓存） |
 | 状态 | `isPlaying`, `currentSongInfo`, `playlist`, `favorites`, `history`, `playlists`, `harmoniaStats` | 应用状态（顶层 let，多处直接修改） |
-| 网络 | `wrappedFetch`（25s 超时 + AbortController）、`withKugouRequestDedup` | 统一请求与去重 |
+| 网络 | `wrappedFetch`（25s 超时 + AbortController）、`withKugouRequestDedup`、本地网关（回环白名单 + 免令牌：`isLoopbackGatewayUrl` / `buildTransHeaders`） | 统一请求与去重 |
 | 灵动岛 | `toggleDynamicIsland`, `expandDynamicIsland`, `showDynamicIslandToast` | 灵动岛展开/收起/提示 |
 | 播放控制 | `playSong`, `playFromPlaylist`, `getNextSongId`, `preloadNextSongForGapless`, 无逢隙 `onGaplessEnded` | 播放/切歌/预加载（ended 自动切歌在 `onGaplessEnded`；预加载按音源设置 crossorigin，见 `stApplySourceMediaAttrs`） |
 | 智能过渡 | `stTimeUpdateHook`, `stTryStartTransition`, `stChooseEffect`, `stRunBassSwap`, `stPerformEchoOut`, `stRunVolumeMix`, `stEnsureMixer`, `stDetectBpm`, `stMeasureTail`, `stGetSongFeatures`, `stBuildPlan`, `stDetectKeyOf` | DJ 式混音引擎（非音量交叉淡化）：按结尾形态选效果——淡出结尾→bassSwap 低频交接（自建混音台，无需开 EQ，A/B 均可安全入图时）、骤然结尾→echoOut 回声收尾（尾部原料进 BPM 同步延迟反馈拖尾）、尾部静音→静音段浮现、分析失败→音量淡化+响度匹配；启动点吸附 4 拍小节边界，高置信鼓点歌轻对齐速度（±3%）；酷狗分析通路：桌面直连（跨域全放行），网页/手机经自建 cors 代理（Range 能力探测 7 天缓存，不支持则降级淡化）；负缓存分级 noCors 24h/networkFail 1h；分析缓存 localStorage（`stAnalysisCache5`，含 loudnessDb 与 ST6 的 key/energy），回声原料内存缓存 30 首；交接时响度匹配（matchGain 0.5-2）+4s 缓释；**ST6：调性 × 能量双维相容度**——`stBuildPlan` 用 A 尾 × B 头的 chroma/调性（Krumhansl-Schmuckler 24 调 + Camelot 轮相容度）与能量形态（满能量骤停 / 软起）产出**冻结 Plan**：调性冲突缩短同时发声时长（×0.45，下限 2s）、A 尾满能量骤停给足重叠（≥3s）、高相容旁路 B 侧低通、中性档 B 侧低通 700→20000 扫入、冲突档 700→12000（**由暗到亮**，方向恒为 to > from）、高相容 + 两侧 BPM 高置信且差距 ∈(3%,6%] 时变速放宽到 ±6%；调性不可信时一律沿用既有 0.65 + 旁路（零回归）；纯函数（效果选择/响度/匹配增益/代理URL/FFT/chroma/调性/相容度/能量形态/Plan）在 `js/lib/pure.js`。**调性可信度两重门槛**：① `computeHarmonyEvidence` **复音证据**——判定"所有显著谱峰能否被**单一拉伸谐波列**解释"（`f_h = h·f0·√(1+B·h²)`，B 粗到细扫描）：单一基频（含钢琴/钟的拉伸泛音）→ 证据 0；真实和声含多个独立基频 → 证据 ≥1。候选基频取**多个**（能量最强若干峰 + 最低峰）而非"最低峰即基频"——后者是错误假设，颤音素材的最低峰常是基频**下方**的弱边带，会导致真实基频被算错、谐波列整体"对不上"而凭空产生证据（实测颤音有害误报 19.0% → 6.5%）。单音（含 40 次谐波）证据恒为 0，此时 `detectKey` **fail-closed** 返回无效（不回退 bestR），因为一个音高不是"调性"（E 既属 C 大调也属 E 大调）；② 熵折扣 `minEntropy=0.85` + `ST_KEY_CONF_MIN=0.75`（两值与 pure.js 的 `keyConfMin` 缺省值均由单测守卫）。**已知残余**：低音区（82/110Hz）+快颤音（6.5Hz）的边带间距恰约为一个半音，与"两个相隔半音的真实音"在稳态频谱上不可区分（表示层局限） |
 | 歌词 | `parseLyrics`（LRC 家族）、`parseWordLyrics`（YRC/QRC）、`parseKugouKrc`（KRC）、`parseTTMLContentToAMLLLines`（TTML）、`renderAMLLLines`, `updateAMLyricsHighlight`, `normalizeAMLLLine`, `amllSetLyricLinesNoBurst`, `applyAMLLProcessConfig`, IndexedDB 缓存 `getCachedLyrics` | 歌词解析/渲染/高亮/缓存。解析优先走 AMLL 官方 parser（`parseLrcLike`/`parseYrc`/`parseQrc`/`parseTTML`），手写实现降级为兜底；高行数歌词由 core 0.6.0 内置的渲染范围门控按需构建（渲染器不降级、行不合并） |
 | 搜索 | `searchMusic`, `displaySearchResults`, `updatePagination` | 搜索/结果/分页 |
+| 歌曲翻译 | `classifyLyricLanguage` / `classifyKuGouLyricsLanguage`（判定，返回 `{total, foreignLines, verdict}`，verdict ∈ foreign/chinese/unknown）、`shouldTranslateLyricText` / `shouldTranslateKugouLyrics`（决策） | **判定与决策分离**：三档 `translationScope` —— `no-translation`（仅翻无现成译文的外语歌，与旧行为等价）/ `all-foreign`（除明显中文外全翻，`unknown` 含无时间轴歌词也翻）/ `all`（无条件全翻）。旧 `isForeignLyric` / `isKuGouLyricsForeign` 保留为 `classify(...).verdict === 'foreign'` 薄封装，阈值与统计口径未改；普通与酷狗两条通路共用同一套判定/决策 |
 | 歌单 | `createPlaylist`, `addTrackToPlaylist`, `syncKugouPlaylists`, `renderPlaylists` | 歌单 CRUD（含酷狗同步） |
 | 酷狗 | `fetchKugouVipDetail`, `loginKugou`, `initKugouQrLogin`, `runKugouVipClaimAndUpgrade` | 酷狗 API 与 VIP |
 | 均衡器 | `ensureEqAudioGraph`, `applyEqToGraph`, `persistAndRefreshEqUi` | Web Audio EQ（CORS 探测 + 自动关闭） |
@@ -82,6 +83,42 @@
 其中 `emptyBeat` 是**数值**节拍数（`amll:empty-beat="2"`，官方用 `parseInt` 解析，
 写成 `"true"` 会得到 NaN 被丢弃），`obscene` 为布尔。
 
+## Legacy 歌词引擎（`js/lib/lyric-engine.js`）
+
+「经典布局」（`lyricsRendererMode === 'legacy'`）的渲染器。**改编自**
+`demos/ttml-lyric-modes/js/`（自研实现，仅借鉴 AMLL 技术方向，未复制其源码），
+搬迁为单文件 classic script（UMD，同 `js/lib/pure.js` 的包装；`file://` 下 ESM 会被
+CORS 拦截，故不能直接 import demo）。样式在同名 `css/lyric-engine.css`。
+
+**为什么需要**：旧的 legacy 通路用「单列前缀高度 + 单活跃行」模型，
+同一时刻只有一行能高亮，且行映射丢掉了 `isBG`/`isDuet`/`agent` —— TTML 的
+对唱、背景人声、重叠时间轴三类结构在渲染层被抹平。引擎用「行组 + 嵌套背景行 +
+每行独立弹簧」表达它们。
+
+**它是 demo 的「分叉」而非副本**（不能按「保持同步」维护）。与 demo 的 5 处差异
+（文件头有同一份清单）：
+
+| # | 差异 | 原因 |
+|---|---|---|
+| a | `LineGroup` 额外写 `dataset.time` | 主项目点击歌词跳转按 `data-time` 取时间 |
+| b | 新增 `relayout()` | 字号/尺寸变化后必须重测组高前缀和 |
+| c | `update()` 增加「宿主无尺寸则跳过」守卫 + `ensureSized()` | 移动端面板隐藏时 `clientHeight` 为 0，测量全为 0 会让所有组叠在一处 |
+| d | 新增 `mountLyrics()` / `PRESETS` | 装配层与三种动画模式的参数预设 |
+| e | `findActiveLines` 改用「前缀最大行尾」剪枝 | demo 用「已见最大行尾」判断早停，等价于「前两行结束就停」，会漏掉更早开始的长行（真实样本 5055 个采样点中 2 个漏行） |
+
+**接线要点**（都在 `main.js`）：`renderLegacyLyricLines` 优先 `setupLyricEngine(list)`，
+失败则回退 `renderLegacyLyricLinesFallback`；引擎激活时 `updateAMLyricsHighlight` 与
+`UpdateLyricsLayout` 短路（否则两套布局互相覆盖位置）；**窗口标题歌词改由引擎的 rAF
+循环更新**（它原本在 `updateAMLyricsHighlight` 里）；循环与播放态成对接线
+（`play` 启动 / `pause`·`ended` 停止）—— 只做一侧会分别导致「暂停时空转」或
+「暂停态渲染后歌词整首冻结」；跳转走 `controller.seek()` 强制跳位（不跑弹簧）。
+
+**CSS 度量纪律**：滚动数学依赖 `offsetHeight` 准确，因此参与测量的元素**不得**使用
+size containment（`contain: strict`/`size`）或常开的 `content-visibility: auto`
+（实测会让 130px 的行读成 40px）。字号必须写成
+`calc(<N>px * var(--lyrics-size-scale,1))`（背景行等用相对主行的比例），
+否则「歌词大小」滑块对它无效。以上两条由 `tests/js/lyric-engine.test.js` 静态守卫。
+
 ## 错误处理
 
 - 网络请求统一走 `wrappedFetch`（25s 超时 + AbortController）
@@ -122,7 +159,8 @@
 ## 注意事项
 
 - `main.js` 为全局作用域单体脚本，无模块化/构建步骤；新增函数注意命名冲突
-- `js/` 目录部署 `main.js`、`stFlacRepair.js`（FLAC/WAV 无损音源尾部修复）与 `MODULES.md`
+- `js/` 目录部署 `main.js`、`stFlacRepair.js`（FLAC/WAV 无损音源尾部修复）、
+  `lib/`（`pure.js` 纯函数库、`lyric-engine.js` legacy 歌词引擎）与 `MODULES.md`
 - 顶层 localStorage 读取必须走 `safeJsonParse`，避免存储损坏导致整站白屏
 - `init()` 只在文件主体执行一次（`<script defer>` 加载），勿在 DOMContentLoaded 中再次调用
 - 动态 import 的相对说明符须以 `./` 开头并以 `document.baseURI` 归一：`main.js` 位于 `/js/` 下，

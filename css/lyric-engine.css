@@ -1,0 +1,102 @@
+/* Legacy 歌词引擎样式 —— 改编自 demos/ttml-lyric-modes/css/engine.css
+ *
+ * 结构（由 js/lib/lyric-engine.js 的 line.js 生成）：
+ *   .eng-group            滚动位移由此元素承担（一条 Y 弹簧）
+ *     .eng-bg-wrap        背景行包裹（bgFirst 时插在主行之前）
+ *       .eng-line.eng-bg
+ *     .eng-line.eng-main  主行（内含 .eng-word）
+ *
+ * 字号纪律：每一处 font-size 都必须由主行基准**显式算出**，即形如
+ *   calc(var(--eng-font-size, 40px) * var(--lyrics-size-scale, 1) * <比例>)
+ *   —— 否则「歌词大小」对 legacy 无效（本次修复的缺陷 1）。
+ *   ❌ 禁止用 em/rem/% 做相对字号：em 相对的是**父元素**（.eng-group 从 body
+ *      继承 16px），不是主行的 40px，于是 0.62em 恒为 12px、max(0.5em,10px)
+ *      恒落在 10px 地板上 —— 滑块拉动时这些行纹丝不动（实测 x1.00）。
+ *      同理禁止写死的绝对 px 字号。
+ *   ✅ 比例值对齐 demo 的层级关系：背景主行 0.62（36px→22px 同比例）、
+ *      副行 0.5、背景副行 0.4。
+ *   由 tests/js/lyric-engine.test.js 静态守卫（只接受含 var(--lyrics-size-scale)
+ *   的声明，且全文不得再出现 em/rem 字号）。
+ * 度量纪律：不得使用 size containment / 常开的 content-visibility —— 滚动数学依赖
+ *   offsetHeight 准确（demo README「CSS 度量守卫」记录了实测踩坑）。
+ * 由 tests/js/lyric-engine.test.js 静态守卫上述两条。
+ */
+
+.lyric-engine-host { position: relative; width: 100%; height: 100%; overflow: hidden; }
+
+.lyric-engine-host .eng-group {
+  position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box;
+  padding: 0.4em var(--eng-padding-x, 1em); border-radius: 0.25em;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.3em;
+  will-change: transform;
+  transition: opacity 0.4s ease, filter 0.4s ease, background-color 0.25s ease;
+}
+.lyric-engine-host .eng-group[data-offscreen='1'] { visibility: hidden; pointer-events: none; }
+.lyric-engine-host .eng-group[data-offscreen='1'] .eng-line {
+  content-visibility: auto; contain-intrinsic-size: auto 40px;
+}
+
+.lyric-engine-host .eng-line {
+  position: relative; box-sizing: border-box; width: 100%; height: fit-content;
+  padding: 0.2em; margin: -0.2em; transform-origin: left;
+  contain: layout style paint; backface-visibility: hidden;
+}
+
+.lyric-engine-host .eng-main {
+  font-size: calc(var(--eng-font-size, 40px) * var(--lyrics-size-scale, 1));
+  line-height: 1.24; font-weight: 700; letter-spacing: 0.4px;
+  color: rgba(255, 255, 255, 0.97); word-wrap: break-word; white-space: pre-wrap;
+}
+/* 副行（翻译 / 音译）：0.5 倍主行基准 —— 显式乘 scale，不能靠 em 继承 */
+.lyric-engine-host .eng-sub { opacity: 0.3; font-size: calc(var(--eng-font-size, 40px) * var(--lyrics-size-scale, 1) * 0.5); line-height: 1.5em; font-weight: 500; transition: opacity 0.2s 0.25s; }
+.lyric-engine-host .eng-trans { opacity: 0.34; }
+
+.lyric-engine-host .eng-word { display: inline-block; margin: -1em; padding: 1em; white-space: pre-wrap; vertical-align: bottom; contain: layout style; backface-visibility: hidden; }
+.lyric-engine-host .eng-word.eng-emphasize { will-change: transform, text-shadow; }
+.lyric-engine-host .eng-line:not(.is-active) .eng-word { filter: brightness(0.72); }
+.lyric-engine-host .eng-line.is-active .eng-word { filter: none; }
+
+/* 嵌套背景行：未演唱时折叠收在一旁，起唱展开（与主行共享组位置 → 天然同屏） */
+.lyric-engine-host .eng-bg-wrap {
+  position: absolute; top: 100%; left: var(--eng-padding-x, 1em); z-index: -1;
+  width: calc(100% - var(--eng-padding-x, 1em) * 2);
+  display: flex; flex-direction: column; opacity: 0;
+  transform-origin: left top; transition: opacity 0.3s ease; pointer-events: none;
+}
+.lyric-engine-host .eng-bg-wrap-top { position: relative; top: auto; left: 0; width: 100%; margin-top: -999px; transform-origin: left bottom; }
+.lyric-engine-host .eng-bg-wrap.is-shown { position: relative; top: auto; left: 0; width: 100%; opacity: 1; }
+.lyric-engine-host .eng-line.eng-bg .eng-main { font-size: calc(var(--eng-font-size, 40px) * var(--lyrics-size-scale, 1) * 0.62); font-weight: 600; color: rgba(111, 195, 255, 0.92); opacity: 0.78; }
+.lyric-engine-host .eng-line.eng-bg .eng-sub { font-size: calc(var(--eng-font-size, 40px) * var(--lyrics-size-scale, 1) * 0.4); opacity: 0.5; }
+
+/* 对唱：右对齐 + 声部色，主行让出右侧 15% —— 形成左右对话 */
+.lyric-engine-host .eng-line.eng-duet { text-align: right; transform-origin: right; }
+.lyric-engine-host .eng-line.eng-duet .eng-main { color: var(--eng-duet-color, #ff8fa6); }
+.lyric-engine-host .eng-group-duet .eng-line:not(.eng-duet) { padding-right: 15%; }
+.lyric-engine-host .eng-group-duet .eng-line.eng-duet { padding-left: 15%; }
+.lyric-engine-host .eng-group-duet { align-items: flex-end; }
+.lyric-engine-host .eng-group-duet .eng-bg-wrap { transform-origin: right top; }
+.lyric-engine-host .eng-group-duet .eng-bg-wrap-top { transform-origin: right bottom; }
+
+/* 三种动画模式的差异只落在动画，不落在结构 */
+.lyric-engine-host.lyric-engine-performance .eng-group { transition: none; text-shadow: none; filter: none; mix-blend-mode: normal; }
+.lyric-engine-host.lyric-engine-performance .eng-main { text-shadow: none; }
+.lyric-engine-host.lyric-engine-preview .eng-main { font-weight: 800; letter-spacing: -0.6px; white-space: normal; overflow-wrap: anywhere; }
+.lyric-engine-host.lyric-engine-preview .eng-group { transition: opacity 0.8s cubic-bezier(0.15, 0, 0.15, 1), filter 0.42s ease; }
+
+/* 移动全屏三档：与 css/responsive.css 的 legacy 通路保持一致（32/24/20px 基准）。
+ * legacy 的 480px 档位实际是 24px，不是 28px —— responsive.css 在同一个
+ * @media (max-width:480px) 块里先写 28px、后写 24px，两条规则特异性相同且都带
+ * !important，后者胜出，28px 那条是死规则（由 CSS 文本解析确认）。
+ * 因此这里只跟有效值对齐，不跟那段死规则对齐。
+ * 挂在 **宿主** 而非 `.eng-main` 上：副行 `.eng-sub`（翻译 / 音译）与 `.eng-main` 是
+ * **兄弟**（引擎 this.el.append(mainEl, transEl, romanEl)），不是后代 —— 写在 `.eng-main`
+ * 上的自定义属性不会被它们继承，副行会退回 40px 兜底值，破坏「副行 = 主行 0.5 倍」的层级。 */
+@media (max-width: 768px) {
+  body.mobile-lyrics-fullscreen .lyric-engine-host { --eng-font-size: 32px; }
+}
+@media (max-width: 480px) {
+  body.mobile-lyrics-fullscreen .lyric-engine-host { --eng-font-size: 24px; }
+}
+@media (max-width: 360px) {
+  body.mobile-lyrics-fullscreen .lyric-engine-host { --eng-font-size: 20px; }
+}

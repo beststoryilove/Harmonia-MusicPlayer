@@ -1253,6 +1253,109 @@
     });
   }
 
+  // ── 下一首预加载闸门（2026-10-17 限流治理）────────────────────────────
+  //
+  // 背景：`audioPlayer.timeupdate` 约 4 次/秒触发 `stEnsureNextPreloaded()`，
+  // 而预加载要等 `await getAudioUrl()` 返回后才写「已预加载」状态。原实现只有
+  // 「已完整预加载」这一个守卫，于是在途期间每个 tick 都会再发一次 `types=url`；
+  // 失败分支又立刻清空状态 → 上游 429 自我强化成 4 req/s 的请求风暴。
+  //
+  // 本组四个纯函数把「现在该不该发请求」「失败了该等多久」「状态怎么迁移」从
+  // main.js 的全局状态里拆出来，使规则可被 Node 单测直接锁定（见 tests/js/preload-gate.test.js）。
+  // 刻意不碰 DOM / 定时器 / 全局变量：调用方负责保存返回值与真正发请求。
+
+  var PRELOAD_BACKOFF_BASE_MS = 30000;   // 首次失败冷却 30s
+  var PRELOAD_BACKOFF_MAX_MS = 300000;   // 冷却封顶 5min
+  var PRELOAD_MIN_INTERVAL_MS = 1500;    // 两次尝试之间的最小间隔（timeupdate 4Hz 不得放大）
+
+  // 指数退避：count=1 → base，之后每级翻倍，封顶 max。
+  // 非法 count（0/负数/NaN/Infinity/非数字）一律收敛为 base —— 宁可多试一次，
+  // 也不要产生 0ms（退化成忙等）或 NaN（冷却永不生效）。
+  function computePreloadBackoffMs(count, opts) {
+    var o = opts || {};
+    var base = Number(o.baseMs);
+    if (!isFinite(base) || base <= 0) base = PRELOAD_BACKOFF_BASE_MS;
+    var max = Number(o.maxMs);
+    if (!isFinite(max) || max <= 0) max = PRELOAD_BACKOFF_MAX_MS;
+    if (max < base) max = base;
+    var n = Number(count);
+    if (!isFinite(n) || n < 1) n = 1;
+    // n=1 → base；n=2 → base*2 …… 用循环而非 2**n，避免大 n 时溢出成 Infinity
+    var ms = base;
+    for (var i = 1; i < n && ms < max; i++) ms *= 2;
+    return Math.min(ms, max);
+  }
+
+  // 「现在该不该发起下一首预加载」的唯一判据。返回 { action, reason }：
+  //   action='start' → 调用方可以发请求
+  //   action='skip'  → 不要发；reason 说明原因（便于日志与测试定位）
+  // 判据优先级：无歌 > 在途 > 已完成 > 失败冷却 > 最小间隔。
+  // 「在途」排在「已完成」之前：已完成状态可能尚未落盘，在途 Promise 才是最新事实。
+  function decideGaplessPreload(state) {
+    var s = state || {};
+    var songId = s.songId === 0 ? '0' : String(s.songId || '');
+    if (!songId) return { action: 'skip', reason: 'no-song' };
+    // 时钟非法时 fail-closed：算不出「冷却/间隔」就等于没有任何限流保护，宁可这次不发。
+    // 未提供 now 则按 0 处理（调用方通常总会传，此分支只服务于极简测试桩）。
+    var now = 0;
+    if (s.now !== undefined && s.now !== null) {
+      now = Number(s.now);
+      if (!isFinite(now)) return { action: 'skip', reason: 'bad-clock' };
+    }
+
+    var pendingSongId = s.pendingSongId ? String(s.pendingSongId) : '';
+    if (pendingSongId === songId) return { action: 'skip', reason: 'in-flight' };
+    if (pendingSongId) return { action: 'skip', reason: 'busy' };
+
+    var preloadedSongId = s.preloadedSongId ? String(s.preloadedSongId) : '';
+    if (preloadedSongId === songId && s.preloadedUrl) {
+      return { action: 'skip', reason: 'already-preloaded' };
+    }
+
+    var failSongId = s.failSongId ? String(s.failSongId) : '';
+    var failUntil = Number(s.failUntil);
+    if (failSongId === songId && isFinite(failUntil) && now < failUntil) {
+      return { action: 'skip', reason: 'backoff' };
+    }
+
+    /* 最小间隔节流：**只对同一首歌生效**。
+       它要防的是「timeupdate 4Hz 对同一首重复发起」，而不是跨歌限速。
+       早期版本用全局 lastAttemptAt，导致「前一首刚尝试过 → 换下一首也被挡」，
+       用户切歌时会看到「切了歌却不请求」，与限流治理的初衷相悖。 */
+    var lastAttemptSongId = s.lastAttemptSongId ? String(s.lastAttemptSongId) : '';
+    var lastAttemptAt = Number(s.lastAttemptAt);
+    var minInterval = Number(s.minIntervalMs);
+    if (!isFinite(minInterval) || minInterval < 0) minInterval = PRELOAD_MIN_INTERVAL_MS;
+    if (lastAttemptSongId === songId && isFinite(lastAttemptAt) && lastAttemptAt > 0 && now - lastAttemptAt < minInterval) {
+      return { action: 'skip', reason: 'throttle' };
+    }
+
+    return { action: 'start', reason: 'ok' };
+  }
+
+  // 失败状态迁移：返回新的失败状态（不修改入参）。
+  // 同一首连续失败 → 计数累加、退避翻倍；换歌失败 → 计数重置。
+  function recordPreloadFailure(state, songId, now) {
+    var prev = state || {};
+    var id = songId === 0 ? '0' : String(songId || '');
+    var t = Number(now);
+    if (!isFinite(t) || t < 0) t = 0;
+    var prevId = prev.failSongId ? String(prev.failSongId) : '';
+    var prevCount = Number(prev.failCount);
+    if (!isFinite(prevCount) || prevCount < 0) prevCount = 0;
+    var count = (prevId && prevId === id) ? prevCount + 1 : 1;
+    return {
+      failSongId: id,
+      failCount: count,
+      failUntil: t + computePreloadBackoffMs(count)
+    };
+  }
+
+  // 成功状态迁移：清空失败计数与冷却（下一次失败重新从 base 起算）。
+  function recordPreloadSuccess() {
+    return { failSongId: null, failCount: 0, failUntil: 0 };
+  }
+
   return {
     escapeHtml: escapeHtml,
     formatTime: formatTime,
@@ -1282,6 +1385,10 @@
     isCreditLine: isCreditLine,
     isArtistCreditLine: isArtistCreditLine,
     spatial3dDelaySeconds: spatial3dDelaySeconds,
-    computeArtistMarquee: computeArtistMarquee
+    computeArtistMarquee: computeArtistMarquee,
+    decideGaplessPreload: decideGaplessPreload,
+    computePreloadBackoffMs: computePreloadBackoffMs,
+    recordPreloadFailure: recordPreloadFailure,
+    recordPreloadSuccess: recordPreloadSuccess
   };
 });

@@ -162,6 +162,8 @@ const kugouVipStatusPill = document.getElementById('kugouVipStatusPill');
 const kugouVipDetailText = document.getElementById('kugouVipDetailText');
 const kugouVipProgressText = document.getElementById('kugouVipProgressText');
 const kugouVipRefreshBtn = document.getElementById('kugouVipRefreshBtn');
+const kugouVipAutoBtn = document.getElementById('kugouVipAutoBtn');
+const kugouVipAutoToggle = document.getElementById('kugouVipAutoToggle');
 const krcRemoveCreditsToggle = document.getElementById('krcRemoveCreditsToggle');
 const desktopLyricsToggle = document.getElementById('desktopLyricsToggle');
 const crossfadeToggle = document.getElementById('crossfadeToggle'); // 已并入歌曲过渡，元素不存在时为 null
@@ -276,6 +278,9 @@ const seconds = HarmoniaLib.spatial3dDelaySeconds(spatial3dEnabled());
 try { spatial3dDelay.delayTime.setTargetAtTime(seconds, stMixCtx.currentTime, SPATIAL3D_RAMP_SECONDS); } catch (_) {}
 }
 const KUGOU_QUALITY_KEY = 'kugouAudioQuality';
+/* 每日自动领取开关。历史遗留：af92804 误删了 UI 与接线，本键实际未被读取；
+   本次恢复按钮时重新接入 scheduleKugouVipAutoRun 的两个门控。 */
+const KUGOU_VIP_AUTO_KEY = 'kugouVipAutoEnabled';
 const KUGOU_VIP_LAST_AUTO_DATE_KEY = 'kugouVipLastAutoDate';
 const KUGOU_VIP_LAST_STATUS_KEY = 'kugouVipLastStatus';
 const KUGOU_VIP_STATUS_CACHE_VERSION = 2;
@@ -505,6 +510,8 @@ const LYRICS_RENDERER_MODE_KEY = 'lyricsRendererMode';
 const LYRICS_ANIMATION_MODE_KEY = 'lyricsAnimationMode';
 const MV_FEATURE_KEY = 'mvFeatureEnabled';
 const TRACK_TRANSITION_KEY = 'trackTransitionEnabled';
+/* 设置内搜索开关：默认开启（只有明确写入 'false' 才算关闭） */
+const ISLAND_SETTINGS_SEARCH_KEY = 'islandSettingsSearchEnabled';
 const CROSSFADE_ENABLED_KEY = 'crossfadeEnabled';
 const SMART_TRANSITION_KEY = 'smartTransitionEnabled';
 const SMART_TRANSITION_MIX_KEY = 'stMixDuration';
@@ -1234,6 +1241,19 @@ const CROSSFADE_DURATION = 3;
 let gaplessPreloadAbort = null;
 let gaplessPreloadUrl = null;
 let gaplessPreloadedSongId = null;  // 已预加载的下一首 ID，crossfade 时复用，避免 shuffle 两次随机不一致
+/* ── 下一首预加载闸门状态（2026-10-17 限流治理）─────────────────────────
+   背景：`audioPlayer.timeupdate` 约 4 次/秒调用 stEnsureNextPreloaded()，而预加载要等
+   `await getAudioUrl()` 返回后才写 gaplessPreloadedSongId。原实现只有「已完整预加载」
+   一个守卫 → 在途期间每个 tick 都会再发一次 `types=url`；失败分支又立刻清空状态，
+   于是上游 429 被自我强化成 4 req/s 的请求风暴。
+   现在把判据交给 pure.js 的纯函数（可单测），这里只保存状态与结算。 */
+let gaplessPreloadPendingSongId = null;   // 正在飞的歌（在途去重）
+let gaplessPreloadFailSongId = null;      // 上次失败的歌
+let gaplessPreloadFailCount = 0;          // 该歌连续失败次数
+let gaplessPreloadFailUntil = 0;          // 该歌失败冷却截止（ms）
+let gaplessPreloadLastAttemptAt = 0;      // 上次尝试时间（最小间隔节流）
+let gaplessPreloadLastAttemptSongId = null; // 上次尝试的歌（节流按歌隔离，避免换歌被挡）
+const GAPLESS_PRELOAD_MIN_INTERVAL_MS = 1500;
 let isCrossfading = false;
 // crossfadeTriggered 提升到模块级，因为 performCrossfadeToNext 需要在 fade 完成后重置它。
 // BUG 根因：fade 完成后 audioPlayer.currentTime ≈ 3（来自 audioPlayerB 的播放位置），
@@ -1624,11 +1644,12 @@ kugouVipProgressText.textContent = progress;
 }
 }
 function setKugouVipControlsLoading(loading) {
-[kugouVipRefreshBtn].forEach(btn => {
+[kugouVipRefreshBtn, kugouVipAutoBtn].forEach(btn => {
 if (!btn) return;
 btn.disabled = !!loading;
 });
 if (kugouVipRefreshBtn) kugouVipRefreshBtn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> 处理中...' : '<i class="fas fa-sync-alt"></i> 刷新状态';
+if (kugouVipAutoBtn) kugouVipAutoBtn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> 正在处理...' : '<i class="fas fa-bolt"></i> 领取并升级';
 }
 /* 临时调试开关：把客户端指向本地 KuGouMusicApi（默认行为不变，永远走线上）。
    DevTools 执行 localStorage.setItem('KUGOU_API_BASE_OVERRIDE', 'http://127.0.0.1:3000') 即切到本地；
@@ -1820,6 +1841,9 @@ if (remain > 0) {
 pushProgress(`今天还能领 ${remain} 次，稍后自动继续。`);
 if (kugouVipAutoLoopTimer) clearTimeout(kugouVipAutoLoopTimer);
 kugouVipAutoLoopTimer = setTimeout(() => {
+/* 先清句柄再入队：否则「已触发但未清空」的定时器会让 finally 的
+   闩锁推断误判为仍有后续循环，等同于旧缺陷（永久早退）。 */
+kugouVipAutoLoopTimer = null;
 runKugouVipClaimAndUpgrade({ manual: false, isAutoLoop: true });
 }, 2 * 60 * 1000);
 kugouVipAutoLoopActive = true;
@@ -1860,6 +1884,12 @@ return null;
 } finally {
 kugouVipOperationInProgress = false;
 setKugouVipControlsLoading(false);
+/* 闩锁回收：kugouVipAutoLoopActive 表示「自动链还有后续迭代待跑」。
+   旧实现只在 clearKugouVipLoopTimer() 里复位，而该函数唯一调用点是重新登录，
+   于是走过一次 remain>0 分支后闩锁永久为 true，scheduleKugouVipAutoRun 的
+   早退会让本次会话余下时间全部失效（自动领取静默停摆）。
+   此处按「是否还有挂起的后续定时器」判定：没有则说明链条已结束，释放闩锁。 */
+if (!kugouVipAutoLoopTimer) kugouVipAutoLoopActive = false;
 }
 }
 /* 非破坏性重登提示：只弹提示并切到设置-账户页，绝不删除本地凭证。
@@ -1870,6 +1900,8 @@ showError(_msg, 3200);
 try {
 settingsModalOverlay.classList.add('active');
 document.body.classList.add('settings-modal-open');
+document.body.classList.add('settings-panel-open');
+ssSyncOnSettingsOpen();
 } catch (_) { }
 const accountTab = document.querySelector('.settings-tab[data-tab="account"]') || document.querySelector('.nav-item[data-tab="account"]');
 if (accountTab) accountTab.click();
@@ -2030,8 +2062,24 @@ if (!e.target.checked) return;
 applyKugouAudioQuality(e.target.value, { persist: true, toast: true });
 });
 });
+if (kugouVipAutoToggle) {
+kugouVipAutoToggle.checked = localStorage.getItem(KUGOU_VIP_AUTO_KEY) === 'true';
+kugouVipAutoToggle.addEventListener('change', (e) => {
+localStorage.setItem(KUGOU_VIP_AUTO_KEY, e.target.checked ? 'true' : 'false');
+if (e.target.checked) {
+showDynamicIslandToast('已开启每日自动领取（每2分钟一次）', 2200);
+scheduleKugouVipAutoRun(true);
+} else {
+showDynamicIslandToast('已关闭 VIP 自动领取', 2200);
+clearKugouVipLoopTimer();
+}
+});
+}
 if (kugouVipRefreshBtn) {
 kugouVipRefreshBtn.addEventListener('click', () => refreshKugouVipStatus());
+}
+if (kugouVipAutoBtn) {
+kugouVipAutoBtn.addEventListener('click', () => runKugouVipClaimAndUpgrade({ manual: true }));
 }
 if (kugouToken) {
 restoreKugouVipStatusFromCache('已读取本地 VIP 识别结果，正在同步最新状态...');
@@ -2043,12 +2091,16 @@ setKugouVipStatusUI(null, '请先登录酷狗账号。');
 scheduleKugouVipAutoRun(false);
 }
 function scheduleKugouVipAutoRun(force = false) {
+/* 自动链路是显式 opt-in：开关关闭时连手动 force（登录成功）也不触发，
+   与恢复前的原设计一致，避免在用户未同意时替其消耗每日领取次数。 */
+if (localStorage.getItem(KUGOU_VIP_AUTO_KEY) !== 'true') return;
 if (!kugouToken) return;
 const today = getLocalDateKey();
 const lastDate = localStorage.getItem(KUGOU_VIP_LAST_AUTO_DATE_KEY);
 if (!force && lastDate === today) return;
 if (kugouVipAutoLoopActive) return;
 window.setTimeout(() => {
+if (localStorage.getItem(KUGOU_VIP_AUTO_KEY) !== 'true') return;
 if (!kugouToken) return;
 const latestDate = localStorage.getItem(KUGOU_VIP_LAST_AUTO_DATE_KEY);
 if (!force && latestDate === today) return;
@@ -2408,7 +2460,7 @@ kugouQuality: '320',
 };
 let translationSettings = {
 enabled: false,
-scope: 'no-translation', // 'no-translation' 或 'all-foreign'
+scope: 'no-translation', // 'no-translation'（仅翻译无译版）| 'all-foreign'（除明显中文外全翻）| 'all'（无条件全翻）
 apiToken: '',
 thinkingMode: 'low', // 'high' 或 'low'
 endpoint: 2, // index into TRANS_ENDPOINTS
@@ -2829,6 +2881,13 @@ radio.checked = radio.value === lyricsAnimationMode;
 if (persist) {
 localStorage.setItem(LYRICS_ANIMATION_MODE_KEY, lyricsAnimationMode);
 }
+/* 三种模式共用同一套布局与数据流，差异只在引擎的动画参数
+   （视觉=弹簧+景深；性能=无 blur + 无 WAAPI 逐字；预览=更慢的弹簧）。
+   下发必须走控制器自己的 setPreset：它用同一批行描述符重建行组，
+   组数 / 背景行 / 对唱行完全不变，只有动画参数不同 —— 因此**不能**在这里
+   destroy 再 setup（那会把正在播放的歌词整个抹掉重来）。
+   旧参数（getLyricsItemTransition 等）仍保留给回退通路。 */
+applyLyricEnginePreset(lyricsAnimationMode);
 applyLyricsItemTransitions();
 requestAnimationFrame(() => {
 if (amLyricsData.length) {
@@ -2960,7 +3019,9 @@ if (requestStatusTimeout) {
 clearTimeout(requestStatusTimeout);
 requestStatusTimeout = null;
 }
-if (dynamicIsland.classList.contains('expanded')) {
+/* 设置内搜索模式：用户正在岛内输入，后台请求不得强行收岛（本地搜索无请求，
+   但页面其他后台请求仍可能触发此处）。 */
+if (dynamicIsland.classList.contains('expanded') && !ssIsActive()) {
 dynamicIsland.classList.remove('expanded');
 isDynamicIslandExpanded = false;
 if (collapsedTextSpan) {
@@ -3045,6 +3106,49 @@ return error.name === 'TypeError'
 || error.name === 'AbortError'
 || /Failed to fetch|NetworkError|network error|ECONNREFUSED|ERR_|TypeError: Failed/i.test(msg);
 }
+/* ── 统一请求调度器（2026-10-17 限流治理）───────────────────────────────
+   为什么需要：出网路径有 ~15 个外域、40 处 wrappedFetch 调用。单次点播可同时打出
+   「音频 URL + 封面 + 歌词 + 6 路网易云搜索」，上游（music-api.gdstudio.xyz 等）
+   会返回 429；原实现既无并发上限、也无 429 处理（`Retry-After` 全文件 0 次出现）。
+   调度器在这里提供：按 host 限并发/限速、GET 在途去重、429/503 读 Retry-After 冷却、
+   优先级、AbortSignal 透传、可观测统计（控制台 `window.__netStats()`）。
+
+   刻意**不重试**：重试策略是业务决策（wrappedFetchWithRetry 另有职责），
+   调度器只负责「把请求按配额发出去」，失败原样抛回，调用方既有错误处理不变。
+   lib 缺失（脚本未加载/被 CSP 拦截）时自动退化为直连 fetch，功能不受影响。 */
+const netScheduler = (function () {
+try {
+const factory = window.HarmoniaNetScheduler;
+if (!factory || typeof factory.createScheduler !== 'function') return null;
+return factory.createScheduler({
+fetch: (url, init) => fetch(url, init),
+hosts: {
+/* 第三方聚合接口：免费额度有限，保守给 2 并发 / 300ms 间隔（≈3.3 req/s）。
+   音频 URL / 搜索 / 歌词 / 封面全部走这个 host，是全站最热的一条。 */
+'music-api.gdstudio.xyz': { maxConcurrent: 2, minIntervalMs: 300 },
+/* 自建酷狗代理：同一后端，放宽到 3 并发 / 150ms。 */
+'api-kugou.harmoniamusicplayer.dpdns.org': { maxConcurrent: 3, minIntervalMs: 150 },
+/* 自建 CORS 代理：转发网易云歌词 + Range 分析，与酷狗共后端，同样收紧。 */
+'cors.harmoniamusicplayer.dpdns.org': { maxConcurrent: 2, minIntervalMs: 150 },
+/* GitHub API：未认证仅 60 次/小时（配额耗尽返回 403 而非 429），
+   且本功能有 30 分钟缓存兜底，故给最保守额度。 */
+'api.github.com': { maxConcurrent: 2, minIntervalMs: 300 },
+/* 网易云自有 API 代理（MV 搜索）。 */
+'api.harmoniamusicplayer.dpdns.org': { maxConcurrent: 2, minIntervalMs: 150 },
+/* AMLL TTML 社区库：静态文件，可略宽。 */
+'amlldb.bikonoo.com': { maxConcurrent: 2, minIntervalMs: 100 },
+'raw.githubusercontent.com': { maxConcurrent: 2, minIntervalMs: 100 }
+},
+globalMaxConcurrent: 8,
+defaultHost: { maxConcurrent: 3, minIntervalMs: 100 }
+});
+} catch (e) {
+console.warn('[net-scheduler] 初始化失败，退化为直连 fetch:', e && e.message);
+return null;
+}
+})();
+/* 现场排查限流用：控制台执行 __netStats() 看每 host 在飞/排队/429 冷却 */
+try { window.__netStats = () => (netScheduler ? netScheduler.stats() : null); } catch (_) {}
 async function wrappedFetch(input, init) {
 /* skipIslandStatus：后台型请求（热搜词/发现/评论等）不驱动灵动岛请求状态。
    startRequest 在请求开始时会强制收起已展开的岛——首例 bug：首次点击展开灵动岛
@@ -3080,8 +3184,16 @@ finalInit.headers = {
    「重启后失效」多为会话未恢复。真伪交给下一次 api-kugou 请求回答（见下方分类 + 滑动续期）。 */
 }
 let response;
+/* 优先级：0=交互（点播/搜索/当前歌歌词）1=预取（下一首/分析）2=后台（更新日志等）。
+   ⚠ 字段名必须用私有前缀 `_priority`，**不能**用 `priority`：
+   `priority` 是标准化的 RequestInit 字段（枚举 'high'|'low'|'auto'），
+   传数字会让浏览器在发出任何网络请求之前就抛 TypeError，
+   导致「所有请求都发不出去、F12 里看不到任何 API 请求」。
+   曾真实踩此坑（详见 js/lib/net-scheduler.js 的 stripPrivateKeys 注释）。 */
+if (typeof finalInit._priority !== 'number') finalInit._priority = 1;
+const doFetch = netScheduler ? netScheduler.fetch : fetch;
 try {
-response = await fetch(input, finalInit);
+response = await doFetch(input, finalInit);
 clearTimeout(timeoutId);
 } catch (error) {
 clearTimeout(timeoutId);
@@ -3298,6 +3410,10 @@ setLyricsBtnIcon(true);
 }
 const syncLyricsAfterPaint = () => {
 LYRICS_OFFSET = calculateLyricsOffset();
+/* 引擎接管时先于 AMLL 分支返回：面板尺寸/断点档位变了，--eng-font-size 与宿主
+   尺寸都变，必须重测组高前缀和并强制重排（否则滚动位置仍按旧视口算）。
+   顺序不能反 —— AMLL 分支带 return，排在后面就会被截断。 */
+if (isLyricEngineActive()) { relayoutLyricEngine(); return; }
 if (isAMLLRendererMode() && amllPlayer && amllActive) {
 resizeAMLLPlayer();
 return;
@@ -3504,8 +3620,9 @@ if (scopeRadio) scopeRadio.checked = true;
 if (thinkingModeToggle) thinkingModeToggle.checked = translationSettings.thinkingMode === 'high';
 const endpointIdx = parseInt(translationSettings.endpoint, 10);
 if (transEndpointSelect && !isNaN(endpointIdx)) transEndpointSelect.value = String(endpointIdx);
-if (transBaseUrlInput){transBaseUrlInput.value=translationSettings.baseUrl||'';if(!isNaN(endpointIdx)&&endpointIdx!==7&&TRANS_ENDPOINTS[endpointIdx]){transBaseUrlInput.readOnly=true;transBaseUrlInput.style.opacity='0.6';}else{transBaseUrlInput.readOnly=false;transBaseUrlInput.style.opacity='1';}}
-if (transModelInput){transModelInput.value=translationSettings.model||'';}
+if (transBaseUrlInput){transBaseUrlInput.value=translationSettings.baseUrl||'';if(!isNaN(endpointIdx)&&isTransEndpointUrlEditable(endpointIdx)){transBaseUrlInput.readOnly=false;transBaseUrlInput.style.opacity='1';}else{transBaseUrlInput.readOnly=true;transBaseUrlInput.style.opacity='0.6';}}
+if (transModelInput) transModelInput.value = translationSettings.model || '';
+if (!isNaN(endpointIdx)) updateTransModelPlaceholder(endpointIdx);
 if (autoRetryToggle) autoRetryToggle.checked = translationSettings.autoRetry !== false;
 if (transPromptInput) transPromptInput.value = translationSettings.translationPrompt || '';
 } catch {}
@@ -3517,10 +3634,10 @@ if (transEndpointSelect) transEndpointSelect.addEventListener('change', () => {
 const idx=parseInt(transEndpointSelect.value,10);
 const ep=TRANS_ENDPOINTS[idx];
 if(transBaseUrlInput&&ep){
-if(idx===7){transBaseUrlInput.readOnly=false;transBaseUrlInput.style.opacity='1';}
+if(isTransEndpointUrlEditable(idx)){transBaseUrlInput.readOnly=false;transBaseUrlInput.style.opacity='1';}
 else{transBaseUrlInput.value=ep.url;transBaseUrlInput.readOnly=true;transBaseUrlInput.style.opacity='0.6';}
 }
-if(transModelInput){transModelInput.value='';transModelInput.placeholder=ep?ep.model:'';}
+if(transModelInput){transModelInput.value='';updateTransModelPlaceholder(idx);}
 saveTranslationSettings();
 });
 if (transBaseUrlInput) transBaseUrlInput.addEventListener('change', saveTranslationSettings);
@@ -3878,6 +3995,9 @@ function toggleDynamicIsland() {
 		if (searchInput && !searchInput.value.trim()) {
 			renderIslandHotWords();
 		}
+		/* 歌名跑马灯按「展开后的实际可用宽度」测量：收起态宽度不同，必须等展开布局生效后再量。
+		   用两帧（布局 + 过渡起始）确保 clientWidth 已是展开后的值。 */
+		requestAnimationFrame(() => requestAnimationFrame(() => applyIslandTitleMarquee()));
 	}
 }
 function handleDynamicIslandClick(e) {
@@ -3909,6 +4029,8 @@ function expandDynamicIsland() {
 		if (searchInput && !searchInput.value.trim()) {
 			renderIslandHotWords();
 		}
+		/* 同 toggleDynamicIsland：等展开布局生效后再按新宽度重算跑马灯 */
+		requestAnimationFrame(() => requestAnimationFrame(() => applyIslandTitleMarquee()));
 	}
 }
 function openSidebar() {
@@ -5068,6 +5190,26 @@ const labels = ['翻译 / 罗马音', '仅罗马音', '仅翻译', '隐藏'];
 tooltip.textContent = labels[trState] || '翻译 / 罗马音';
 }
 function applyTranslationRomanState() {
+/* 引擎通路：翻译 / 罗马音的内容来自行对象本身，且引擎在 build() 时才把
+   translatedLyric / romanLyric 写进 .eng-sub。因此开关切换必须**重建行组**
+   才会生效（只改 body 的 tr-hide-* class 对引擎 DOM 无效：那些选择器命中的是
+   旧通路的 .lyric-translation / .lyric-roman）。
+   必须早于下面的 AMLL 分支返回；重建后接 relayout，否则行数变化后
+   滚动位置仍按旧前缀和。 */
+if (isLyricEngineActive() && originalLyricLines.length) {
+const filtered = originalLyricLines.map(line => {
+const copy = { ...line, words: (line.words || []).map(w => ({ ...w })) };
+if (trState === 1 || trState === 3) copy.translatedLyric = '';
+if (trState === 2 || trState === 3) copy.romanLyric = '';
+return copy;
+});
+try {
+lyricEngineController.setLines(filtered);
+relayoutLyricEngine();
+} catch (error) {
+console.warn('[LyricsEngine] 翻译开关重建失败:', error);
+}
+}
 if (isAMLLRendererMode() && amllPlayer && originalLyricLines.length) {
 const filtered = originalLyricLines.map(line => {
 const copy = { ...line };
@@ -5107,6 +5249,7 @@ amllStatus.classList.toggle('hidden', !message || type === 'hidden');
 amllStatus.classList.toggle('error', type === 'error');
 }
 function resetLegacyLyricsRuntime() {
+destroyLyricEngine();
 amLyricsData = [];
 lastLyric = -1;
 lastTitleLyricIndex = -1;
@@ -5409,12 +5552,20 @@ return !!(audioPlayer && !audioPlayer.paused && !audioPlayer.ended);
 hasTrack() {
 return !!currentPlayingId;
 },
-/* 开关切换时由模块回调：负责互斥显隐与播放状态对齐（真正的创建/释放在模块内） */
+/* 开关切换时由模块回调：负责互斥显隐与播放状态对齐（真正的创建/释放在模块内）。
+   注意**开启时不得在这里加 dynamic-bg-on**：该 class 会把旧的专辑图模糊背景藏掉，
+   而此刻渲染器还没有任何内容 —— 一旦取色失败就只剩 body 的纯黑底板（用户看到「纯黑」）。
+   可见性统一由 js/dynamic-bg.js 的 syncVisibility() 按「渲染器是否真有内容」决定。 */
 onEnabledChange(enabled) {
-document.body.classList.toggle('dynamic-bg-on', !!enabled);
+if (!enabled) document.body.classList.remove('dynamic-bg-on');
 if (enabled && window.HarmoniaDynamicBg) {
 window.HarmoniaDynamicBg.syncPlaying(this.isPlaying());
 }
+},
+/* 渲染器起来了但始终取不到封面（如画布被跨域数据污染）→ 背景无法显示。
+   此时模块会保留旧的模糊背景当底板，这里只负责明确告知用户，不留一块纯黑让人以为界面坏了。 */
+onRenderUnavailable() {
+showDynamicIslandToast('动态背景暂时无法渲染，已保留专辑图背景', 3200);
 }
 };
 /* ── AMLL 歌词处理配置（core 0.6.0）──────────────────────────────────────────
@@ -6091,6 +6242,10 @@ return false;
 }
 }
 function renderLegacyNoLyrics(text = '暂无歌词') {
+/* 引擎必须先销毁：它把 .eng-group 追加在同一个宿主里且不受 innerHTML 之外的
+   清空约束 —— 不先销毁就会出现「暂无歌词」占位 .item 与残留 .eng-group 叠加
+   （同时引擎循环继续空转）。destroy 后再写占位 DOM，中间态也不会两层并存。 */
+destroyLyricEngine();
 deactivateAMLLRenderer({ clearLines: true });
 amLyrics.classList.add('amll-player-host');
 amLyrics.innerHTML = '';
@@ -6106,6 +6261,151 @@ setAMLLStatus('', 'hidden');
 }
 function renderLegacyLyricLines(lines, emptyText = '暂无歌词') {
 deactivateAMLLRenderer({ clearLines: true });
+setAMLLStatus('', 'hidden');
+const list = lines || [];
+if (!list.length) { renderLegacyNoLyrics(emptyText); return; }
+if (setupLyricEngine(list)) {
+/* amLyricsData 保持「AMLL 行」形态（毫秒 + isBG/isDuet），供标题歌词、
+   桌面歌词推送、PiP 与无歌词判定复用；但**不挂 ele**——DOM 由引擎持有，
+   旧的 wordSpans 逐字通路对它无效（引擎用 WAAPI）。 */
+amLyricsData = list.map(line => ({
+...line,
+time: (line.startTime || 0) / 1000,
+ele: undefined,
+wordSpans: undefined,
+}));
+lastLyric = -1;
+const ms = Math.round((audioPlayer.currentTime || 0) * 1000);
+lyricEngineController.update(ms, !audioPlayer.paused && !audioPlayer.ended, 0);
+if (!audioPlayer.paused && !audioPlayer.ended) startLyricEngineLoop();
+updatePageTitle();
+return;
+}
+renderLegacyLyricLinesFallback(list, emptyText);
+}
+/* ── Legacy 歌词引擎（对唱 / 背景行 / 重叠时间轴的唯一正确渲染路径）────────
+   为什么要有它：旧的 legacy 通路用「单列前缀高度 + 单活跃行」模型，
+   同一时刻只有一行能被高亮，背景行与对唱行都被降级成普通行 —— TTML 的
+   三类结构信息在渲染层被抹平。引擎（js/lib/lyric-engine.js）用「行组 +
+   嵌套背景行 + 每行独立弹簧」表达它们，且逐行按像素 overscan 剔除。
+   引擎不可用时整体回退到旧实现（renderLegacyLyricLinesFallback），不白屏。 */
+let lyricEngineController = null;
+let lyricEngineRAF = 0;
+let lyricEngineLastFrame = -1;
+function isLyricEngineActive() {
+return !!lyricEngineController;
+}
+function stopLyricEngineLoop() {
+if (lyricEngineRAF) { cancelAnimationFrame(lyricEngineRAF); lyricEngineRAF = 0; }
+lyricEngineLastFrame = -1;
+}
+function startLyricEngineLoop() {
+if (lyricEngineRAF) return;
+const tick = (frameTime) => {
+if (!lyricEngineController) { lyricEngineRAF = 0; return; }
+const delta = lyricEngineLastFrame === -1 ? 0 : Math.min(0.1, (frameTime - lyricEngineLastFrame) / 1000);
+lyricEngineLastFrame = frameTime;
+const currentTime = audioPlayer.currentTime || 0;
+const ms = Math.round(currentTime * 1000);
+const playing = !audioPlayer.paused && !audioPlayer.ended;
+try {
+lyricEngineController.update(ms, playing, delta);
+} catch (error) {
+console.warn('[LyricsEngine] 帧更新失败，停止引擎:', error);
+destroyLyricEngine();
+lyricEngineRAF = 0;
+return;
+}
+/* 标题歌词跟随：旧通路由 updateAMLyricsHighlight 负责，而它已被短路，
+   因此改由本循环承担，否则 legacy 模式下窗口标题不再逐句更新（回归）。 */
+if (playing) {
+const activeIndex = findActiveLyricIndex(currentTime);
+const lyricText = composeTitleLyricText(currentTime, activeIndex);
+if (activeIndex !== lastTitleLyricIndex || lyricText !== lastTitleLyricText) {
+lastTitleLyricIndex = activeIndex;
+lastTitleLyricText = lyricText;
+if (lyricText && lyricText.trim() !== '') document.title = lyricText;
+else updatePageTitle();
+}
+}
+lyricEngineRAF = requestAnimationFrame(tick);
+};
+lyricEngineRAF = requestAnimationFrame(tick);
+}
+function destroyLyricEngine() {
+stopLyricEngineLoop();
+if (lyricEngineController) {
+try { lyricEngineController.destroy(); } catch (_) { /* 已销毁 */ }
+lyricEngineController = null;
+}
+}
+/* 引擎装配：失败返回 false，由调用方回退旧渲染 */
+function setupLyricEngine(lines) {
+const engineApi = window.HarmoniaLyricEngine;
+if (!engineApi || typeof engineApi.mountLyrics !== 'function' || !amLyrics) return false;
+destroyLyricEngine();
+try {
+/* 保留 amll-player-host：它承载 legacy 的字体与基础布局契约
+   （css/lyrics.css 的 body.lyrics-renderer-legacy .amll-player-host{font-family:...}），
+   去掉会让引擎通路换字体（视觉回归）。 */
+amLyrics.classList.remove('lyric-engine-host');
+amLyrics.innerHTML = '';
+lyricEngineController = engineApi.mountLyrics(amLyrics, lines, {
+preset: lyricsAnimationMode,
+});
+applyLyricEnginePresetClass();
+return !!lyricEngineController;
+} catch (error) {
+console.warn('[LyricsEngine] 装配失败，回退旧渲染:', error);
+lyricEngineController = null;
+amLyrics.classList.add('amll-player-host');
+return false;
+}
+}
+function applyLyricEnginePresetClass() {
+if (!amLyrics) return;
+amLyrics.classList.toggle('lyric-engine-performance', lyricsAnimationMode === 'performance');
+amLyrics.classList.toggle('lyric-engine-preview', lyricsAnimationMode === 'preview');
+}
+function applyLyricEnginePreset(mode) {
+applyLyricEnginePresetClass();
+if (lyricEngineController) lyricEngineController.setPreset(mode === 'performance' ? 'performance' : (mode === 'preview' ? 'preview' : 'visual'));
+}
+/* 已经渲染过的歌词重新布局（字号 / 面板尺寸变化后必须重测行高）*/
+function relayoutLyricEngine() {
+if (!lyricEngineController) return;
+try { lyricEngineController.relayout(); } catch (error) { console.warn('[LyricsEngine] relayout 失败:', error); }
+}
+/* 字号 / 尺寸变化后的统一重测入口。
+   两条通路都要覆盖：引擎重测自己的组高前缀和；旧通路重算 lyricsHeightsPrefix。
+   防抖 80ms：滑块拖动时 input 高频触发，逐次重测会强制同步布局（掉帧）。
+   安全前提：启动时 applySizeScale 就会调一次（此时还没渲染歌词），因此这里必须
+   在「引擎未激活 + 无歌词数据」时静默返回，不能假定已经渲染过。 */
+let _lyricsRelayoutTimer = 0;
+function scheduleLyricsRelayout() {
+clearTimeout(_lyricsRelayoutTimer);
+_lyricsRelayoutTimer = setTimeout(() => {
+_lyricsRelayoutTimer = 0;
+if (isLyricEngineActive()) { relayoutLyricEngine(); return; }
+if (amLyricsData.length) {
+LYRICS_OFFSET = calculateLyricsOffset();
+rebuildLyricsMetrics(amLyricsData);
+const idx = lastLyric >= 0 ? lastLyric : 0;
+UpdateLyricsLayout(idx, [idx], amLyricsData, 0);
+}
+}, 80);
+}
+/* 引擎循环的播放态接线：与旧通路 (startWordLyricLoop/stopWordLyricLoop) 同款。
+   为什么必须成对：
+   - 只加 play 侧的启动：暂停时循环仍在空转（每帧推进弹簧 + 写样式，白耗 CPU）；
+   - 只加 pause 侧的停止：在**暂停状态**下渲染歌词（切歌 / 切渲染器 / 歌词迟到）时循环
+     从未启动，之后点播放就再没人启动它 —— 歌词与窗口标题会整首冻结。
+   两者必须同时存在，缺一个都会留下上面某种缺陷。 */
+audioPlayer.addEventListener('play', startLyricEngineLoop);
+audioPlayer.addEventListener('pause', stopLyricEngineLoop);
+audioPlayer.addEventListener('ended', stopLyricEngineLoop);
+function renderLegacyLyricLinesFallback(lines, emptyText = '暂无歌词') {
+deactivateAMLLRenderer({ clearLines: true });
 amLyrics.classList.add('amll-player-host');
 const legacyLines = (lines || []).map(line => ({
 time: (line.startTime || 0) / 1000,
@@ -6113,6 +6413,12 @@ end: (line.endTime || (line.startTime || 0) + 5000) / 1000,
 text: lineTextFromAMLL(line),
 translation: line.translatedLyric || '',
 romanLyric: line.romanLyric || '',
+/* 结构字段必须透传：对唱 / 背景行 / 优先级背景行的区分全靠它们。
+   旧实现只搬文本，导致 legacy 通路把三类行渲染成一模一样的普通行。 */
+isBG: !!line.isBG,
+isDuet: !!line.isDuet,
+isPriorityBg: !!line.isPriorityBg,
+agent: line.agent || '',
 words: (line.words || []).map(word => ({
 start: (word.startTime || line.startTime || 0) / 1000,
 end: (word.endTime || line.endTime || 0) / 1000,
@@ -6179,14 +6485,14 @@ if (line.romanLyric) {
 const roman = document.createElement('p');
 roman.className = 'lyric-roman';
 roman.textContent = line.romanLyric;
-roman.style.cssText = 'font-size:26px;margin-top:8px;opacity:.72;font-weight:400;letter-spacing:.2px;';
+roman.style.cssText = 'margin-top:8px;opacity:.72;font-weight:400;letter-spacing:.2px;';
 div.appendChild(roman);
 }
 if (line.translation) {
 const trans = document.createElement('p');
 trans.className = 'lyric-translation';
 trans.textContent = line.translation;
-trans.style.cssText = 'font-size:28px;margin-top:8px;opacity:.7;font-weight:400;';
+trans.style.cssText = 'margin-top:8px;opacity:.7;font-weight:400;';
 div.appendChild(trans);
 }
 line.ele = div;
@@ -6300,7 +6606,9 @@ let lastError = null;
    全部返回后分级匹配：先精确歌名，再 artist 严格匹配。 */
 const queryResults = await Promise.allSettled(queries.map(async (query) => {
   const url = `https://music-api.gdstudio.xyz/api.php?types=search&source=netease&name=${encodeURIComponent(query)}&count=${encodeURIComponent(count)}&pages=1`;
-  const response = await wrappedFetch(url);
+  /* 优先级 1（预取档）：这是「为拿歌词 ID 而做的辅助搜索」，不该抢占用户点播/搜索的额度。
+     调度器会按 host 并发上限自动排队，因此 6 路候选不再瞬间打满上游。 */
+  const response = await wrappedFetch(url, { _priority: 1 });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const data = await response.json();
   const items = getNeteaseSearchResultItems(data).filter(item => getNeteaseCandidateId(item));
@@ -6359,6 +6667,40 @@ if (!content || !/<tt[\s>]/i.test(content)) throw new Error('TTML 内容无效')
 return { content, url };
 } catch(e) { clearTimeout(to); throw e; }
 }
+/* 官方歌词主分支的 AI 翻译回填。
+   背景：processLyricTranslation 只被下方 gdstudio 兜底分支调用，而官方接口对绝大多数歌曲都能
+   返回 LRC/逐字歌词 → 主分支命中后直接 return，用户选的「翻译所有外语歌 / 翻译所有歌曲」在这条
+   通路上完全不生效。此处让两条主分支也接入同一个决策函数。
+   为什么不用 processLyricTranslation 的回填：它产出的 tlyric 是「原文 => 译文」文本，没有时间轴，
+   下游 lrcResponseToAMLLLines 靠 alignMonotonicByTime 按时间对齐 → 对不上，译文中会整段丢失。
+   故统一走 translateKugouLyrics：它按行索引返回 {index, text, trans}，与 wordLines 一一对应。
+
+   ⚠️ rawLyricText 必须传**含时间轴**的原文：classifyLyricLanguage 只对 ^[mm:ss.xx] 行计数，
+   传剥掉时间轴的纯文本会恒得 total=0 → verdict='unknown' → 默认档（仅翻译无译版）在官方通路上
+   退化成「从不翻译」的死代码。 */
+async function applyOfficialAiTranslation(wordLines, rawLyricText) {
+	if (!translationSettings.enabled || !Array.isArray(wordLines) || !wordLines.length) return wordLines;
+	// 官方自带译文占比达 30% 时视作「已有译文」，默认档不重复翻译
+	const filled = wordLines.filter(l => l.translation && String(l.translation).trim()).length;
+	const hasBuiltinTrans = filled > wordLines.length * 0.3;
+	/* 判定只做一次：结论以 skipScopeGate 传给 translateKugouLyrics。
+	   若让内层再判一次，两处判据不同（此处按整篇原文、内层按逐行 CJK 比例）会分叉——
+	   例如纯中文歌词 + all-foreign：外层放行、内层否决，用户看到「正在翻译」却什么都拿不到。 */
+	if (!shouldTranslateLyricText(String(rawLyricText || ''), hasBuiltinTrans, translationSettings.scope)) return wordLines;
+	try {
+		showError('正在翻译歌词...', 3000);
+		const translations = await translateKugouLyrics(wordLines, { skipScopeGate: true, pathKey: 'netease-official' });
+		if (Array.isArray(translations) && translations.length) {
+			for (const t of translations) {
+				if (wordLines[t.index] && t.trans) wordLines[t.index].translation = t.trans;
+			}
+		}
+	} catch (error) {
+		/* 翻译是增强而非阻塞：失败只告警，绝不让歌词因此显示不出来 */
+		console.warn('[翻译] 官方歌词翻译失败，继续使用原文:', error);
+	}
+	return wordLines;
+}
 async function fetchOfficialNeteaseLyricLines(neteaseId) {
 if (!neteaseId) return { lines: [], rawLyricText: '', rawTlyricText: '' };
 try {
@@ -6384,6 +6726,11 @@ wordLines.forEach((line, i) => {
 const li = wrdToLrc[i];
 if (li !== -1 && lrcTranslations[li]) line.translation = lrcTranslations[li];
 });
+// 主分支接入用户选择的 AI 翻译（官方自带译文已在上方映射进 line.translation）
+// 传入含时间轴的原文：classifyLyricLanguage 只对 ^[mm:ss.xx] 行计数，传纯文本会恒判 unknown。
+// lrcText 缺失时用 wordLines 现合成一份 LRC（判定口径与「实际要翻的内容」一致）。
+await applyOfficialAiTranslation(wordLines,
+lrcText || serializeAMLLLinesToLrc(legacyWordLinesToAMLLLines(wordLines), 'main'));
 return {
 lines: legacyWordLinesToAMLLLines(wordLines),
 rawLyricText: lrcText || yrcText || qrcText,
@@ -6392,10 +6739,38 @@ source: `netease-${wordSource}`
 };
 }
 if (lrcText && lrcText.trim()) {
+/* 未启用翻译时逐字节走原路径（零回归）；启用时才解析成 wordLines 做按行回填。
+   注释链路：lrcResponseToAMLLLines(=parseLyrics + alignMonotonicByTime) 与下方回填同源，
+   故启用翻译时两者对原文行的产出一致，差别仅在 translation 字段。 */
+if (!translationSettings.enabled) {
 return {
 lines: lrcResponseToAMLLLines({ lyric: lrcText, tlyric: tlyricText }),
 rawLyricText: lrcText,
 rawTlyricText: tlyricText
+};
+}
+const lrcWordLines = parseLyrics(lrcText).map(l => ({ ...l, text: l.text || '' }));
+if (tlyricText && tlyricText.trim()) {
+const lrcT = parseLyrics(tlyricText);
+/* 容差必须是 0.6：与 disabled 路径的 lrcResponseToAMLLLines 内部口径一致。
+   若这里用 1.2，用户只要打开翻译开关（哪怕 scope 决定一行都不翻）就会改变官方译文的
+   对齐结果 → 同一首歌渲染不同，零回归不成立。 */
+const tmap = alignMonotonicByTime(lrcWordLines.map(x => x.time), lrcT.map(x => x.time), 0.6);
+lrcWordLines.forEach((line, i) => {
+const ti = tmap[i];
+if (ti !== -1 && lrcT[ti]?.text) line.translation = lrcT[ti].text;
+});
+}
+await applyOfficialAiTranslation(lrcWordLines, lrcText);
+const aiLines = legacyWordLinesToAMLLLines(lrcWordLines);
+/* rawTlyricText 语义保持：优先沿用平台自带译文文本；仅当本次真的产生了 AI 译文
+   （原本无译文）时才用它替换，避免破坏「字段原本为空」的既有语义。 */
+const hasAiTranslation = lrcWordLines.some(l => l.translation && String(l.translation).trim());
+return {
+lines: aiLines.length ? aiLines : lrcResponseToAMLLLines({ lyric: lrcText, tlyric: tlyricText }),
+rawLyricText: lrcText,
+rawTlyricText: (tlyricText && tlyricText.trim()) ? tlyricText
+: (hasAiTranslation ? serializeAMLLLinesToLrc(aiLines, 'translated') : tlyricText)
 };
 }
 } catch (error) {
@@ -6644,6 +7019,7 @@ proxies.push(lyricsSettings.neteaseProxy);
 }
 proxies.push(...BUILTIN_NETEASE_PROXIES);
 	// 并行发起所有代理请求，取最先成功的
+	/* 优先级 1（预取档）：逐字歌词是增强而非阻塞，不该与用户点播抢额度。 */
 	const results = await Promise.allSettled(proxies.map(async (proxy) => {
 		try {
 			const url = proxy.includes('?')
@@ -6654,6 +7030,7 @@ proxies.push(...BUILTIN_NETEASE_PROXIES);
 				headers: {
 					'Accept': 'application/json'
 				},
+				_priority: 1,
 				...(bypassCache ? { cache: 'no-store', timeout: 30000 } : { timeout: 30000 })
 			});
 			if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -6879,9 +7256,11 @@ sp.__wordWasActive = false;
 lastWordLyricTime = currentTime;
 lastWordLyricLineIndex = lastLyric;
 }
-function isForeignLyric(lyricText) {
+// 语言判定（只回答「这是什么语言」，不做翻不翻的决策）——判定与决策分离后，
+// 决策权交还用户的 scope，启发式不得再一票否决。阈值与统计口径与旧 isForeignLyric 完全一致。
+function classifyLyricLanguage(lyricText) {
 if (!lyricText || typeof lyricText !== 'string') {
-return false;
+return { total: 0, foreignLines: 0, verdict: 'unknown' };
 }
 const lines = lyricText.split('\n');
 let totalContentLines = 0;
@@ -6988,10 +7367,24 @@ foreignContentLines++;
 }
 }
 console.log(`歌词检测: 总有效行=${totalContentLines}, 外语行=${foreignContentLines}, 比例=${totalContentLines > 0 ? (foreignContentLines/totalContentLines).toFixed(2) : 0}`);
-if (totalContentLines === 0) return false;
-const isForeign = (foreignContentLines / totalContentLines) > 0.4;
-console.log(`是否为外语歌词: ${isForeign}`);
-return isForeign;
+// 无有效行（含无 [mm:ss] 时间轴）→ unknown：旧实现此处直接判「非外语」，
+// 正是英文歌被漏判的机制性原因；现在交给 scope 决定
+if (totalContentLines === 0) return { total: 0, foreignLines: 0, verdict: 'unknown' };
+const foreignRatio = foreignContentLines / totalContentLines;
+const verdict = foreignRatio > 0.4 ? 'foreign' : (foreignRatio < 0.2 ? 'chinese' : 'unknown');
+console.log(`是否为外语歌词: ${verdict === 'foreign'}`);
+return { total: totalContentLines, foreignLines: foreignContentLines, verdict };
+}
+// 旧接口保留为薄封装，不破坏其它调用点
+function isForeignLyric(lyricText) {
+return classifyLyricLanguage(lyricText).verdict === 'foreign';
+}
+// 决策：由用户的 scope 决定翻不翻，语言判定只用于「明显中文」的排除
+function shouldTranslateLyricText(lyricText, hasExistingTranslation, scope) {
+if (scope === 'all') return true;
+const verdict = classifyLyricLanguage(lyricText).verdict;
+if (scope === 'all-foreign') return verdict !== 'chinese';
+return verdict === 'foreign' && !hasExistingTranslation;
 }
 const TRANS_ENDPOINTS=[
 {name:'OpenAI',url:'https://api.openai.com/v1/chat/completions',model:'gpt-4o-mini'},
@@ -7001,8 +7394,44 @@ const TRANS_ENDPOINTS=[
 {name:'Moonshot',url:'https://api.moonshot.cn/v1/chat/completions',model:'moonshot-v1-8k'},
 {name:'Anthropic',url:'https://api.anthropic.com/v1/messages',model:'claude-3-5-sonnet-20241022'},
 {name:'LongCat',url:'https://api.longcat.chat/openai/v1/chat/completions',model:'LongCat-2.0'},
-{name:'自定义',url:'',model:'GLM-4.7-Flash'}
+{name:'自定义',url:'',model:'GLM-4.7-Flash'},
+{name:'本地网关',url:'http://127.0.0.1:11434/v1',model:'',isLocal:true}
 ];
+const TRANS_CUSTOM_ENDPOINT_INDEX = 7;
+const TRANS_LOCAL_GATEWAY_INDEX = 8;
+// Base URL 是否可编辑：仅「自定义」与「本地网关」可改（本地网关端口/路径由用户环境决定：
+// Ollama 11434、LM Studio 1234、llama.cpp 8080 等）。非法索引保持只读，由调用方另行守卫。
+function isTransEndpointUrlEditable(idx) {
+	return idx === TRANS_CUSTOM_ENDPOINT_INDEX || idx === TRANS_LOCAL_GATEWAY_INDEX;
+}
+// 模型输入框 placeholder 的单一产出点（load 与 change 两处共用，避免分叉）：
+// 本地网关 model 为空串表示「无默认模型」，故提示 local-model（设计 §4.1）
+function updateTransModelPlaceholder(idx) {
+	if (!transModelInput) return;
+	const ep = TRANS_ENDPOINTS[idx];
+	transModelInput.placeholder = ep ? (ep.model || (ep.isLocal ? 'local-model' : '')) : '';
+}
+// 本地网关（index 8）的回环判定：必须 http:、无 userinfo，主机属 127/8、localhost、*.localhost、[::1]
+// 非法 URL / https / 其他主机一律 fail-closed 返回 false（不抛错），避免"填个公网地址就免令牌外发"
+function isLoopbackGatewayUrl(rawUrl) {
+	try {
+		const u = new URL(String(rawUrl || '').trim());
+		if (u.protocol !== 'http:') return false;
+		if (u.username || u.password) return false;
+		const host = u.hostname.toLowerCase();
+		if (host === 'localhost' || host.endsWith('.localhost')) return true;
+		if (host === '[::1]' || host === '::1') return true;
+		return /^127(?:\.\d{1,3}){3}$/.test(host);
+	} catch (e) {
+		return false;
+	}
+}
+// 授权头唯一产出点：有令牌才注入 Authorization（本地网关令牌可留空 → 只发 Content-Type）
+function buildTransHeaders(cfg, token) {
+	const headers = { 'Content-Type': 'application/json' };
+	if (token) headers['Authorization'] = `Bearer ${token}`;
+	return headers;
+}
 let _transThrottleTimer = null;
 let _transAbortController = null;
 const TRANS_THROTTLE_MS = 5000;
@@ -7034,7 +7463,13 @@ const customUrl=transBaseUrlInput&&transBaseUrlInput.value.trim()?transBaseUrlIn
 let url=customUrl||ep.url;
 if(!url.endsWith('/chat/completions')&&!url.endsWith('/messages'))url+='/chat/completions';
 const customModel=transModelInput&&transModelInput.value.trim()?transModelInput.value.trim():'';
-return {url,model:customModel||ep.model,isAnthropic:idx===5};
+// isLocal 只看预设索引（index 8 为本地网关，与 TRANS_LOCAL_GATEWAY_INDEX 同值）——URL 不能
+// 单方面为自己授权，故「自定义」里手填回环地址仍需令牌；反之本地网关预设填了非回环地址直接 fail-closed。
+// 注：此处用字面量 8 而非常量，因为守卫测试把本函数单独提取进沙箱求值（沙箱只注入 TRANS_ENDPOINTS
+// 与两个纯函数），引用沙箱外的常量会 ReferenceError。改动索引时两处需同步。
+const isLocal=idx===8;
+if(isLocal&&!isLoopbackGatewayUrl(url))throw new Error('本地网关只允许回环地址（127.0.0.1 / localhost / ::1），其他地址请在「自定义」端点中填写');
+return {url,model:customModel||ep.model||(isLocal?'local-model':''),isAnthropic:idx===5,isLocal};
 }
 function parseTranslationOutput(text) {
 if (!text) return '';
@@ -7134,7 +7569,8 @@ if (transPromptPresetSelect) {
   });
 }
 async function translateLyrics(lyricText) {
-	if (!translationSettings.apiToken) {
+	const cfg=getTransApiConfig();
+	if (!translationSettings.apiToken && !cfg.isLocal) {
 		throw new Error('请先设置API令牌');
 	}
 	cancelPendingTranslation();
@@ -7144,14 +7580,14 @@ async function translateLyrics(lyricText) {
 	const prompt = buildTranslationPrompt(translationSettings.translationPrompt || '', lyricText, songName, artist);
 	try {
 	markTranslationSent();
-	const cfg=getTransApiConfig();
 	const response = await wrappedFetch(cfg.url, {
 method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-'Authorization': `Bearer ${translationSettings.apiToken}`
-},
+headers: buildTransHeaders(cfg, translationSettings.apiToken),
 timeout: 120000,
+/* 本地网关：禁止重定向。privacy 承诺「歌词仅发送至本机回环地址」，
+   而 fetch 默认 follow 会把带歌词的 POST 带到 30x 指向的任意主机（含公网），
+   使该承诺失效。云端端点保持默认行为不变（最小改动）。 */
+...(cfg.isLocal ? { redirect: 'error' } : {}),
 body: JSON.stringify({
 model: cfg.model,
 messages: [{ role: 'user', content: prompt }],
@@ -7163,7 +7599,7 @@ thinking: { mode: translationSettings.thinkingMode === 'high' ? 'high' : 'low' }
 });
 if (!response.ok) {
 const errText = await response.text();
-const msg = response.status === 401 ? 'API 令牌无效，请检查设置。' :
+const msg = response.status === 401 ? (cfg.isLocal&&!translationSettings.apiToken?'网关要求鉴权，请填写 API 令牌':'API 令牌无效，请检查设置。') :
 response.status === 429 ? '请求过于频繁，请稍后再试。' :
 response.status >= 500 ? '翻译服务暂时不可用，请稍后重试。' :
 `翻译服务异常（HTTP ${response.status}）`;
@@ -7190,20 +7626,10 @@ return lyricResponse;
 }
 const originalLyric = lyricResponse.lyric || '';
 const existingTranslation = lyricResponse.tlyric || '';
-const isForeign = isForeignLyric(originalLyric);
-if (!isForeign) {
-console.log('非外语歌词，跳过翻译');
-return lyricResponse;
-}
-let needTranslate = false;
-if (translationSettings.scope === 'no-translation') {
+// 翻不翻由用户的 scope 决定：语言判定只用于排除「明显中文」，不再一票否决（旧硬门禁已删）
 const hasExistingTranslation = existingTranslation.trim().length > 0;
-needTranslate = !hasExistingTranslation;
-console.log(`no-translation模式: 已有翻译=${hasExistingTranslation}, 需要翻译=${needTranslate}`);
-} else if (translationSettings.scope === 'all-foreign') {
-needTranslate = true;
-console.log('all-foreign模式: 强制翻译所有外语歌');
-}
+const needTranslate = shouldTranslateLyricText(originalLyric, hasExistingTranslation, translationSettings.scope);
+console.log(`翻译决策: scope=${translationSettings.scope}, 已有翻译=${hasExistingTranslation}, 需要翻译=${needTranslate}`);
 if (!needTranslate) {
 return lyricResponse;
 }
@@ -7222,15 +7648,21 @@ return lyricResponse;
 }
 }
 const TRANS_CACHE_PREFIX = 'trans_v2_';
-function getTransCacheKey(songName, artist, model) {
+function getTransCacheKey(songName, artist, model, pathKey, lineFingerprint) {
 // 直接用完整字符串拼接作为缓存 key，避免简单哈希（2^31 取模）的碰撞风险；localStorage 容量足够
 // 提示词（要求部分）参与 key：用户修改提示词后缓存自然失效（旧条目按 30 天 TTL 回收）
+// pathKey/lineFingerprint：通路标识 + 行指纹。缺少二者时跨通路（酷狗 KRC ↔ 网易云官方 LRC）
+// 会按 index 回放错位——两条通路的行数组形状不同（元数据行、署名过滤差异）。
+// 两者为可选参数：旧调用点不传即退化为原 key，不破坏既有缓存。
 const promptText = (translationSettings.translationPrompt || '').trim() || DEFAULT_TRANSLATION_PROMPT_REQUIREMENTS;
-return TRANS_CACHE_PREFIX + `${songName}||${artist}||${model}||prompt:${promptText}`;
+let key = TRANS_CACHE_PREFIX + `${songName}||${artist}||${model}||prompt:${promptText}`;
+if (pathKey) key += `||path:${pathKey}`;
+if (lineFingerprint) key += `||lines:${lineFingerprint}`;
+return key;
 }
-function getCachedTranslation(songName, artist, model) {
+function getCachedTranslation(songName, artist, model, pathKey, lineFingerprint) {
 try {
-const key = getTransCacheKey(songName, artist, model);
+const key = getTransCacheKey(songName, artist, model, pathKey, lineFingerprint);
 const raw = localStorage.getItem(key);
 if (!raw) return null;
 const data = JSON.parse(raw);
@@ -7241,9 +7673,9 @@ return null;
 return data.entries;
 } catch { return null; }
 }
-function setCachedTranslation(songName, artist, model, entries) {
+function setCachedTranslation(songName, artist, model, entries, pathKey, lineFingerprint) {
 try {
-const key = getTransCacheKey(songName, artist, model);
+const key = getTransCacheKey(songName, artist, model, pathKey, lineFingerprint);
 localStorage.setItem(key, JSON.stringify({ ts: Date.now(), entries }));
 } catch (e) { console.warn('[TR] 缓存写入失败:', e); }
 }
@@ -7286,16 +7718,29 @@ const text = l.text || (l.words || []).map(w => w.word).join('');
 return text.trim();
 }).filter(Boolean);
 }
-function isKuGouLyricsForeign(wordLines) {
+// 酷狗通路同构：语言判定（阈值与统计口径与旧 isKuGouLyricsForeign 完全一致）
+function classifyKuGouLyricsLanguage(wordLines) {
 const lines = extractPlainTextFromWordLines(wordLines);
-if (lines.length === 0) return false;
+if (lines.length === 0) return { total: 0, foreignLines: 0, verdict: 'unknown' };
 let foreign = 0;
 for (const line of lines) {
 const cjk = (line.match(/[一-鿿]/g) || []).length;
 const total = line.replace(/\s/g, '').length;
 if (total > 0 && cjk / total < 0.4) foreign++;
 }
-return foreign / lines.length > 0.4;
+const foreignRatio = foreign / lines.length;
+const verdict = foreignRatio > 0.4 ? 'foreign' : (foreignRatio < 0.2 ? 'chinese' : 'unknown');
+return { total: lines.length, foreignLines: foreign, verdict };
+}
+function isKuGouLyricsForeign(wordLines) {
+return classifyKuGouLyricsLanguage(wordLines).verdict === 'foreign';
+}
+// 酷狗通路的决策：入参 hasBuiltinTranslation 沿用调用方的 30% 内置译文判定
+function shouldTranslateKugouLyrics(wordLines, hasBuiltinTranslation, scope) {
+if (scope === 'all') return true;
+const verdict = classifyKuGouLyricsLanguage(wordLines).verdict;
+if (scope === 'all-foreign') return verdict !== 'chinese';
+return verdict === 'foreign' && !hasBuiltinTranslation;
 }
 function parseTranslationPairs(text) {
 if (!text) return [];
@@ -7331,30 +7776,41 @@ async function translateKugouLyrics(wordLines, options = {}) {
 	await waitForTranslationThrottle();
 	const songName = currentSongInfo?.name || '';
 	const artist = currentSongInfo?.artist || '';
-	const model = 'GLM-4.7-Flash';
+	// cfg 必须先于缓存查询算出：缓存键用真实模型名（原硬编码 'GLM-4.7-Flash' 会让本地网关的缓存被其他端点误命中）
+	const cfg=getTransApiConfig();
+	const model = cfg.model;
 	const maxRetries = translationSettings.autoRetry !== false ? (options.maxRetries ?? 2) : 0;
-	const cached = getCachedTranslation(songName, artist, model);
-	if (cached && !options.force) {
-		console.log('[TR] 缓存命中，跳过 API 请求');
-		return cached;
-	}
-	if (!translationSettings.apiToken) throw new Error('请先设置 API 令牌');
-	if (!isKuGouLyricsForeign(wordLines)) {
-		console.log('[TR] 非外语歌词，跳过翻译');
+	/* 决策先于缓存查询。原顺序是先查缓存、后判 scope，于是「默认档跑出的空译文」会以 30 天 TTL
+	   命中给「all」档使用：用户切到 all 后日志显示缓存命中、0 次请求、译文仍为空。
+	   options.skipScopeGate：调用方（官方主分支）已用同一决策函数判过一次，避免两套判据分叉。 */
+	if (!options.skipScopeGate && !shouldTranslateKugouLyrics(wordLines, false, translationSettings.scope)) {
+		console.log('[TR] 按当前 scope 跳过翻译');
 		return [];
 	}
 	const idx = buildTranslationIndex(wordLines);
 	const lines = idx.map(e => e.text);
+	/* 缓存键带上通路标识与行指纹：两条通路的行数组形状不同（酷狗含「作词/作曲」元数据行、
+	   官方 LRC 已过滤署名），只按 index 回放会把 A 通路的译文错位贴到 B 通路的行上。 */
+	const pathKey = options.pathKey || 'kugou-krc';
+	const lineFingerprint = lines.join('\u0001');
+	const cached = getCachedTranslation(songName, artist, model, pathKey, lineFingerprint);
+	if (cached && !options.force) {
+		console.log('[TR] 缓存命中，跳过 API 请求');
+		return cached;
+	}
+	// 令牌校验置于缓存查询之后（与原顺序一致）：本地网关免令牌，其他端点仍必须填
+	if (!translationSettings.apiToken && !cfg.isLocal) throw new Error('请先设置 API 令牌');
 	const prompt = buildTranslationPrompt(translationSettings.translationPrompt || '', lines.join('\n'), songName, artist);
 let lastError = null;
-const cfg=getTransApiConfig();
 for (let attempt = 0; attempt <= maxRetries; attempt++) {
 	try {
 	markTranslationSent();
 	const response = await wrappedFetch(cfg.url, {
 method: 'POST',
-headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${translationSettings.apiToken}` },
+headers: buildTransHeaders(cfg, translationSettings.apiToken),
 timeout: 120000,
+/* 同 translateLyrics：本地网关禁止重定向，兜住「歌词只发往本机回环」的隐私承诺 */
+...(cfg.isLocal ? { redirect: 'error' } : {}),
 body: JSON.stringify({
 model: cfg.model, messages: [{ role: 'user', content: prompt }],
 stream: false, temperature: 0.3, max_tokens: 32768,
@@ -7362,7 +7818,7 @@ thinking: { mode: translationSettings.thinkingMode === 'high' ? 'high' : 'low' }
 })
 });
 if (!response.ok) {
-const msg = response.status === 401 ? 'API 令牌无效。' : response.status === 429 ? '请求过于频繁。' : `服务异常（HTTP ${response.status}）`;
+const msg = response.status === 401 ? (cfg.isLocal&&!translationSettings.apiToken?'网关要求鉴权，请填写 API 令牌':'API 令牌无效。') : response.status === 429 ? '请求过于频繁。' : `服务异常（HTTP ${response.status}）`;
 throw new Error(msg);
 }
 const data = await response.json();
@@ -7375,7 +7831,17 @@ lastError = new Error('翻译不完整');
 continue;
 }
 const result = idx.map((e, i) => ({ ...e, trans: pairs[i]?.trans || '' }));
-setCachedTranslation(songName, artist, model, result);
+/* 负缓存防护：一行都没解析出译文时不落盘。
+   否则「网关返回非 => 格式文本」这类失败会被当成成功结果缓存 30 天，用户之后切到 all 档
+   也会一直命中这份全空缓存（0 次请求、译文永远为空）。此时改走重试/继续分支。 */
+const anyTranslated = result.some(e => e.trans && String(e.trans).trim());
+if (!anyTranslated) {
+console.warn(`[TR] 未解析出任何译文（${pairs.length}/${idx.length} 行），不写缓存`);
+lastError = new Error('未解析出任何译文');
+if (attempt < maxRetries) continue;
+break;
+}
+setCachedTranslation(songName, artist, model, result, pathKey, lineFingerprint);
 return result;
 } catch (error) {
 lastError = error;
@@ -7390,7 +7856,7 @@ throw lastError || new Error('翻译失败');
 }
 const albumArtUrlCache = new Map();
 const ALBUM_ART_CACHE_TTL = 24 * 60 * 60 * 1000; // 24小时
-async function getAlbumArtUrl(picId, source = currentSettings.source) {
+async function getAlbumArtUrl(picId, source = currentSettings.source, options = {}) {
 const cacheKey = `${picId}:${source}`;
 if (albumArtUrlCache.has(cacheKey)) {
 return albumArtUrlCache.get(cacheKey);
@@ -7405,7 +7871,10 @@ setTimeout(() => albumArtUrlCache.delete(cacheKey), ALBUM_ART_CACHE_TTL);
 return directUrl;
 }
 }
-const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=${normalizedSource}&id=${encodeURIComponent(picId)}&size=500`);
+const _init = {};
+/* 同上：必须用私有名 _priority，不能用标准化的 priority 字段 */
+if (options && typeof options.priority === 'number') _init._priority = options.priority;
+const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&source=${normalizedSource}&id=${encodeURIComponent(picId)}&size=500`, _init);
 if (!r.ok) throw new Error('无法获取专辑图片');
 const data = await r.json();
 if (!data.url) throw new Error('无效的专辑图片URL');
@@ -7444,6 +7913,9 @@ const img = new Image();
 img.crossOrigin = 'anonymous'; // 尝试跨域，但不强制依赖它
 img.onload = () => {
 console.log('[loadAlbumArt] 图片加载成功，开始应用封面和背景');
+/* 图片已就绪：与切歌过渡共用叠化通道（旧图静止铺底 + 新图原位缓慢浮现），
+   智能过渡/无缝换歌等走本函数的路径也是同一效果 */
+endTrackTransition(() => {
 albumArt.src = url;
 sendCoverToPip(url);
 albumArt.classList.add('loaded');
@@ -7459,6 +7931,7 @@ bgDiv.style.backgroundColor = 'transparent';
 console.log('[loadAlbumArt] 模糊背景设置成功');
 /* 动态背景：img 已带 crossOrigin='anonymous'，直接传元素可省一次网络加载 */
 window.HarmoniaDynamicBg?.notifyCover(url, img);
+});
 };
 img.onerror = (err) => {
 console.error('[loadAlbumArt] 图片加载失败:', err, 'URL:', url);
@@ -7569,16 +8042,23 @@ requestIdleCallback(() => schedule(), { timeout: 3000 });
 setTimeout(schedule, 1500);
 }
 })();
-async function getAudioUrl(id, source = currentSettings.source, song = null) {
+async function getAudioUrl(id, source = currentSettings.source, song = null, options = {}) {
 try {
 const normalizedSource = normalizeMusicSource(source);
 if (normalizedSource === 'kugou') {
 const hash = String(song?.hash || song?.id || id || '').trim();
 if (!hash) throw new Error('缺少酷狗歌曲 hash');
-return await getKugouAudioUrlByHash(hash);
+return await getKugouAudioUrlByHash(hash, options);
 }
 const playableId = song?.songId || id;
-const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${normalizedSource}&id=${encodeURIComponent(playableId)}&br=${currentSettings.quality}`);
+/* options.signal：调用方（预加载/切歌）可用它真正取消在途请求。
+   options.priority：0=交互（用户点了播放）1=预取（下一首预加载）—— 交给调度器排序。
+   ⚠ 落到 init 上必须改名 `_priority`：`priority` 是标准化 RequestInit 枚举字段，
+   传数字会让 fetch 在发请求前抛 TypeError（曾导致所有请求静默发不出去）。 */
+const init = {};
+if (options && options.signal) init.signal = options.signal;
+if (options && typeof options.priority === 'number') init._priority = options.priority;
+const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=url&source=${normalizedSource}&id=${encodeURIComponent(playableId)}&br=${currentSettings.quality}`, init);
 const data = await r.json();
 if (!data.url) throw new Error('无法获取音频链接');
 return data.url.replace(/\\/g, '');
@@ -7617,7 +8097,7 @@ let data = [];
 if (source === 'kugou') {
 data = await searchKugouTracks(query, page, 20);
 } else {
-const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=${source}&name=${encodeURIComponent(query)}&count=20&pages=${page}`);
+const r = await wrappedFetch(`https://music-api.gdstudio.xyz/api.php?types=search&source=${source}&name=${encodeURIComponent(query)}&count=20&pages=${page}`, { _priority: 0 });
 if (!r.ok) throw new Error('搜索失败');
 const raw = await r.json();
 data = Array.isArray(raw)
@@ -7643,6 +8123,13 @@ pagination.style.display = 'none';
 function ensureSearchResultsDelegation() {
 if (!searchResultsClickBound) {
 searchResults.addEventListener('click', (e) => {
+/* 设置内搜索结果：走跳转，绝不进入歌曲索引取值（否则会误触发 playTrack） */
+const ssItem = e.target.closest('.island-setting-item');
+if (ssItem && searchResults.contains(ssItem)) {
+e.stopPropagation();
+ssJumpTo(ssItem.dataset.settingKey);
+return;
+}
 const actionBtn = e.target.closest('.island-result-action');
 const resultItem = e.target.closest('.island-result-item');
 if (!resultItem || !searchResults.contains(resultItem)) return;
@@ -7726,7 +8213,123 @@ ${sourceBadge}
 fragment.appendChild(item);
 });
 searchResults.appendChild(fragment);
+applyIslandTitleMarquee();
 pagination.style.display = 'flex';
+}
+/* 灵动岛搜索结果的歌名跑马灯（复用既有歌手行的同一套口径）。
+ *
+ * 需求：歌名**必须只占一行**，超长时以跑马灯滚动展示；「是否超长」按每条自身的
+ * 可用宽度实时测量，因此天然随设备尺寸/字号自适应（不写死任何长度阈值）。
+ *
+ * 与 setNowPlayingArtist 的差异：
+ *   - 这里是对已渲染的**多条**条目批量处理，故遍历 .island-result-title；
+ *   - 关键帧按「条目序号」动态生成：每条的歌名长度不同 → 位移距离与停顿占比都不同，
+ *     无法共用一个 @keyframes。故每条一个唯一 id，并只重写自己那个 <style> 节点。
+ *   - 结果列表会被整体重建，所以旧的关键帧 <style> 需要按前缀回收，避免节点堆积。
+ *
+ * 降级：HarmoniaLib 缺失或用户偏好减少动效时保持纯文本 + CSS 省略号（仍是单行）。 */
+var ISLAND_TITLE_MARQUEE_CFG = { speedPxPerSec: 30, holdMs: 3000, gapPx: 48 };
+var ISLAND_TITLE_MARQUEE_PREFIX = 'harmonia-island-title-kf-';
+/* 灵动岛宽度过渡时长（见 css/base.css 的 .dynamic-island transition: width 0.55s）+ 余量。
+   量宽必须在这之后进行，原因见 applyIslandTitleMarquee 的说明。 */
+var ISLAND_WIDTH_TRANSITION_MS = 600;
+var ISLAND_MARQUEE_MAX_DEFER = 3;   // 病态情况下防止无限推迟
+var islandMarqueeDeferTimer = null;
+var islandMarqueeDeferCount = 0;
+
+/* 取标题的纯文本：若已是跑马灯轨道，从第一段还原。
+   直接读 textContent 会拿到「两段拼接」的重复文案，绝不能当原文用。 */
+function islandTitlePlainText(el) {
+  var seg = el.querySelector('.island-title-marquee-seg');
+  return seg ? seg.textContent : el.textContent;
+}
+
+/* 把标题复位成纯文本并清掉滚动态（有轨道时一并移除）。 */
+function resetIslandTitleText(el) {
+  if (!el) return;
+  var seg = el.querySelector('.island-title-marquee-seg');
+  if (seg) el.textContent = seg.textContent;
+  el.classList.remove('is-scrolling');
+}
+
+/* 灵动岛的宽度过渡是否仍在进行。
+   过渡中（以及收起态）量到的是「非展开宽度」：实测收起态 180px 下标题可用宽只有
+   14px，而「动态背景」文本宽 60px —— 任何标题都会被判为需要滚动。必须等过渡结束再量。 */
+function isIslandWidthAnimating() {
+  if (!dynamicIsland || typeof dynamicIsland.getAnimations !== 'function') return false;
+  try {
+    return dynamicIsland.getAnimations().some(function (a) {
+      return a && a.transitionProperty === 'width';
+    });
+  } catch (_) { return false; }
+}
+
+function applyIslandTitleMarquee() {
+  if (!searchResults) return;
+  var titles = searchResults.querySelectorAll('.island-result-title');
+  /* 先回收上一轮为结果行生成的关键帧，避免节点堆积 */
+  document.querySelectorAll('style[id^="' + ISLAND_TITLE_MARQUEE_PREFIX + '"]').forEach(function (n) {
+    n.parentNode && n.parentNode.removeChild(n);
+  });
+  if (!titles.length) return;
+
+  /* 先无条件把标题复位成纯文本，再决定是否滚动。
+     旧实现只在「需要滚动」的分支里重建轨道，而「不需要滚动」的分支直接 return，
+     于是任何一次误判（例如在收起态量宽）留下的轨道就永久驻留 DOM：
+     文案两段重复 + 内联 animation 无限循环，之后宽度够了也无人清理。
+     这正是「搜索一次后收起再展开，短名字也开始滚动」的直接原因。 */
+  titles.forEach(resetIslandTitleText);
+
+  /* 收起态量宽必然出错，直接返回；展开时（toggleDynamicIsland /
+     expandDynamicIsland 的展开分支）会再调一次本函数。 */
+  if (dynamicIsland && !dynamicIsland.classList.contains('expanded')) {
+    islandMarqueeDeferCount = 0;
+    return;
+  }
+  /* 展开过渡中量宽同样出错（宽度仍是收起态附近的值）：等过渡结束再量。 */
+  if (isIslandWidthAnimating() && islandMarqueeDeferCount < ISLAND_MARQUEE_MAX_DEFER) {
+    islandMarqueeDeferCount++;
+    if (islandMarqueeDeferTimer) clearTimeout(islandMarqueeDeferTimer);
+    islandMarqueeDeferTimer = setTimeout(function () {
+      islandMarqueeDeferTimer = null;
+      applyIslandTitleMarquee();
+    }, ISLAND_WIDTH_TRANSITION_MS);
+    return;
+  }
+  islandMarqueeDeferCount = 0;
+
+  var lib = (typeof HarmoniaLib !== 'undefined' && HarmoniaLib
+    && typeof HarmoniaLib.computeArtistMarquee === 'function') ? HarmoniaLib : null;
+  if (!lib || prefersReducedMotion()) return;
+
+  titles.forEach(function (el, i) {
+    var text = islandTitlePlainText(el);
+    if (!text) return;
+    /* 此时已是纯文本：CSS 的 white-space:nowrap 让 scrollWidth 即完整文本宽，
+       clientWidth 即限长后的可用宽（与歌手行同一手法，无需离屏克隆元素）。 */
+    var r = lib.computeArtistMarquee(el.scrollWidth, el.clientWidth, ISLAND_TITLE_MARQUEE_CFG);
+    if (!r.scrolling) return;
+    var st = document.createElement('style');
+    st.id = ISLAND_TITLE_MARQUEE_PREFIX + i;
+    st.textContent = '@keyframes islandTitleScroll' + i + '{0%{transform:translateX(0)}'
+      + r.keyframePct + '%{transform:translateX(-' + r.distance + 'px)}'
+      + '100%{transform:translateX(-' + r.distance + 'px)}}';
+    document.head.appendChild(st);
+    /* 两段轨道，第二段对读屏隐藏（避免同一歌名被念两遍） */
+    el.textContent = '';
+    var track = document.createElement('span');
+    track.className = 'island-title-marquee';
+    for (var k = 0; k < 2; k++) {
+      var seg = document.createElement('span');
+      seg.className = 'island-title-marquee-seg';
+      seg.textContent = text;
+      if (k) seg.setAttribute('aria-hidden', 'true');
+      track.appendChild(seg);
+    }
+    el.appendChild(track);
+    el.classList.add('is-scrolling');
+    track.style.animation = 'islandTitleScroll' + i + ' ' + r.totalMs + 'ms linear infinite';
+  });
 }
 function updatePagination(curPage) {
 ensureSearchResultsDelegation();
@@ -7754,6 +8357,9 @@ function setCachedSong(song, data) {
 }
 async function playSong(song, isFromPlaylist = false) {
 const thisToken = ++currentPlayToken;  // 每个播放请求获得唯一令牌
+/* 专辑图缩放：本次播放请求的票据（0 = 本次未参与，例如被 guardSongSwitch 挡掉）。
+   必须在 try 之外声明，finally 才看得见。 */
+let coverRequestTicket = 0;
 if (gaplessPreloadAbort) { gaplessPreloadAbort.abort(); gaplessPreloadAbort = null; }  // 取消过时的预加载
 gaplessPreloadUrl = null;
 gaplessPreloadedSongId = null;
@@ -7764,6 +8370,11 @@ if (currentMvVideoUrl && mvVideoPlayer.src && !mvVideoPlayer.paused) {
 stopCurrentMv();
 }
 startTrackTransition();
+/* 专辑图缩放：置位「切换闸门」。位置有两个硬约束：
+   ① 必须在 guardSongSwitch 之后 —— 被挡掉的重复点击不得改动闸门归属；
+   ② 必须在任何 await 之前 —— 换 src 引起的那次 pause 就在下面的 await 之后，
+      晚于它的置位等于没有闸门，切歌会先缩再涨。 */
+if (window.HarmoniaCoverScale) coverRequestTicket = window.HarmoniaCoverScale.notifyPlayRequest();
 nowPlayingTitle.textContent = song.name || '未知歌曲';
 const songSourceName = getMusicSourceName(song?.source);
 const artistText = toArtistText(song.artist);
@@ -7829,15 +8440,16 @@ if (cachedSong && cachedSong.audioUrl) {
     console.log('[SongCache] 跳过所有API请求，直接使用缓存');
 } else {
     /* 并行获取封面URL、歌词、音频URL */
-    const albumArtUrlPromise = getAlbumArtUrl(song.pic_id, song.source);
+    /* 优先级：这是用户主动点播，全部走交互档（0），优先于下一首预取。 */
+    const albumArtUrlPromise = getAlbumArtUrl(song.pic_id, song.source, { priority: 0 });
     const lyricsPromise = requestLyricsOnlyForSong(song);
-    const audioUrlPromise = getAudioUrl(song.id, song.source, song).catch(err => { console.warn('[Play] 音频URL获取失败:', err); throw err; });
+    const audioUrlPromise = getAudioUrl(song.id, song.source, song, { priority: 0 }).catch(err => { console.warn('[Play] 音频URL获取失败:', err); throw err; });
     const [artUrl, _lyricsResult, audUrl] = await Promise.all([albumArtUrlPromise, lyricsPromise, audioUrlPromise]);
     audioUrl = audUrl;
     const albumArtUrl = artUrl;
     /* 封面由 getAlbumArtUrl 返回 URL，手动应用到DOM（此时 lyrics 已渲染完毕） */
+    /* 注意：不可在预加载前直接写 albumArt.src —— 那会让叠化浮现的旧图快照拿到新图 */
     if (albumArtUrl) {
-        albumArt.src = albumArtUrl;
         applyAlbumArtWithPreload(albumArtUrl, (preImg) => {
         albumArt.src = albumArtUrl;
         lastAppliedCoverUrl = albumArtUrl;
@@ -7912,6 +8524,14 @@ showError(e.message);
 playButton.innerHTML = '<i class="fas fa-play"></i>';
 isPlaying = false;
 updatePageTitle();
+} finally {
+/* 专辑图缩放：请求结算（成功或失败）解除切换闸门。
+   缺了这条，取地址失败（无版权 / 20028）后闸门会一直挂着，
+   用户接下来按暂停将不缩小封面 —— 直接违反需求 4。
+   成功路径上闸门已由 play 事件提前解除，这里的重复解除是幂等的。 */
+if (coverRequestTicket && window.HarmoniaCoverScale) {
+window.HarmoniaCoverScale.notifyPlayRequestSettled(coverRequestTicket);
+}
 }
 }
 async function playFromPlaylist(index) {
@@ -8079,6 +8699,7 @@ right = mid - 1;
 return answer;
 }
 function UpdateLyricsLayout(mainIndex, highlightIndices, data, init = 1) {
+if (isLyricEngineActive()) return;
 if (!Array.isArray(data) || data.length === 0) return;
 pendingLyricsLayout = {
 mainIndex,
@@ -8179,6 +8800,9 @@ ele.__lyricsTransform = targetTransform;
 });
 }
 function updateAMLyricsHighlight(currentTime) {
+/* 引擎接管布局与高亮。注意：它同时是旧通路里「标题歌词跟随」的调用点，
+   短路后该职责已移交 startLyricEngineLoop（见 Step 5），因此这里不会丢失标题更新。 */
+if (isLyricEngineActive()) return;
 if (!amLyricsData.length) return;
 const activeIndex = findActiveLyricIndex(currentTime);
 if (activeIndex === -1 || lastLyric === activeIndex) return;
@@ -8256,7 +8880,9 @@ e.preventDefault();
 e.stopPropagation();
 return;
 }
-const target = e.target.closest('.item');
+/* 两条渲染通路的目标元素不同：引擎是 .eng-group（含嵌套背景行），旧通路是 .item。
+   引擎已把主行起点写进 dataset.time（秒），语义与旧通路一致。 */
+const target = e.target.closest('.item, .eng-group');
 if (!target) return;
 const t = parseFloat(target.dataset.time);
 if (isNaN(t) || t < 0) return;
@@ -8284,11 +8910,14 @@ connectDesktopLyrics();
 function closeSettingsModal() {
 settingsModalOverlay.classList.remove('active');
 document.body.classList.remove('settings-modal-open');
+document.body.classList.remove('settings-panel-open');
 stopKugouQrPolling();
 }
 settingsToggle.addEventListener('click', () => {
 settingsModalOverlay.classList.add('active');
 document.body.classList.add('settings-modal-open');
+document.body.classList.add('settings-panel-open');
+ssSyncOnSettingsOpen();
 updateTimeDisplayPreview();
 });
 settingsModalClose.addEventListener('click', closeSettingsModal);
@@ -8364,20 +8993,20 @@ console.warn('播放时恢复均衡器失败:', error);
 });
 testApiBtn.addEventListener('click', async () => {
 const token = apiTokenInput.value.trim();
-if (!token) {
+try {
+const cfg=getTransApiConfig();
+// 只有本地网关预设允许空令牌；其余端点（含「自定义」）保持原提示
+if (!token && !cfg.isLocal) {
 showError('请输入API令牌', 2000);
 return;
 }
-try {
 showError('测试API连接中...', 2000);
-const cfg=getTransApiConfig();
 const response = await wrappedFetch(cfg.url, {
 method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-'Authorization': `Bearer ${token}`
-},
+headers: buildTransHeaders(cfg, token),
 timeout: 120000,
+/* 同 translateLyrics：本地网关禁止重定向（连通性探测也不应把请求带出回环） */
+...(cfg.isLocal ? { redirect: 'error' } : {}),
 body: JSON.stringify({
 model: cfg.model,
 messages: [{ role: 'user', content: '你好' }],
@@ -8387,6 +9016,8 @@ max_tokens: 10
 });
 if (response.ok) {
 showError('API连接成功', 2000);
+} else if (response.status === 401 && cfg.isLocal && !token) {
+showError('网关要求鉴权，请填写 API 令牌', 3000);
 } else {
 throw new Error(`HTTP ${response.status}`);
 }
@@ -8394,9 +9025,9 @@ throw new Error(`HTTP ${response.status}`);
 showError(`API连接失败: ${error.message}`, 3000);
 }
 });
-searchButton.addEventListener('click', () => searchMusic(searchInput.value.trim()));
+searchButton.addEventListener('click', () => ssRunSearch());
 searchInput.addEventListener('keydown', e => {
-if (e.key === 'Enter' && !e.isComposing) searchMusic(searchInput.value.trim());
+if (e.key === 'Enter' && !e.isComposing) ssRunSearch();
 });
 lyricsToggleBtn.addEventListener('click', toggleLyrics);
 if (trToggleBtn) {
@@ -8553,6 +9184,17 @@ sendCurrentTimeToDesktop(currentTime);
 });
 audioPlayer.addEventListener('seeked', () => {
 const currentTime = audioPlayer.currentTime || 0;
+if (isLyricEngineActive()) {
+/* 跳转必须强制跳位（不跑弹簧），否则歌词会从旧位置缓慢爬过来 */
+lyricEngineController.seek(Math.round(currentTime * 1000), !audioPlayer.paused && !audioPlayer.ended);
+lastWordLyricTime = -1;
+lastWordLyricLineIndex = -1;
+if (syncDesktopLyricsPip._demoted) syncDesktopLyricsPip._demoted.clear();
+if (syncDesktopLyricsPip._lastFg) syncDesktopLyricsPip._lastFg = null;
+if (syncDesktopLyricsPip._lyricsRef) { syncDesktopLyricsPip._lyricsRef = null; }
+try { if (typeof syncDesktopLyricsPip === 'function') syncDesktopLyricsPip(); } catch (_) {}
+return;
+}
 lastWordLyricTime = -1;
 lastWordLyricLineIndex = -1;
 // ★ 跳转时清空持久化降级表，避免旧背景行在进度回溯后仍然残留
@@ -9080,7 +9722,8 @@ function updatePlayButtonState() {
   }
 }
 /* ===== Apple Music 风格歌曲过渡动画 =====
- * 切歌时：旧封面缩放淡出 → 新封面载入后放大淡入；标题/歌手新文本下滑淡入 */
+ * 切歌时：新封面就绪后铺在不动的旧封面之上、原位缓慢浮现（纯淡入，无缩放位移）；
+ * 标题/歌手新文本下滑淡入 */
 let _trackTransitionTimer = null;
 let _trackCleanupTimer = null;
 /* 歌手/制作人行：限长 + 超长无缝滚动。
@@ -9169,7 +9812,8 @@ function startTrackTransition() {
     if (artist) artist.classList.remove('track-transition-in');
   }, 520);
 }
-/* 新封面就绪后调用：旧图快速淡出 → 应用新 src → 新图放大淡入 */
+/* 新封面就绪后调用：旧图 ghost 静止铺底 + 主 img 换新 src 后原位缓慢淡入（叠化浮现）。
+   旧封面全程不动、不缩放，视觉上新歌专辑图就是在原位置慢慢浮现出来 */
 function endTrackTransition(applySrc) {
   const cover = document.querySelector('.album-cover');
   if (!isTrackTransitionEnabled() || !cover) {
@@ -9178,14 +9822,30 @@ function endTrackTransition(applySrc) {
   }
   clearTimeout(_trackTransitionTimer);
   clearTimeout(_trackCleanupTimer);
-  cover.classList.add('track-transition'); /* 旧图 0.14s 快速淡出 */
+  /* 动画被打断时先清掉上一轮残留的 ghost，再快照当前旧图 */
+  cover.querySelectorAll('.am-cover-ghost').forEach(g => g.remove());
+  const mainImg = cover.querySelector('img:not(.am-cover-ghost)');
+  const oldSrc = mainImg && mainImg.getAttribute('src');
+  /* 首播时主 img 还是 data: 占位图：没有旧图可淡出，跳过 ghost 层 */
+  if (oldSrc && !oldSrc.startsWith('data:')) {
+    const ghost = document.createElement('img');
+    ghost.className = 'am-cover-ghost';
+    ghost.alt = '';
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.src = oldSrc; /* 旧图已解码，不产生额外网络请求 */
+    cover.appendChild(ghost);
+  }
+  /* 同一帧换新 src 并播入场动画：amTrackIn 用 both 回填首帧 opacity 0，
+     且 add class 与改 src 之间不会发生绘制，新图不会以全亮状态闪一帧 */
+  if (typeof applySrc === 'function') applySrc();
+  cover.classList.remove('track-transition-in');
+  void cover.offsetWidth;
+  cover.classList.add('track-transition-in');
+  /* 清理时长必须 ≥ CSS amTrackIn 的 1.2s，否则新图未淡满就被摘类会跳变 */
   _trackTransitionTimer = setTimeout(() => {
-    if (typeof applySrc === 'function') applySrc();
-    cover.classList.remove('track-transition');
-    void cover.offsetWidth;
-    cover.classList.add('track-transition-in');
-    _trackTransitionTimer = setTimeout(() => cover.classList.remove('track-transition-in'), 560);
-  }, 150);
+    cover.classList.remove('track-transition-in');
+    cover.querySelectorAll('.am-cover-ghost').forEach(g => g.remove());
+  }, 1280);
 }
 /* 预加载图片，加载完成后再执行封面过渡（避免切换瞬间空白/闪烁） */
 function applyAlbumArtWithPreload(url, applySrc) {
@@ -9194,6 +9854,15 @@ function applyAlbumArtWithPreload(url, applySrc) {
     return;
   }
   const preImg = new Image();
+  /* 【必须设 crossOrigin】本元素会被传给 AMLL 动态背景（notifyCover 的封面参数）。
+     AMLL 收到 HTMLImageElement 时会直接 drawImage 进它**实例级共享**的 32×32 取样画布
+     再 getImageData 取色。若本图是「跨域且未声明 crossOrigin」的，drawImage 会**永久**
+     污染那张共享画布（clearRect 无法解除），此后每次 setAlbum 都在 getImageData 抛
+     SecurityError → meshStates 永远为空 → 背景 canvas 全透明 → 露出 body 纯黑。
+     桌面 Electron 因 webSecurity:false 不执行同源策略，故此前只在安卓端暴露；
+     网页版在窄屏/移动浏览器上同样会中招。声明 crossOrigin 后：图源返回 ACAO 即可安全
+     取色；未返回 ACAO 时本图加载失败走 onerror，不会污染画布。 */
+  preImg.crossOrigin = 'anonymous';
   const done = () => endTrackTransition(applySrc);
   preImg.onload = done;
   preImg.onerror = done;
@@ -9837,6 +10506,15 @@ audioPlayerB.addEventListener('play', syncBodyPlayingClass);
 audioPlayerB.addEventListener('pause', syncBodyPlayingClass);
 audioPlayerB.addEventListener('ended', syncBodyPlayingClass);
 syncBodyPlayingClass();   /* 首屏/会话恢复：按真实媒体状态初始化一次（无布局读取，幂等） */
+/* 专辑图随播放状态缩放（js/cover-scale.js）：算法的单一实现在那个文件里，
+   此处只把真实的封面元素与两个 media 元素交给它。
+   位置：audioPlayer(79 行) 与 audioPlayerB(534 行) 都已声明，不撞 TDZ。
+   注意：上面的 syncBodyPlayingClass 及其 6 行接线保持原样 ——
+   _perf-verify/mirror-parity.cjs 依赖其原文，改动会把两端差异从 1 处放大。 */
+window.HarmoniaCoverScale?.init({
+  cover: document.querySelector('.album-cover'),
+  players: [audioPlayer, audioPlayerB],
+});
 (function setupRememberProgress(){
 const enabled = () => localStorage.getItem('rememberProgressEnabled') === 'true';
 let _lastProgressSave = 0;
@@ -10082,6 +10760,17 @@ localStorage.setItem(TRACK_TRANSITION_KEY, this.checked ? 'true' : 'false');
 showDynamicIslandToast(this.checked ? '已开启歌曲过渡动画' : '已关闭歌曲过渡动画', 2000);
 });
 }
+/* 专辑图随播放状态缩放开关（视觉）：默认开启，持久化由 cover-scale.js 负责。
+   本接线块自身不回填初始 checked（trackTransitionToggle 的回填在 loadVisualSettings() 里）；
+   新开关在这里显式回填，保证刷新后 UI 与存储值一致。 */
+const coverScaleToggle = document.getElementById('coverScaleToggle');
+if (coverScaleToggle && window.HarmoniaCoverScale) {
+coverScaleToggle.checked = window.HarmoniaCoverScale.isEnabled();
+coverScaleToggle.addEventListener('change', function() {
+window.HarmoniaCoverScale.setEnabled(this.checked);
+showDynamicIslandToast(this.checked ? '已开启专辑图缩放' : '已关闭专辑图缩放', 2000);
+});
+}
 /* 动态背景开关（视觉）：持久化后由 js/dynamic-bg.js 负责创建/释放渲染器 */
 const _dynamicBgToggleEl = document.getElementById('dynamicBgToggle');
 if (_dynamicBgToggleEl) {
@@ -10227,6 +10916,9 @@ requestAnimationFrame(() => document.body.classList.remove('player-center-no-tra
 LYRICS_OFFSET = calculateLyricsOffset();
 initSidebarControls();
 initDragAndDrop();
+/* 软键盘感知布局：注册时机必须在 body 与 CSS 变量就绪之后（此处即在 init() 尾部）。
+   移动端专属，桌面端直接 return，不产生任何监听开销。 */
+initKeyboardAwareLayout();
 /* 初始化播放模式按钮 UI（高亮当前模式、设置图标） */
 if (typeof updatePlayModeUI === 'function') updatePlayModeUI();
 musicSourceRadios.forEach(radio => {
@@ -10315,12 +11007,24 @@ listEl.innerHTML = list;
 };
 shortcutsTab.addEventListener('click', fillList);
 })();
+/* 网络错误 → 用户可读文案（更新日志与最新开发进度共用）。
+   区分「网络不可用」与「超时」，避免把超时笼统说成网络故障。 */
+function describeHttpError(e) {
+const msg = String((e && e.message) || e || '未知错误');
+if (e && e.name === 'AbortError') return '请求超时，请重试';
+if ((e && e.name === 'TypeError') || /Failed to fetch|NetworkError|network error|ECONNREFUSED|网络请求失败/i.test(msg)) {
+return '网络不可用，请检查网络后重试';
+}
+return msg;
+}
 (function initChangelog() {
 const container = document.getElementById('changelogContent');
 if (!container) return;
 const changelogTab = document.querySelector('[data-tab="changelog"]');
 if (!changelogTab) return;
-let loaded = false;
+let changelogLoaded = false;
+let changelogLoading = false;
+let changelogError = null;
 const GITHUB_RELEASES_API = 'https://api.github.com/repos/beststoryilove/Harmonia-MusicPlayer/releases?per_page=10';
 function parseChangelog(body) {
 const sections = [];
@@ -10403,25 +11107,144 @@ html += `</div>`;
 html += `</div>`;
 return html;
 }
-async function loadChangelog() {
-if (loaded) return;
-loaded = true;
+/* 优先级 2（后台档）：更新日志不该与点播/搜索抢额度。
+   ⚠ 必须用私有名 _priority，不能用 priority —— 后者是标准化 RequestInit 枚举字段
+   （'high'|'low'|'auto'），传数字会让浏览器在发出任何网络请求前抛 TypeError。 */
+const CHANGELOG_FETCH_INIT = { _priority: 2, timeout: 10000 };
+function renderChangelogError(e) {
+const msg = describeHttpError(e);
+return `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);">
+<i class="fas fa-exclamation-circle"></i> 加载失败：${escapeHtml(msg)}<br>
+<button id="changelogRetryBtn" type="button" style="margin-top:12px;padding:5px 14px;font-size:12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.8);cursor:pointer;">
+<i class="fas fa-rotate-right"></i> 重试
+</button>
+<a href="https://github.com/beststoryilove/Harmonia-MusicPlayer/releases" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color);margin-left:12px;">在 GitHub 查看</a>
+</div>`;
+}
+async function loadChangelog(opts) {
+const force = !!(opts && opts.force);
+if (changelogLoading) return;
+if (changelogLoaded && !force) return;
+changelogLoading = true;
+if (!changelogLoaded) {
+container.innerHTML = `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);"><i class="fas fa-spinner fa-spin"></i> 正在加载更新日志…</div>`;
+}
 try {
-const ctrl = new AbortController(); const gto = setTimeout(() => ctrl.abort(), 10000);
-const res = await fetch(GITHUB_RELEASES_API, { headers: { 'Accept': 'application/vnd.github.v3+json' }, signal: ctrl.signal });
-clearTimeout(gto);
+const res = await wrappedFetch(GITHUB_RELEASES_API, CHANGELOG_FETCH_INIT);
 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 const releases = await res.json();
 if (!Array.isArray(releases) || releases.length === 0) throw new Error('无发布记录');
 container.innerHTML = releases.map(renderRelease).join('');
+/* ⚠ changelogLoaded 只允许在**成功之后**置位。
+   若写在请求之前，失败态会永久锁死 —— 重试按钮点了没反应。
+   这是本项目修过的真实缺陷，勿再前移。 */
+changelogLoaded = true;
+changelogError = null;
 } catch (e) {
-container.innerHTML = `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.35);">
-<i class="fas fa-exclamation-circle"></i> 加载失败：${escapeHtml(e.message)}<br>
-<a href="https://github.com/beststoryilove/Harmonia-MusicPlayer/releases" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color);">在 GitHub 查看</a>
-</div>`;
+changelogError = e;
+container.innerHTML = renderChangelogError(e);
+const retryBtn = container.querySelector('#changelogRetryBtn');
+if (retryBtn) retryBtn.addEventListener('click', () => { loadChangelog({ force: true }); });
+} finally {
+changelogLoading = false;
 }
 }
 changelogTab.addEventListener('click', loadChangelog);
+/* 网络恢复时若仍处于失败态，自动重试一次（失败不提示，避免打扰） */
+window.addEventListener('online', () => {
+if (changelogError && !changelogLoaded) loadChangelog({ force: true });
+});
+})();
+(function initDevProgress() {
+const contentEl = document.getElementById('devProgressContent');
+const timeEl = document.getElementById('devProgressTime');
+const refreshBtn = document.getElementById('devProgressRefresh');
+if (!contentEl || !refreshBtn) return;
+const lib = window.HarmoniaGithubFeed;
+if (!lib) {
+contentEl.innerHTML = '<div style="text-align:center;padding:16px;color:rgba(255,255,255,0.35);">组件未加载</div>';
+return;
+}
+/* 全部网络经 wrappedFetch（后台档 _priority 由库内部标注），
+   享受调度器的并发/限流/429 冷却，不绕过统一收口。 */
+const store = lib.createFeedStore(window.localStorage, () => Date.now());
+const feed = lib.createGithubFeed({
+fetchImpl: (url, init) => wrappedFetch(url, init),
+store: store,
+now: () => Date.now(),
+author: lib.DEV_PROGRESS_AUTHOR,
+proxyBase: 'https://cors.harmoniamusicplayer.dpdns.org/api/proxy?url=',
+logger: console
+});
+function fmtTime(iso) {
+const d = new Date(iso);
+if (!isFinite(d.getTime())) return '';
+const p = (n) => String(n).padStart(2, '0');
+return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function renderModel(model, meta) {
+/* ⚠ 评论正文是**外部不可信数据**（GitHub 侧可被任意编辑）：
+   必须 escapeHtml + pre-wrap 纯文本展示，**不解析 markdown** ——
+   否则评论内容可注入 HTML/脚本。 */
+const safeBody = escapeHtml(model.body);
+const when = fmtTime(model.createdAt);
+timeEl.textContent = when
+? `发布于 ${when}${meta && meta.fromCache ? ' · 缓存' : ''}`
+: (meta && meta.fromCache ? '来自缓存' : '');
+const link = model.htmlUrl
+? `<a href="${escapeHtml(model.htmlUrl)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color);font-size:12px;">查看该评论</a>`
+: '';
+contentEl.innerHTML = `<div style="white-space:pre-wrap;word-break:break-word;">${safeBody}</div>`
++ (link ? `<div style="margin-top:8px;">${link}</div>` : '');
+}
+function renderError(msg) {
+contentEl.innerHTML = `<div style="text-align:center;padding:16px;color:rgba(255,255,255,0.35);">
+<i class="fas fa-exclamation-circle"></i> ${escapeHtml(msg)}
+</div>`;
+}
+function describeFeedError(r) {
+if (!r) return '获取失败，请稍后重试';
+if (r.rateLimited) {
+const mins = Math.max(1, Math.ceil((r.retryAfterMs || 0) / 60000));
+return `GitHub 接口配额已用完，约 ${mins} 分钟后可重试`;
+}
+if (r.error === 'network') return '网络不可用，请检查网络后重试';
+if (r.error === 'no-comment') return '该作者暂未发布开发进度';
+if (r.error === 'bad-json' || r.error === 'bad-comment') return '返回数据格式异常';
+if (typeof r.error === 'string' && r.error.indexOf('http-') === 0) return `获取失败（${r.error.slice(5)}）`;
+return '获取失败，请稍后重试';
+}
+let busy = false;
+async function refresh(force) {
+if (busy) return;
+busy = true;
+if (refreshBtn) refreshBtn.disabled = true;
+try {
+const r = await feed.refresh({ force: !!force });
+if (r.model) {
+renderModel(r.model, r);
+/* 有可用数据时，限流/失败只做低调提示，不覆盖正文 */
+if (r.rateLimited) timeEl.textContent += ` · ${describeFeedError(r)}`;
+} else {
+renderError(describeFeedError(r));
+}
+} catch (e) {
+renderError(describeHttpError(e));
+} finally {
+busy = false;
+if (refreshBtn) refreshBtn.disabled = false;
+}
+}
+refreshBtn.addEventListener('click', () => { refresh(true); });
+/* 静默预取：空闲时请求一次。库内部有 30 分钟 TTL 与配额冷却，
+   因此"每次访问都调"不会造成配额压力；失败不打扰用户（logger 已降级为 warn）。 */
+const schedule = () => { refresh(false); };
+if (window.requestIdleCallback) {
+requestIdleCallback(() => schedule(), { timeout: 3000 });
+} else {
+setTimeout(schedule, 1500);
+}
+window.addEventListener('online', () => { refresh(false); });
 })();
 document.querySelectorAll('.settings-tab').forEach(tab => {
 tab.addEventListener('click', function(e) {
@@ -10436,6 +11259,9 @@ if (activeContent) activeContent.classList.add('active');
 });
 window.addEventListener('resize', debounce(() => {
 if (_artistMarqueeLastText) setNowPlayingArtist(_artistMarqueeLastText);
+/* 歌名跑马灯同样按容器宽重算：设备旋转/窗口缩放后可用宽度变化，
+   原先「不滚动」的可能需要滚动、原先滚动的位移距离也要跟着变。 */
+applyIslandTitleMarquee();
 LYRICS_OFFSET = calculateLyricsOffset();
 if (amLyricsData.length > 0 && lastLyric >= 0) {
 UpdateLyricsLayout(lastLyric, [lastLyric], amLyricsData, 0);
@@ -10448,6 +11274,68 @@ refreshDynamicIslandToastLayout();
 }, 200));
 updateCollapsedText('Harmonia');
 updateKugouAccountUI();
+}
+/* ── 软键盘感知（修复「展开灵动岛 → 点输入框 → 键盘弹起 → 界面被压缩」）─────────
+ *
+ * 根因（2026-10-04）：Android 客户端 AndroidManifest 原为
+ * windowSoftInputMode="adjustPan"。该模式由 Android 在**原生层**把整个 WebView 平移，
+ * 网页引擎完全不知情 —— 实测 window.innerHeight / visualViewport.height /
+ * visualViewport.offsetTop 在键盘弹起前后**全都不变**，因此任何 CSS/JS 都写不出
+ * 针对键盘的自适应。客户端已改为 adjustResize：WebView 真的收缩，JS 才能读到变矮的
+ * 可视高度。网页版在移动浏览器上本就是 adjustResize 语义，故本段同样生效。
+ *
+ * 本函数的职责：把「当前可用高度」与「键盘是否弹起」两个事实下发给 CSS
+ * （--island-avail-h / body.kbd-open），由 CSS 决定灵动岛高度与让位行为。
+ * 刻意不在 JS 里算像素高度——布局归 CSS，JS 只提供事实。
+ *
+ * 键盘判定：以「视口高度比历史峰值矮了超过阈值」为准。
+ * 为什么不用 focus 判定：输入框聚焦与键盘真正弹起之间有 ~200~400ms 的系统动画延迟，
+ * 用 focus 会让布局在键盘还没出现时就先让位（视觉上闪一下）；而可用高度是键盘的
+ * **直接结果**，时序上天然正确。阈值取 120px 以避开浏览器地址栏折叠等小幅变化。 */
+var KBD_MIN_INSET = 120;
+var _islandAvailH = 0;          // 最近一次下发的可用高度（实际像素，非 CSS 值）
+var _kbdOpen = false;
+function syncIslandAvailableHeight() {
+  var vv = window.visualViewport;
+  /* 可用高度取 innerHeight 与 visualViewport.height 的较小值：
+     adjustResize 下两者一致；若某些 ROM 只缩 visualViewport，这里也能覆盖。 */
+  var avail = Math.round(Math.min(window.innerHeight || 0, vv ? vv.height : Infinity));
+  if (!avail || avail < 0) return;
+  if (avail > _islandAvailH) _islandAvailH = avail;   // 记录峰值，仅在下降时判键盘
+  var open = (_islandAvailH - avail) > KBD_MIN_INSET;
+  if (open !== _kbdOpen) {
+    _kbdOpen = open;
+    document.body.classList.toggle('kbd-open', open);
+  }
+  /* 下发给 CSS 的是「灵动岛自身可用高度」——必须再扣掉岛自己的 top 偏移。
+     踩坑记录：第一版只减了底部安全区，结果小屏（可用 340px）下 `top:10px` 没被计入，
+     岛高算出 340px、下沿落在 350px，仍然溢出屏幕 10px。
+     这里读取布局实测的 top 而非写死 10px：竖屏是 10px、横屏是 20px（responsive.css 里
+     两处规则不同），实测值天然覆盖两种形态；岛不可见时 rect.top 为 0，回退不影响。 */
+  var islandEl = document.getElementById('dynamicIsland');
+  var islandTop = 0;
+  if (islandEl) {
+    var r = islandEl.getBoundingClientRect();
+    if (r && r.height > 0) islandTop = Math.max(0, Math.round(r.top));
+  }
+  var forIsland = Math.max(0, avail - islandTop);
+  document.documentElement.style.setProperty('--island-avail-h', forIsland + 'px');
+}
+/* 首次调用放在 init() 之后：此时 body/CSS 变量已就绪；同时注册三类事件源。
+   visualViewport 的 resize 是移动端键盘最可靠的信号，window.resize 作为兜底。 */
+function initKeyboardAwareLayout() {
+  if (!isMobile()) return;                 // 桌面端无软键盘，不做无谓监听
+  syncIslandAvailableHeight();
+  window.addEventListener('resize', syncIslandAvailableHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncIslandAvailableHeight);
+    window.visualViewport.addEventListener('scroll', syncIslandAvailableHeight);
+  }
+  /* 旋转屏幕后峰值会变化（横屏更矮），需重设峰值再重算，否则会误判成键盘弹起 */
+  window.addEventListener('orientationchange', function () {
+    _islandAvailH = 0;
+    setTimeout(syncIslandAvailableHeight, 260);
+  });
 }
 function initSidebarControls() {
 const sidebarSearchInput = document.getElementById('sidebarSearchInput');
@@ -10959,7 +11847,7 @@ const res = await wrappedFetchWithRetry(url, { credentials: 'include' });
 if (!res.ok) throw new Error('酷狗 URL 请求失败');
 return await res.json();
 }
-async function getKugouAudioUrlByHash(hash) {
+async function getKugouAudioUrlByHash(hash, options = {}) {
 if (!kugouToken) throw new Error('请先在设置-账户中登录酷狗账号');
 if (!hash) throw new Error('缺少酷狗歌曲 hash');
 const requestedQuality = getKugouAudioQuality();
@@ -11183,7 +12071,7 @@ if (!Array.isArray(wordLines) || !wordLines.length) {
 return await renderAMLLLines([], { emptyText: '暂无逐字歌词' });
 }
 const hasBuiltinTrans = wordLines.filter(l => l.translation && l.translation.trim()).length > wordLines.length * 0.3;
-if (translationSettings.enabled && isKuGouLyricsForeign(wordLines) && !hasBuiltinTrans) {
+if (translationSettings.enabled && shouldTranslateKugouLyrics(wordLines, hasBuiltinTrans, translationSettings.scope)) {
 try {
 showError('正在翻译歌词...', 3000);
 const translations = await translateKugouLyrics(wordLines);
@@ -11573,6 +12461,8 @@ function triggerKugouReLogin() {
 	showError('酷狗凭证已失效/退出，请重新登录', 4000);
 settingsModalOverlay.classList.add('active');
 document.body.classList.add('settings-modal-open');
+document.body.classList.add('settings-panel-open');
+ssSyncOnSettingsOpen();
 updateTimeDisplayPreview();
 const accountTab = document.querySelector('.settings-tab[data-tab="account"]') || document.querySelector('.nav-item[data-tab="account"]');
 if (accountTab) accountTab.click();
@@ -13443,13 +14333,62 @@ return localStorage.getItem(CROSSFADE_ENABLED_KEY) === 'true';
 async function preloadNextSongForGapless(nextSong) {
 if (!nextSong || !nextSong.id) return;
 if (!isCrossfadeEnabled() && !isSmartTransitionEnabled()) return;
+/* ── 闸门（2026-10-17 限流治理）───────────────────────────────────────
+   timeupdate 约 4Hz 调到这里。原实现只有「已完整预加载」一个守卫，于是在途期间
+   每个 tick 都会再发一次 `types=url`；失败后又立刻清空状态 → 4 req/s 风暴。
+   现在判据收敛到 pure.js 的 decideGaplessPreload（纯函数、有单测），规则：
+     ① 同一首在途 → 直接复用（不重复发）
+     ② 已完整预加载且有 URL → 跳过
+     ③ 该歌失败冷却期内 → 跳过（指数退避 30s→300s，按歌隔离）
+     ④ 距上次尝试 < 1.5s → 跳过（timeupdate 4Hz 不得放大成 4 req/s）
+   返回 action='skip' 时直接返回，**不改变任何既有状态**。 */
+const _gate = (typeof HarmoniaLib !== 'undefined' && HarmoniaLib.decideGaplessPreload)
+? HarmoniaLib.decideGaplessPreload({
+songId: nextSong.id,
+pendingSongId: gaplessPreloadPendingSongId,
+preloadedSongId: gaplessPreloadedSongId,
+preloadedUrl: gaplessPreloadUrl,
+failSongId: gaplessPreloadFailSongId,
+failCount: gaplessPreloadFailCount,
+failUntil: gaplessPreloadFailUntil,
+lastAttemptAt: gaplessPreloadLastAttemptAt,
+lastAttemptSongId: gaplessPreloadLastAttemptSongId,
+minIntervalMs: GAPLESS_PRELOAD_MIN_INTERVAL_MS,
+now: Date.now()
+})
+: { action: 'start', reason: 'no-lib' };
+if (_gate.action !== 'start') {
+if (_gate.reason === 'backoff') console.info('[Gapless] 预加载冷却中，跳过（' + nextSong.name + '）');
+return;
+}
+const _attemptAt = Date.now();
+gaplessPreloadLastAttemptAt = _attemptAt;
+/* 节流按歌隔离：记录「这次是哪首歌在尝试」，否则前一首刚尝试过会把换歌也挡掉 */
+gaplessPreloadLastAttemptSongId = nextSong.id;
+gaplessPreloadPendingSongId = nextSong.id;
+/* _ctrl 必须声明在 try **之外**：finally 要拿它做配对判断，若声明在 try 内，
+   一旦 try 开头就抛错（例如 gaplessPreloadAbort.abort() 抛异常），finally 里
+   引用 _ctrl 会抛 ReferenceError，导致其后「清空在途标记」的语句永不执行 →
+   gaplessPreloadPendingSongId 永久残留 → 之后所有歌的预加载都被「在途」判据挡掉，
+   表现为「限流改完之后连请求都不发了」。曾真实踩此坑，勿再移回 try 内。 */
+let _ctrl = null;
 try {
 if (gaplessPreloadAbort) { gaplessPreloadAbort.abort(); }
-gaplessPreloadAbort = new AbortController();
-const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong);
-if (gaplessPreloadAbort.signal.aborted) return;
+_ctrl = new AbortController();
+gaplessPreloadAbort = _ctrl;
+/* signal 真正透传进 fetch：此前 abort 只 abort 了 controller 变量，请求照样跑完
+   （getAudioUrl 旧签名没有 signal 参数），既浪费配额也让「取消」形同虚设。 */
+const audioUrl = await getAudioUrl(nextSong.id, nextSong.source, nextSong, { signal: _ctrl.signal });
+if (_ctrl.signal.aborted) return;
 gaplessPreloadUrl = audioUrl;
 gaplessPreloadedSongId = nextSong.id;
+/* 成功结算：清空失败状态（下一次失败重新从 30s 起算） */
+if (typeof HarmoniaLib !== 'undefined' && HarmoniaLib.recordPreloadSuccess) {
+const _ok = HarmoniaLib.recordPreloadSuccess();
+gaplessPreloadFailSongId = _ok.failSongId;
+gaplessPreloadFailCount = _ok.failCount;
+gaplessPreloadFailUntil = _ok.failUntil;
+}
 /* 跨域适配：酷狗 CDN 无 CORS 头，带 crossorigin 会加载失败（与主播放器策略一致） */
 stApplySourceMediaAttrs(audioPlayerB, nextSong.source);
 audioPlayerB.src = audioUrl;
@@ -13463,6 +14402,22 @@ setCachedSong(nextSong, { audioUrl });
 		console.warn('[Gapless] 预加载失败:', e?.message || e);
 		gaplessPreloadUrl = null;
 		gaplessPreloadedSongId = null;  // 同步清理，避免 ID 悬空导致后续 crossfade 误判
+		/* 失败结算：按歌记录连续失败次数并进入指数退避冷却（30s→60s→120s→240s→300s 封顶）。
+		   这是「失败 → 立刻重试 → 更严重限流」正反馈的断点：冷却期内该歌不再发请求。 */
+		if (typeof HarmoniaLib !== 'undefined' && HarmoniaLib.recordPreloadFailure) {
+		const _f = HarmoniaLib.recordPreloadFailure({
+		failSongId: gaplessPreloadFailSongId,
+		failCount: gaplessPreloadFailCount,
+		failUntil: gaplessPreloadFailUntil
+		}, nextSong.id, Date.now());
+		gaplessPreloadFailSongId = _f.failSongId;
+		gaplessPreloadFailCount = _f.failCount;
+		gaplessPreloadFailUntil = _f.failUntil;
+		console.info('[Gapless] 预加载进入冷却 ' + Math.round((_f.failUntil - Date.now()) / 1000) + 's（第 ' + _f.failCount + ' 次失败）');
+		}
+	} finally {
+		if (gaplessPreloadAbort === _ctrl) gaplessPreloadAbort = null;
+		if (gaplessPreloadPendingSongId === nextSong.id) gaplessPreloadPendingSongId = null;
 	}
 }
 function performCrossfadeToNext() {
@@ -13620,6 +14575,8 @@ const remaining = duration - currentTime;
 const sn = getMusicSourceName(nextSong?.source);
 const at = toArtistText(nextSong.artist);
 if (nowPlayingArtist) setNowPlayingArtist(sn + ' · ' + at);
+/* 与相邻 gapless 路径对齐：新文本就位后触发标题/歌手入场动画（封面浮现由 loadAlbumArt 走叠化通道） */
+startTrackTransition();
 currentSongInfo = { name: nextSong.name || '未知歌曲', artist: sn + ' · ' + at, album: nextSong.album || '', source: sn };
 window.__lastSongInfo = currentSongInfo;
 currentSongData = nextSong;
@@ -13897,6 +14854,9 @@ showDynamicIslandToast('歌词缓存已清空', 1500);
     if (slider) slider.value = String(p);
     if (valueEl) valueEl.textContent = p + '%';
     if (persist) { try { localStorage.setItem(LYRICS_SIZE_KEY, String(p)); } catch (_) {} }
+    /* 字号变了 → 行高变了 → 必须重测，否则引擎的前缀和与旧通路的 metrics 都会失准
+       （表现为「字号调大后行压叠」）。防抖在 scheduleLyricsRelayout 内部。 */
+    scheduleLyricsRelayout();
     return p;
   }
   /* 启动即应用已保存比例（无保存/非法值回落 100%），避免首帧字号跳变 */
@@ -14797,6 +15757,8 @@ function showShortcutsHelp() {
 if (!settingsModalOverlay.classList.contains('active')) {
 settingsModalOverlay.classList.add('active');
 document.body.classList.add('settings-modal-open');
+document.body.classList.add('settings-panel-open');
+ssSyncOnSettingsOpen();
 updateTimeDisplayPreview();
 }
 const shortcutsTab = document.querySelector('.nav-item[data-tab="shortcuts"]');
@@ -15698,7 +16660,16 @@ const tt='<div class="stats-pie-tooltip" id="pieTooltip" style="display:none;"><
 return '<div class="stats-pie-container">'+svg+tt+legend+'</div>';
 }
 /* init 已在文件主体执行（见 :8462），defer 脚本执行时 readyState 已非 loading，此处不再重复调用 */
-if(window.requestIdleCallback)requestIdleCallback(()=>{import(AMLL_CORE_ESM_URL).catch(()=>{});import(AMLL_LYRIC_ESM_URL).catch(()=>{});},{timeout:8000});
+/* 空闲预取：**必须预取本地 vendor，不能预取 esm.sh**。
+   原实现写的是 `import(AMLL_CORE_ESM_URL)`，而 AMLL_CORE_ESM_URL 指向
+   https://esm.sh/...（见 :145）；但真正加载引擎的是 AMLL_MODULE_CANDIDATES[0]
+   的 AMLL_VENDOR_CORE_URL（./js/vendor/...，见 :143/:5281）。
+   ESM 模块缓存是**按 URL 键**的，两者 URL 不同 → 预取的 CDN 副本对主路径毫无帮助，
+   等于每次冷启动白拉约 565 KB（473 KB core + 92 KB lyric）并额外付一次跨域往返，
+   拉完即弃。实测（_perf-verify/net-probe-web.cjs）：主路径用 vendor ✓ 但预取仍打 esm.sh。
+   现改为预取 vendor 自身：命中的话是零成本（同一 URL，主路径直接复用缓存），
+   不命中也只是把本来就要下的文件提前到空闲期。 */
+if(window.requestIdleCallback)requestIdleCallback(()=>{import(AMLL_VENDOR_CORE_URL).catch(()=>{});import(AMLL_VENDOR_LYRIC_URL).catch(()=>{});},{timeout:8000});
 
 /* ═══════════ 配置迁移：导出（网页端） ═══════════
    将播放列表 / 功能设置 / API 密钥导出为 JSON 文件，
@@ -15707,7 +16678,7 @@ if(window.requestIdleCallback)requestIdleCallback(()=>{import(AMLL_CORE_ESM_URL)
 const HARMONIA_MIGRATION_VERSION = 1;
 const HARMONIA_MIGRATION_GROUPS = {
   playlists: ['musicPlaylist', 'harmoniaPlaylists', 'musicFavorites', 'musicHistory', 'musicPlayerCustomOrder'],
-  settings: ['musicPlayerVolume', 'playbackRate', 'rememberProgressEnabled', 'spatial3dEnabled', 'desktopLyricsPipEnabled', 'miniPlayerLyricsPillEnabled', 'lyricsSettings', 'wordLyricsSource', 'lyricsRendererMode', 'lyricsAnimationMode', 'timeDisplayMode', 'liquidGlassStyle', 'amllTtmlSource', 'musicSource', 'crossfadeEnabled', 'smartTransitionEnabled', 'stAnalysisCache5', 'stMixDuration', 'krcRemoveCredits', 'kugouAudioQuality', 'mvFeatureEnabled', 'albumEffectEnabled', 'trackTransitionEnabled', 'dynamicBgEnabled', 'dynamicBgSpeed', 'musicPlayerEqSettings', 'settings-bg-mode', 'startupBgFetched', 'lastPlayPosition', 'harmoniaSleepTimer'],
+  settings: ['musicPlayerVolume', 'playbackRate', 'rememberProgressEnabled', 'spatial3dEnabled', 'desktopLyricsPipEnabled', 'miniPlayerLyricsPillEnabled', 'lyricsSettings', 'wordLyricsSource', 'lyricsRendererMode', 'lyricsAnimationMode', 'timeDisplayMode', 'liquidGlassStyle', 'amllTtmlSource', 'musicSource', 'crossfadeEnabled', 'smartTransitionEnabled', 'stAnalysisCache5', 'stMixDuration', 'krcRemoveCredits', 'kugouAudioQuality', 'kugouVipAutoEnabled', 'mvFeatureEnabled', 'albumEffectEnabled', 'trackTransitionEnabled', 'dynamicBgEnabled', 'dynamicBgSpeed', 'musicPlayerEqSettings', 'settings-bg-mode', 'startupBgFetched', 'lastPlayPosition', 'harmoniaSleepTimer'],
   api: ['translationSettings', 'kugouToken', 'kugouUserId', 'kugouDfid', 'kugouNickname', 'kugouPic']
 };
 function collectHarmoniaMigrationData() {
@@ -15780,3 +16751,236 @@ if (spatial3dEnabled() && !stMixAGain) ensureSpatial3dAttach().catch(() => {});
 } catch (e) { console.warn('[Spatial3d] 注册 play 监听失败:', e && e.message); }
 }
 bootstrapSpatial3dPersistence();
+
+/* ================= 设置内搜索（Settings Search，ss 前缀） ================= */
+/* 需求：设置窗口打开时，灵动岛内搜索检索「设置项」而不是歌曲；点击结果跳到对应设置分页
+   并定位高亮。开关：设置→视觉→「灵动岛内搜索设置项」，默认开。
+
+   设计要点（详见 docs/superpowers/specs/2026-10-17-island-settings-search-design.md）：
+   1. 索引从 DOM 实时生成，不手写目录 —— 双源（网页版/客户端）设置项本就有差异，
+      手写目录必然漂移。
+   2. 本地搜索不调用 startRequest/endRequest（无网络请求），也不调用 showError
+      （它会收起灵动岛）。
+   3. 点击分流放在 ensureSearchResultsDelegation 的最前面，早于歌曲索引取值，
+      杜绝误触发 playTrack。
+
+   ⚠️ 本区段在双源之间必须逐字节一致（由 HarmoniaApp/tests/settings-island-search.test.js 守卫）。
+*/
+let ssSettingsIndex = [];
+
+function ssIsEnabled() {
+  try { return localStorage.getItem(ISLAND_SETTINGS_SEARCH_KEY) !== 'false'; } catch (_) { return true; }
+}
+
+/* 模式判定唯一入口：开关开 + 设置真的打开。所有分支都调它，不各自判断。 */
+function ssIsActive() {
+  return ssIsEnabled() && !!(settingsModalOverlay && settingsModalOverlay.classList.contains('active'));
+}
+
+/* 取元素自身的直接文本（剥离嵌套 span，如「流动速度 <span>1.0×</span>」只取「流动速度」） */
+function ssDirectText(el) {
+  if (!el) return '';
+  let out = '';
+  for (let i = 0; i < el.childNodes.length; i++) {
+    const n = el.childNodes[i];
+    if (n.nodeType === 3) out += n.nodeValue;
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+
+/* 扫描设置 DOM 建索引。每次打开设置时重建（48 个 setting-item，< 1ms）。 */
+function ssBuildIndex() {
+  const list = [];
+  const seen = Object.create(null);
+  const panels = document.querySelectorAll('.settings-tab-content[data-tab]');
+  panels.forEach((panel) => {
+    const tab = panel.dataset.tab;
+    const nav = document.querySelector('.settings-nav .nav-item[data-tab="' + tab + '"]');
+    const tabLabel = nav ? (nav.textContent || '').replace(/\s+/g, ' ').trim() : tab;
+    let itemCount = 0;
+    panel.querySelectorAll('.setting-item').forEach((item) => {
+      const labelEl = item.querySelector('.item-label');
+      const groupEl = (() => {
+        let p = item.parentElement;
+        while (p && p !== panel) {
+          if (p.classList && p.classList.contains('settings-group')) return p.querySelector('.group-title');
+          p = p.parentElement;
+        }
+        return null;
+      })();
+      const group = groupEl ? (groupEl.textContent || '').replace(/\s+/g, ' ').trim() : tabLabel;
+      const descParts = [];
+      item.querySelectorAll('.item-desc').forEach((d) => {
+        const t = (d.textContent || '').replace(/\s+/g, ' ').trim();
+        if (t) descParts.push(t);
+      });
+      const title = labelEl ? ssDirectText(labelEl) : group;
+      /* key 末尾带 list.length，保证同一分页下同名设置项（极少见）不会互相覆盖 */
+      const key = tab + '|' + group + '|' + title + '|' + list.length;
+      if (seen[key]) return;
+      seen[key] = 1;
+      itemCount++;
+      list.push({ key: key, tab: tab, tabLabel: tabLabel, group: group, title: title, desc: descParts.join(' '), anchor: item });
+    });
+    /* 没有任何 setting-item 的分页（统计/更新日志/关于）：补一条分页级条目，
+       保证搜「日志」「统计」也能跳过去。 */
+    if (itemCount === 0) {
+      list.push({
+        key: tab + '|' + tabLabel + '||page',
+        tab: tab, tabLabel: tabLabel, group: tabLabel,
+        title: tabLabel, desc: '', anchor: panel
+      });
+    }
+  });
+  ssSettingsIndex = list;
+}
+
+function ssFindEntry(key) {
+  for (let i = 0; i < ssSettingsIndex.length; i++) {
+    if (ssSettingsIndex[i].key === key) return ssSettingsIndex[i];
+  }
+  return null;
+}
+
+/* chip 过滤：该词能否命中至少一条设置项（双源设置项不同，避免死链） */
+function ssHasEntryFor(word) {
+  if (!window.HarmoniaSettingsSearch) return false;
+  return window.HarmoniaSettingsSearch.searchIndex(ssSettingsIndex, word).length > 0;
+}
+
+/* 设置模式空态：常用设置 chip（不拉酷狗热搜，那是歌曲维度） */
+function ssRenderEmptyState() {
+  if (!window.HarmoniaSettingsSearch) return;
+  const chips = window.HarmoniaSettingsSearch.DEFAULT_CHIPS.filter((w) => ssHasEntryFor(w));
+  let html = '<div class="island-empty">' +
+    '<i class="fas fa-sliders"></i>' +
+    '<div class="island-empty-text">搜索设置项</div>';
+  if (chips.length) {
+    html += '<div class="island-hot">' + chips.map((w) =>
+      '<button class="island-hot-chip" type="button" data-ss-chip="' + escapeHtml(w) + '">' + escapeHtml(w) + '</button>'
+    ).join('') + '</div>';
+  }
+  html += '</div>';
+  searchResults.innerHTML = html;
+  pagination.style.display = 'none';
+  searchResults.querySelectorAll('[data-ss-chip]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const word = btn.getAttribute('data-ss-chip') || '';
+      if (searchInput) searchInput.value = word;
+      ssSearch(word);
+    });
+  });
+}
+
+function ssRenderResults(list) {
+  /* 必须先绑定点击委托：委托只在 ensureSearchResultsDelegation() 里挂一次，
+     而它原本只在歌曲通路（displaySearchResults）被调用。设置结果走这里渲染时
+     若不主动调用，结果条目点了没有任何反应 —— 实测踩过。 */
+  ensureSearchResultsDelegation();
+  if (!list.length) {
+    searchResults.innerHTML = '<div class="island-empty">' +
+      '<i class="fas fa-sliders"></i>' +
+      '<div class="island-empty-text">没有匹配的设置项<br>试试「动态背景」「音质」「歌词」</div>' +
+      '</div>';
+    pagination.style.display = 'none';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  list.forEach((entry) => {
+    const item = document.createElement('div');
+    item.className = 'island-result-item island-setting-item';
+    item.dataset.settingKey = entry.key;
+    /* 分页级条目（统计/更新日志/关于）用 .group 变体徽标以示区别 */
+    const isPage = entry.anchor && entry.anchor.classList && entry.anchor.classList.contains('settings-tab-content');
+    const badgeClass = isPage ? 'island-setting-badge group' : 'island-setting-badge';
+    const desc = (entry.desc || entry.group || '').slice(0, 60);
+    item.innerHTML =
+      '<div class="island-result-info">' +
+        '<div class="island-result-title-row">' +
+          '<div class="island-result-title">' + escapeHtml(entry.title) + '</div>' +
+          '<span class="' + badgeClass + '">' + escapeHtml(entry.tabLabel) + '</span>' +
+        '</div>' +
+        '<div class="island-result-artist">' + escapeHtml(desc) + '</div>' +
+      '</div>' +
+      '<div class="island-result-actions"><i class="fas fa-reply"></i></div>';
+    frag.appendChild(item);
+  });
+  searchResults.innerHTML = '';
+  searchResults.appendChild(frag);
+  pagination.style.display = 'none';
+}
+
+/* 本地搜索：不触发请求状态、不收起岛、不用 showError */
+function ssSearch(query) {
+  const q = (query || '').trim();
+  if (!q) { ssRenderEmptyState(); return; }
+  if (!window.HarmoniaSettingsSearch) {
+    /* 库未加载（文件缺失/404）时给出可诊断的空态，而不是抛错 */
+    searchResults.innerHTML = '<div class="island-empty">' +
+      '<i class="fas fa-sliders"></i>' +
+      '<div class="island-empty-text">设置搜索不可用（settings-search.js 未加载）</div></div>';
+    pagination.style.display = 'none';
+    return;
+  }
+  ssRenderResults(window.HarmoniaSettingsSearch.searchIndex(ssSettingsIndex, q));
+}
+
+/* 跳转：切分页 → 双 rAF 等布局 → 滚动 + 高亮 → 收起岛 */
+function ssJumpTo(key) {
+  const entry = ssFindEntry(key);
+  if (!entry) return;
+  const nav = document.querySelector('.settings-nav .nav-item[data-tab="' + entry.tab + '"]');
+  if (nav) nav.click();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const anchor = entry.anchor;
+    if (!anchor || !anchor.isConnected) return;
+    try { anchor.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) { anchor.scrollIntoView(); }
+    anchor.classList.add('setting-item-flash');
+    setTimeout(() => { try { anchor.classList.remove('setting-item-flash'); } catch (_) {} }, 1700);
+  }));
+  if (isDynamicIslandExpanded) toggleDynamicIsland();
+}
+
+/* 统一搜索分发：设置模式走本地检索，否则维持原有歌曲搜索 */
+function ssRunSearch() {
+  const q = (searchInput && searchInput.value ? searchInput.value : '').trim();
+  if (!q) return;
+  if (ssIsActive()) { ssSearch(q); return; }
+  searchMusic(q, 1);
+}
+
+/* 打开设置时的同步：建索引；若岛已展开则丢弃歌曲结果、切成设置模式空态 */
+function ssSyncOnSettingsOpen() {
+  ssBuildIndex();
+  if (ssIsActive() && isDynamicIslandExpanded) {
+    if (searchInput) searchInput.value = '';
+    ssRenderEmptyState();
+    pagination.style.display = 'none';
+  }
+}
+
+/* 开关接线（loadVisualSettings 只负责回填 checked） */
+(function initIslandSettingsSearchToggle() {
+  const el = document.getElementById('islandSettingsSearchToggle');
+  if (!el) return;
+  el.checked = ssIsEnabled();
+  el.addEventListener('change', function () {
+    try {
+      localStorage.setItem(ISLAND_SETTINGS_SEARCH_KEY, this.checked ? 'true' : 'false');
+    } catch (_) {}
+    showDynamicIslandToast(this.checked ? '已开启：灵动岛内搜索设置项' : '已关闭：灵动岛内搜索设置项', 2000);
+    if (!this.checked && ssIsActive()) {
+      /* 立即失效：残留的设置结果换成中性空态（不还原热搜，避免无谓网络请求） */
+      searchResults.innerHTML = '<div class="island-empty">' +
+        '<i class="fas fa-music"></i>' +
+        '<div class="island-empty-text">搜索你喜欢的音乐</div></div>';
+      pagination.style.display = 'none';
+    }
+  });
+})();
+
+/* init() 里预热一次索引：避免「第一次打开设置后立刻搜索」时索引还是空的。 */
+ssBuildIndex();
+/* ================= 设置内搜索结束 ================= */
+

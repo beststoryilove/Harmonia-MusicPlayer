@@ -20,6 +20,13 @@
    浅色主题的 --*-light 变量定义，故此处一律不使用该后缀命名。 */
 [data-glass-style="refraction"] {
   --lgv2-tint: rgba(24, 22, 34, 0.46);
+  /* 自足材质：移动端窄屏小元素（结果行/按钮/搜索框）不启用 backdrop blur ——
+     性能报告 M2 点名「每行一次模糊采样、每页 20 行」。没有模糊时 46% 的 tint 会直接
+     透出底图（用户观感就是「透明玻璃」），故这里给出一个不需要模糊也成立的不透明度。
+     数值推导：46% tint 在纯黑底上的等效亮度约 11/255，几乎不可见；
+     86% 在同样底色上约 21/255，配合描边环与内高光即可读出「一块玻璃」而非「一层雾」。
+     刻意不用 100%：完全不透明会失去玻璃的「透」感，退化成塑料板。 */
+  --lgv2-tint-solid: rgba(24, 22, 34, 0.86);
   --lgv2-shadow: 0 14px 44px -8px rgba(8, 4, 24, 0.42);
   --lgv2-spec: 0.6;                    /* 高光亮度 60% */
   --lgv2-rim: linear-gradient(140deg,
@@ -172,16 +179,56 @@
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 
-/* ---------- 窄屏性能降级 ----------
-   responsive.css 在 max-width:768px 下对所有玻璃元素强制
-   backdrop-filter:none（移动端性能取舍）。JS 侧同样以该断点判定不支持折射，
-   此处再补一层，确保即使 JS 未及时响应也不会在窄屏留下重滤镜。 */
+/* ---------- 窄屏（移动端）材质 ----------
+   背景与结论（2026-10-03 用户反馈「液态玻璃完全无法生效，直接变成透明玻璃」）：
+   responsive.css 在 max-width:768px 下对所有玻璃元素强制 backdrop-filter:none
+   （移动端性能取舍），而 v2 的 tint 只有 46% alpha。两者叠加 = 没有模糊、只剩一层
+   几乎透明的暗色。本文件头「材质本身由 CSS 提供、不受影响」的假设在移动端**不成立**：
+   46% 的 tint 不是自足材质 —— **模糊才是材质**（旧的 classic 玻璃同理：8.5% 白 + blur 42px）。
+
+   本块按元素职责分两档。选择器特异性刻意抬到 (0,2,0)/(0,3,0)：
+   responsive.css 的降级规则是 (0,1,0)/(0,2,0) 且带 !important 又后置加载，
+   只有特异性更高才能稳定胜出（同特异性时后加载者赢）。
+
+   1) 单实例大面板 —— 恢复真实 backdrop blur（半径从桌面的 20px 收敛到 14px 控开销）；
+   2) 每页重复多次的小元素 —— 不加模糊。性能报告 M2 已点名 .island-result-item
+      「每行一次模糊采样、每页 20 行」；改用更实的 tint 自成材质。 */
 @media (max-width: 768px) {
   [data-glass-style="refraction"] .liquid-glass,
   [data-glass-style="refraction"] .dynamic-island,
+  /* 展开态必须单列：responsive.css 的 `.dynamic-island.expanded{...backdrop-filter:none}`
+     也是 (0,2,0) !important，与上面那条同特异性，而它后置加载 → 靠源序胜出。
+     这里把展开态抬到 (0,3,0)，模糊才不会被静默压掉。 */
+  [data-glass-style="refraction"] .dynamic-island.expanded,
   [data-glass-style="refraction"] .sidebar,
-  [data-glass-style="refraction"] .player-controls {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+  [data-glass-style="refraction"] .settings-container,
+  [data-glass-style="refraction"] .discovery-modal,
+  [data-glass-style="refraction"] .poster-modal-content {
+    -webkit-backdrop-filter: blur(14px) saturate(1.6) !important;
+    backdrop-filter: blur(14px) saturate(1.6) !important;
+  }
+
+  /* 展开态灵动岛：必须显式压回 v2 的 tint + 高光。
+     responsive.css 的 `.dynamic-island.expanded{background:rgba(40,40,44,0.96) !important}`
+     与本文件 (0,2,0) 同特异性，但它后置加载 → 展开时 v2 材质被整块替换成不透明纯灰
+     （而 border/box-shadow 仍是 v2 → 形成自相矛盾的混合体）。此处用 (0,3,0) 明确胜出。 */
+  [data-glass-style="refraction"] .dynamic-island.expanded {
+    background: var(--lgv2-glow), var(--lgv2-tint) !important;
+  }
+
+  /* 每页重复的小元素：无模糊，用自足材质替代（tint 提到 86% + 描边环 + 顶部内高光）。
+     同时把 backdrop-filter 显式压成 none：layout.css 给 .island-result-item 留了
+     blur(42px) 且带 !important，responsive.css 的降级名单并未覆盖它。 */
+  [data-glass-style="refraction"] .island-result-item,
+  [data-glass-style="refraction"] .island-result-action,
+  [data-glass-style="refraction"] .island-page-btn,
+  [data-glass-style="refraction"] .island-search-box {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: var(--lgv2-tint-solid) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      var(--lgv2-shadow) !important;
   }
 }
