@@ -1356,6 +1356,78 @@
     return { failSongId: null, failCount: 0, failUntil: 0 };
   }
 
+  /* ================= 歌曲缓存（Song Cache，纯函数层）=================
+     本区段只做纯计算，不做 IO、不碰 window/localStorage/文件系统。
+     平台实现在 源码/desktop/song-cache.cjs 与 SongCachePlugin.java。
+     ⚠ 双源同步：本文件必须与 Harmonia/js/lib/pure.js 逐字节一致。 */
+  var SONG_CACHE_PURE_BEGIN = true;
+
+  /* 文件系统安全：songId 来自网络，可能含 / \ .. 等，直接拼路径会写到缓存目录之外。
+     保留 [A-Za-z0-9_-]，其余一律替换为 _（含中文——文件名稳定比可读性重要）。
+     与 SongCachePlugin.java 的 safe() 必须保持同一规则，否则两端文件名对不上。 */
+  function scSafeSegment(input) {
+    return String(input == null ? '' : input).replace(/[^A-Za-z0-9_-]/g, '_');
+  }
+  function scSafeExt(ext) {
+    var e = String(ext == null ? '' : ext).toLowerCase().replace(/[^a-z0-9]/g, '');
+    return e || 'bin';
+  }
+  /* 统一文件名格式：<safeSongId>-<safeQuality>.<ext>，便于从文件名反推条目。 */
+  function buildCacheFileName(songId, quality, ext) {
+    return scSafeSegment(songId) + '-' + scSafeSegment(quality) + '.' + scSafeExt(ext);
+  }
+  /* 解析文件名；不合规返回 null（宁可当作未缓存，也不要误用错误文件）。 */
+  function parseCacheFileName(fileName) {
+    var m = /^([A-Za-z0-9_-]+)-([A-Za-z0-9_-]+)\.([a-z0-9]+)$/.exec(String(fileName || ''));
+    if (!m) return null;
+    return { songId: m[1], quality: m[2], ext: m[3] };
+  }
+  /* 索引条目是否可用于直接播放。音质不匹配时不删缓存（用户改回音质还能秒开）。 */
+  function isCacheEntryUsable(entry, opts) {
+    var o = opts || {};
+    if (!entry || typeof entry !== 'object') return { usable: false, reason: 'no-entry' };
+    if (!entry.bytes || entry.bytes <= 0) return { usable: false, reason: 'corrupt-zero-bytes' };
+    if (String(entry.quality) !== String(o.currentQuality)) {
+      return { usable: false, reason: 'quality-mismatch:' + entry.quality + '!=' + o.currentQuality };
+    }
+    return { usable: true, reason: 'ok' };
+  }
+  /* 播放决策：唯一决定「用本地 / 联网并缓存 / 纯联网」的地方。
+     enabled=false 只影响「要不要新写缓存」，不影响「已有缓存要不要用」——
+     这是用户明确要求的行为（关开关不清空、已有缓存仍秒开）。 */
+  function decideCacheAction(input) {
+    var s = input || {};
+    var usable = isCacheEntryUsable(s.hasEntry ? { bytes: 1, quality: s.entryQuality } : null, { currentQuality: s.currentQuality });
+    if (usable.usable) return { action: 'use-local', reason: 'cache-hit' };
+    if (s.inFlight) return { action: 'net-only', reason: 'already-downloading' };
+    if (s.failedUntil && s.now < s.failedUntil) return { action: 'net-only', reason: 'failure-cooldown' };
+    if (!s.enabled) return { action: 'net-only', reason: 'disabled' };
+    if (s.hasEntry) return { action: 'net-and-cache', reason: 'quality-mismatch' };
+    return { action: 'net-and-cache', reason: 'no-cache' };
+  }
+  /* 是否该启动缓存写入：必须在播放超过阈值后，避免「划过一首就存一堆」。 */
+  function shouldStartCacheWrite(input) {
+    var s = input || {};
+    if (s.alreadyCached) return false;
+    if (s.inFlight) return false;
+    var played = Number(s.playedSec) || 0;
+    var threshold = Number(s.thresholdSec) || 0;
+    return played >= threshold;
+  }
+  /* 统计：bytes 缺失按 0 计，但条目数照算（否则索引里有一条坏数据就少报一首歌）。 */
+  function computeCacheStats(entries) {
+    var e = entries || {};
+    var count = 0, bytes = 0;
+    for (var k in e) {
+      if (!Object.prototype.hasOwnProperty.call(e, k)) continue;
+      count++;
+      var b = Number(e[k] && e[k].bytes);
+      if (isFinite(b) && b > 0) bytes += b;
+    }
+    return { count: count, bytes: bytes };
+  }
+  /* ================= 歌曲缓存纯函数层结束 ================= */
+
   return {
     escapeHtml: escapeHtml,
     formatTime: formatTime,
@@ -1389,6 +1461,12 @@
     decideGaplessPreload: decideGaplessPreload,
     computePreloadBackoffMs: computePreloadBackoffMs,
     recordPreloadFailure: recordPreloadFailure,
-    recordPreloadSuccess: recordPreloadSuccess
+    recordPreloadSuccess: recordPreloadSuccess,
+    buildCacheFileName: buildCacheFileName,
+    parseCacheFileName: parseCacheFileName,
+    isCacheEntryUsable: isCacheEntryUsable,
+    decideCacheAction: decideCacheAction,
+    shouldStartCacheWrite: shouldStartCacheWrite,
+    computeCacheStats: computeCacheStats
   };
 });
